@@ -71,4 +71,20 @@ struct horoscopeTests {
         #expect(transit.durationDays == 5)
     }
 
+    @Test("AppTab raw values support persistence")
+    func appTabRawRoundTrip() {
+        for tab in AppTab.allCases {
+            #expect(AppTab(rawValue: tab.rawValue) == tab)
+        }
+    }
+
+    @Test("Additional chat contexts can be restored from raw values")
+    func chatContextRoundTrip() {
+        #expect(ChatContext(rawValue: "general") == .general)
+        #expect(ChatContext(rawValue: "dream") == .dream)
+        #expect(ChatContext(rawValue: "palmReading") == .palmReading)
+        #expect(ChatContext(rawValue: "tarot") == .tarot)
+        #expect(ChatContext(rawValue: "coffee") == .coffee)
+    }
+
 }

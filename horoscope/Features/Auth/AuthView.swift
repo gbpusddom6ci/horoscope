@@ -2,6 +2,7 @@ import SwiftUI
 
 struct AuthView: View {
     @Environment(AuthService.self) private var authService
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var showEmailAuth = false
     @State private var email = ""
@@ -56,7 +57,7 @@ struct AuthView: View {
                     .opacity(animateTitle ? 1 : 0)
                     .offset(y: animateTitle ? 0 : 20)
 
-                    Text("Yıldızlarınız size ne söylüyor?")
+                    Text("auth.subtitle")
                         .font(MysticFonts.mystic(18))
                         .foregroundColor(MysticColors.textSecondary)
                         .opacity(animateSubtitle ? 1 : 0)
@@ -83,14 +84,20 @@ struct AuthView: View {
             }
         }
         .onAppear {
-            withAnimation(.easeOut(duration: 0.8)) {
+            if reduceMotion {
                 animateTitle = true
-            }
-            withAnimation(.easeOut(duration: 0.8).delay(0.3)) {
                 animateSubtitle = true
-            }
-            withAnimation(.easeOut(duration: 0.8).delay(0.6)) {
                 animateButtons = true
+            } else {
+                withAnimation(.easeOut(duration: 0.8)) {
+                    animateTitle = true
+                }
+                withAnimation(.easeOut(duration: 0.8).delay(0.3)) {
+                    animateSubtitle = true
+                }
+                withAnimation(.easeOut(duration: 0.8).delay(0.6)) {
+                    animateButtons = true
+                }
             }
         }
     }
@@ -111,7 +118,7 @@ struct AuthView: View {
                 Rectangle()
                     .fill(MysticColors.textMuted.opacity(0.3))
                     .frame(height: 1)
-                Text("veya")
+                Text("auth.or")
                     .font(MysticFonts.caption(12))
                     .foregroundColor(MysticColors.textMuted)
                 Rectangle()
@@ -120,7 +127,7 @@ struct AuthView: View {
             }
 
             // Email Sign In
-            MysticButton("E-posta ile Giriş Yap", icon: "envelope.fill", style: .secondary) {
+            MysticButton(String(localized: "auth.email_signin"), icon: "envelope.fill", style: .secondary) {
                 withAnimation(.spring(response: 0.4)) {
                     showEmailAuth = true
                 }
@@ -143,14 +150,14 @@ struct AuthView: View {
         VStack(spacing: MysticSpacing.md) {
             if isSignUp {
                 MysticTextField(
-                    "İsminiz",
+                    String(localized: "auth.name"),
                     text: $displayName,
                     icon: "person.fill"
                 )
             }
 
             MysticTextField(
-                "E-posta",
+                String(localized: "auth.email"),
                 text: $email,
                 icon: "envelope.fill"
             )
@@ -159,14 +166,14 @@ struct AuthView: View {
             .autocapitalization(.none)
 
             MysticTextField(
-                "Şifre",
+                String(localized: "auth.password"),
                 text: $password,
                 icon: "lock.fill",
                 isSecure: true
             )
 
             MysticButton(
-                isSignUp ? "Kayıt Ol" : "Giriş Yap",
+                isSignUp ? String(localized: "auth.signup") : String(localized: "auth.signin"),
                 icon: "arrow.right",
                 style: .primary,
                 isLoading: authService.isLoading
@@ -186,7 +193,7 @@ struct AuthView: View {
                     isSignUp.toggle()
                 }
             } label: {
-                Text(isSignUp ? "Zaten hesabım var" : "Hesap oluştur")
+                Text(isSignUp ? "auth.already_have_account" : "auth.create_account")
                     .font(MysticFonts.caption(14))
                     .foregroundColor(MysticColors.neonLavender)
             }
@@ -199,7 +206,7 @@ struct AuthView: View {
             } label: {
                 HStack(spacing: MysticSpacing.xs) {
                     Image(systemName: "chevron.left")
-                    Text("Geri")
+                    Text("auth.back")
                 }
                 .font(MysticFonts.caption(14))
                 .foregroundColor(MysticColors.textSecondary)

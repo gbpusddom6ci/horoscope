@@ -16,12 +16,85 @@ struct SettingsView: View {
     private var birthData: BirthData? { user?.birthData }
     private var hasPremiumAccess: Bool { (user?.isPremium ?? false) || premiumService.hasPremiumAccess }
 
+    private struct SettingsItem: Identifiable {
+        let id: String
+        let icon: String
+        let titleKey: String
+        let subtitleKey: String
+        let color: Color
+        let action: () -> Void
+    }
+
+    private struct SettingsSectionModel: Identifiable {
+        let id: String
+        let titleKey: String
+        let items: [SettingsItem]
+    }
+
+    private var quickSettingsSection: SettingsSectionModel {
+        SettingsSectionModel(
+            id: "quick",
+            titleKey: "settings.section.quick",
+            items: [
+                SettingsItem(
+                    id: "premium",
+                    icon: "crown.fill",
+                    titleKey: "settings.item.premium.title",
+                    subtitleKey: "settings.item.premium.subtitle",
+                    color: MysticColors.mysticGold,
+                    action: { showPaywall = true }
+                ),
+                SettingsItem(
+                    id: "notifications",
+                    icon: "bell.fill",
+                    titleKey: "settings.item.notifications.title",
+                    subtitleKey: "settings.item.notifications.subtitle",
+                    color: MysticColors.neonLavender,
+                    action: { showNotificationPreferences = true }
+                ),
+                SettingsItem(
+                    id: "language",
+                    icon: "globe",
+                    titleKey: "settings.item.language.title",
+                    subtitleKey: "settings.item.language.subtitle",
+                    color: MysticColors.auroraGreen,
+                    action: { showLanguageSettings = true }
+                )
+            ]
+        )
+    }
+
+    private var supportSection: SettingsSectionModel {
+        SettingsSectionModel(
+            id: "support",
+            titleKey: "settings.section.support",
+            items: [
+                SettingsItem(
+                    id: "help",
+                    icon: "questionmark.circle",
+                    titleKey: "settings.item.help.title",
+                    subtitleKey: "settings.item.help.subtitle",
+                    color: MysticColors.textSecondary,
+                    action: { showHelpCenter = true }
+                ),
+                SettingsItem(
+                    id: "privacy",
+                    icon: "doc.text",
+                    titleKey: "settings.item.privacy.title",
+                    subtitleKey: "settings.item.privacy.subtitle",
+                    color: MysticColors.textSecondary,
+                    action: { showPrivacyPolicy = true }
+                )
+            ]
+        )
+    }
+
     var body: some View {
         ZStack {
             StarField(starCount: 30)
 
             VStack(spacing: 0) {
-                Text("Profil")
+                Text("settings.title")
                     .font(MysticFonts.heading(18))
                     .foregroundColor(MysticColors.textPrimary)
                     .padding(.top, 10)
@@ -30,9 +103,10 @@ struct SettingsView: View {
                 ScrollView(.vertical, showsIndicators: false) {
                     VStack(spacing: MysticSpacing.lg) {
                         profileHeader.fadeInOnAppear(delay: 0)
-                        zodiacInfoCard.fadeInOnAppear(delay: 0.1)
-                        menuSection.fadeInOnAppear(delay: 0.2)
-                        dangerZone.fadeInOnAppear(delay: 0.3)
+                        settingsSectionCard(quickSettingsSection).fadeInOnAppear(delay: 0.1)
+                        accountSection.fadeInOnAppear(delay: 0.2)
+                        settingsSectionCard(supportSection).fadeInOnAppear(delay: 0.3)
+                        dangerZone.fadeInOnAppear(delay: 0.35)
                         Color.clear.frame(height: 100)
                     }
                     .padding(.horizontal, MysticSpacing.md)
@@ -84,7 +158,7 @@ struct SettingsView: View {
                     }
                 }
 
-                Text(user?.displayName ?? "Kullanıcı")
+                Text(user?.displayName ?? String(localized: "common.user"))
                     .font(MysticFonts.heading(22))
                     .foregroundColor(MysticColors.textPrimary)
 
@@ -98,7 +172,7 @@ struct SettingsView: View {
                 HStack(spacing: MysticSpacing.xs) {
                     Image(systemName: hasPremiumAccess ? "crown.fill" : "crown")
                         .font(.system(size: 14))
-                    Text(hasPremiumAccess ? "Premium Üye" : "Ücretsiz Plan")
+                    Text(hasPremiumAccess ? String(localized: "settings.plan.premium") : String(localized: "settings.plan.free"))
                         .font(MysticFonts.caption(13))
                 }
                 .foregroundColor(MysticColors.mysticGold)
@@ -110,14 +184,36 @@ struct SettingsView: View {
         }
     }
 
-    // MARK: - Zodiac Info
-    private var zodiacInfoCard: some View {
-        Group {
+    // MARK: - Sections
+
+    private func sectionTitle(_ key: String) -> some View {
+        Text(LocalizedStringKey(key))
+            .font(MysticFonts.heading(16))
+            .foregroundColor(MysticColors.textPrimary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func settingsSectionCard(_ section: SettingsSectionModel) -> some View {
+        VStack(alignment: .leading, spacing: MysticSpacing.sm) {
+            sectionTitle(section.titleKey)
+
+            VStack(spacing: MysticSpacing.sm) {
+                ForEach(section.items) { item in
+                    settingsMenuItem(item)
+                }
+            }
+        }
+    }
+
+    private var accountSection: some View {
+        VStack(alignment: .leading, spacing: MysticSpacing.sm) {
+            sectionTitle("settings.section.account")
+
             if let bd = birthData {
                 MysticCard(glowColor: bd.sunSign.elementColor) {
                     VStack(alignment: .leading, spacing: MysticSpacing.md) {
                         HStack {
-                            Text("Doğum Bilgileri")
+                            Text("settings.birth.title")
                                 .font(MysticFonts.heading(16))
                                 .foregroundColor(MysticColors.textPrimary)
                             Spacer()
@@ -127,21 +223,35 @@ struct SettingsView: View {
                                 HStack(spacing: 4) {
                                     Image(systemName: "pencil")
                                         .font(.system(size: 13))
-                                    Text("Düzenle")
+                                    Text("settings.birth.edit")
                                         .font(MysticFonts.caption(13))
                                 }
                                 .foregroundColor(MysticColors.neonLavender)
                             }
+                            .buttonStyle(.plain)
+                            .frame(minHeight: MysticAccessibility.minimumTapTarget)
+                            .accessibilityHint(Text(String(localized: "settings.menu.open_hint")))
                         }
 
-                        infoRow(icon: "calendar", label: "Doğum Tarihi", value: bd.birthDate.formatted(as: "d MMMM yyyy"))
+                        infoRow(icon: "calendar", label: String(localized: "settings.birth.date"), value: bd.birthDate.formatted(as: "d MMMM yyyy"))
                         if bd.isBirthTimeKnown {
-                            infoRow(icon: "clock", label: "Doğum Saati", value: bd.birthTime?.formatted(as: "HH:mm") ?? "-")
+                            infoRow(icon: "clock", label: String(localized: "settings.birth.time"), value: bd.birthTime?.formatted(as: "HH:mm") ?? "-")
                         }
-                        infoRow(icon: "mappin", label: "Doğum Yeri", value: bd.birthPlace)
-                        infoRow(icon: "sun.max", label: "Güneş Burcu", value: "\(bd.sunSign.symbol) \(bd.sunSign.rawValue)")
+                        infoRow(icon: "mappin", label: String(localized: "settings.birth.place"), value: bd.birthPlace)
+                        infoRow(icon: "sun.max", label: String(localized: "settings.birth.sun"), value: "\(bd.sunSign.symbol) \(bd.sunSign.rawValue)")
                     }
                 }
+            } else {
+                settingsMenuItem(
+                    SettingsItem(
+                        id: "birth_add",
+                        icon: "calendar.badge.plus",
+                        titleKey: "settings.item.birth_add.title",
+                        subtitleKey: "settings.item.birth_add.subtitle",
+                        color: MysticColors.neonLavender,
+                        action: { showEditBirthData = true }
+                    )
+                )
             }
         }
     }
@@ -162,51 +272,42 @@ struct SettingsView: View {
         }
     }
 
-    // MARK: - Menu
-    private var menuSection: some View {
-        VStack(spacing: MysticSpacing.sm) {
-            menuItem(icon: "crown.fill", title: "Premium'a Yükselt", color: MysticColors.mysticGold) {
-                showPaywall = true
-            }
-            menuItem(icon: "bell.fill", title: "Bildirim Tercihleri", color: MysticColors.neonLavender) {
-                showNotificationPreferences = true
-            }
-            menuItem(icon: "globe", title: "Dil", color: MysticColors.auroraGreen) {
-                showLanguageSettings = true
-            }
-            menuItem(icon: "questionmark.circle", title: "Yardım & Destek", color: MysticColors.textSecondary) {
-                showHelpCenter = true
-            }
-            menuItem(icon: "doc.text", title: "Gizlilik Politikası", color: MysticColors.textSecondary) {
-                showPrivacyPolicy = true
-            }
-        }
-    }
-
-    private func menuItem(icon: String, title: String, color: Color, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
+    private func settingsMenuItem(_ item: SettingsItem) -> some View {
+        Button(action: item.action) {
             MysticCard {
                 HStack(spacing: MysticSpacing.md) {
-                    Image(systemName: icon)
+                    Image(systemName: item.icon)
                         .font(.system(size: 18))
-                        .foregroundColor(color)
+                        .foregroundColor(item.color)
                         .frame(width: 28)
-                    Text(title)
-                        .font(MysticFonts.body(15))
-                        .foregroundColor(MysticColors.textPrimary)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(LocalizedStringKey(item.titleKey))
+                            .font(MysticFonts.body(15))
+                            .foregroundColor(MysticColors.textPrimary)
+                        Text(LocalizedStringKey(item.subtitleKey))
+                            .font(MysticFonts.caption(12))
+                            .foregroundColor(MysticColors.textMuted)
+                    }
+
                     Spacer()
+
                     Image(systemName: "chevron.right")
                         .font(.system(size: 14))
                         .foregroundColor(MysticColors.textMuted)
                 }
+                .frame(minHeight: MysticAccessibility.minimumTapTarget)
             }
-        }.buttonStyle(.plain)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(LocalizedStringKey(item.titleKey)))
+        .accessibilityHint(Text(String(localized: "settings.menu.open_hint")))
     }
 
     // MARK: - Danger Zone
     private var dangerZone: some View {
         VStack(spacing: MysticSpacing.sm) {
-            MysticButton("Çıkış Yap", icon: "rectangle.portrait.and.arrow.right", style: .danger) {
+            MysticButton(String(localized: "settings.signout"), icon: "rectangle.portrait.and.arrow.right", style: .danger) {
                 authService.signOut()
             }
 
@@ -249,7 +350,7 @@ struct EditBirthDataSheet: View {
                     VStack(spacing: MysticSpacing.lg) {
                         // Birth Date
                         VStack(alignment: .leading, spacing: MysticSpacing.sm) {
-                            Text("Doğum Tarihi")
+                            Text("settings.edit.birth_date")
                                 .font(MysticFonts.heading(16))
                                 .foregroundColor(MysticColors.textPrimary)
                             DatePicker("", selection: $birthDate, displayedComponents: .date)
@@ -263,7 +364,7 @@ struct EditBirthDataSheet: View {
                         // Birth Time
                         VStack(alignment: .leading, spacing: MysticSpacing.sm) {
                             Toggle(isOn: $birthTimeKnown) {
-                                Text("Doğum Saati")
+                                Text("settings.edit.birth_time")
                                     .font(MysticFonts.heading(16))
                                     .foregroundColor(MysticColors.textPrimary)
                             }
@@ -281,11 +382,11 @@ struct EditBirthDataSheet: View {
 
                         // Birth Place
                         VStack(alignment: .leading, spacing: MysticSpacing.sm) {
-                            Text("Doğum Yeri")
+                            Text("settings.edit.birth_place")
                                 .font(MysticFonts.heading(16))
                                 .foregroundColor(MysticColors.textPrimary)
 
-                            TextField("Şehir arayın...", text: $locationQuery)
+                            TextField(String(localized: "settings.edit.search_placeholder"), text: $locationQuery)
                                 .font(MysticFonts.body(15))
                                 .foregroundColor(MysticColors.textPrimary)
                                 .padding(MysticSpacing.md)
@@ -347,7 +448,7 @@ struct EditBirthDataSheet: View {
                         }
 
                         // Save Button
-                        MysticButton("Kaydet", icon: "checkmark.circle.fill", style: .primary, isLoading: isSaving) {
+                        MysticButton(String(localized: "common.save"), icon: "checkmark.circle.fill", style: .primary, isLoading: isSaving) {
                             saveBirthData()
                         }
                         .disabled(birthPlace.isEmpty)
@@ -363,12 +464,12 @@ struct EditBirthDataSheet: View {
                     .padding(MysticSpacing.md)
                 }
             }
-            .navigationTitle("Doğum Bilgilerini Düzenle")
+            .navigationTitle(Text("settings.edit.title"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("İptal") { dismiss() }
+                    Button(String(localized: "common.cancel")) { dismiss() }
                         .foregroundColor(MysticColors.neonLavender)
                 }
             }

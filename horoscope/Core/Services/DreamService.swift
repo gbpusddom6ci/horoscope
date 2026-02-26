@@ -39,6 +39,16 @@ class DreamService {
             .sorted { $0.createdAt > $1.createdAt }
     }
 
+    /// True if user created at least one dream entry (first value metric).
+    func hasEntries(for userId: String) -> Bool {
+        !entriesForUser(userId).isEmpty
+    }
+
+    /// Earliest dream entry timestamp for first-value timing.
+    func firstEntryDate(for userId: String) -> Date? {
+        entriesForUser(userId).map(\.createdAt).min()
+    }
+
     /// Adds a new dream entry and persists.
     func addEntry(_ entry: DreamEntry) {
         entries.insert(entry, at: 0)

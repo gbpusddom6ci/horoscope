@@ -1,12 +1,23 @@
 import SwiftUI
 
 struct ChatView: View {
+    private struct FailedChatRequest {
+        let sessionId: String
+        let context: ChatContext
+        let messageHistory: [ChatMessage]
+    }
+
     @Environment(AuthService.self) private var authService
     @State private var inputText: String = ""
     @State private var isLoading: Bool = false
     @State private var scrollProxy: ScrollViewProxy?
     @State private var chatContext: ChatContext = .general
     @State private var currentSessionId: String?
+    @State private var draftsByContext: [ChatContext: String] = [:]
+    @State private var failedRequest: FailedChatRequest?
+    @State private var inlineStatusMessage: String?
+    @State private var transientErrorMessage: String?
+    @State private var showMoreContexts = false
 
     private let aiService = AIService.shared
     private let chatService = ChatService.shared
@@ -20,14 +31,29 @@ struct ChatView: View {
         currentSession?.messages ?? []
     }
 
+    private var trimmedInput: String {
+        inputText.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var canSend: Bool {
+        !trimmedInput.isEmpty && !isLoading
+    }
+
+    private var primaryContexts: [ChatContext] {
+        [.general, .natal, .transit]
+    }
+
+    private var additionalContexts: [ChatContext] {
+        [.dream, .palmReading, .tarot]
+    }
+
     var body: some View {
         ZStack {
             StarField(starCount: 40)
 
             VStack(spacing: 0) {
-                // Custom Header
                 HStack {
-                    Text("AI Sohbet")
+                    Text("chat.title")
                         .font(MysticFonts.heading(18))
                         .foregroundColor(MysticColors.textPrimary)
 
@@ -40,56 +66,95 @@ struct ChatView: View {
                             .font(.system(size: 18))
                             .foregroundColor(MysticColors.neonLavender)
                     }
+                    .frame(
+                        minWidth: MysticAccessibility.minimumTapTarget,
+                        minHeight: MysticAccessibility.minimumTapTarget
+                    )
+                    .accessibilityLabel(Text(String(localized: "chat.new_chat")))
+                    .accessibilityHint(Text(String(localized: "chat.new_chat.hint")))
                 }
                 .padding(.horizontal, MysticSpacing.md)
                 .padding(.top, 10)
                 .padding(.bottom, 10)
 
-                // Context Picker
-                    contextPickerBar
+                contextPickerBar
 
-                    if let syncError = chatService.lastErrorMessage {
-                        syncErrorBanner(syncError)
-                            .padding(.horizontal, MysticSpacing.md)
-                            .padding(.bottom, MysticSpacing.xs)
-                    }
+                if let syncError = chatService.lastErrorMessage {
+                    syncErrorBanner(syncError)
+                        .padding(.horizontal, MysticSpacing.md)
+                        .padding(.bottom, MysticSpacing.xs)
+                }
 
-                    // Messages
-                    ScrollViewReader { proxy in
-                        ScrollView(.vertical, showsIndicators: false) {
-                            LazyVStack(spacing: MysticSpacing.sm) {
-                                if messages.isEmpty {
-                                    emptyStateView
-                                }
+                if let transientErrorMessage {
+                    syncErrorBanner(transientErrorMessage)
+                        .padding(.horizontal, MysticSpacing.md)
+                        .padding(.bottom, MysticSpacing.xs)
+                }
 
-                                ForEach(messages) { message in
-                                    ChatBubbleView(message: message)
-                                        .id(message.id)
-                                }
+                if let failedRequest {
+                    retryBanner(for: failedRequest)
+                        .padding(.horizontal, MysticSpacing.md)
+                        .padding(.bottom, MysticSpacing.xs)
+                }
 
-                                if isLoading {
-                                    typingIndicator
-                                }
-
-                                Color.clear.frame(height: MysticSpacing.md)
-                                    .id("bottom")
+                ScrollViewReader { proxy in
+                    ScrollView(.vertical, showsIndicators: false) {
+                        LazyVStack(spacing: MysticSpacing.sm) {
+                            if messages.isEmpty {
+                                emptyStateView
                             }
-                            .padding(.horizontal, MysticSpacing.md)
-                            .padding(.top, MysticSpacing.md)
-                        }
-                        .onAppear { scrollProxy = proxy }
-                    }
 
+                            ForEach(messages) { message in
+                                ChatBubbleView(message: message)
+                                    .id(message.id)
+                            }
+
+                            if isLoading {
+                                typingIndicator
+                            }
+
+                            Color.clear.frame(height: MysticSpacing.md)
+                                .id("bottom")
+                        }
+                        .padding(.horizontal, MysticSpacing.md)
+                        .padding(.top, MysticSpacing.md)
+                    }
+                    .onAppear { scrollProxy = proxy }
+                }
             }
 
-            // Input Bar
             inputBar
         }
         .task(id: authService.currentUser?.id) {
+            loadDraftsForCurrentUser()
             await loadSessionsForCurrentUser()
         }
-        .onChange(of: chatContext) { _, _ in
+        .onChange(of: chatContext) { oldValue, newValue in
+            draftsByContext[oldValue] = inputText
+            inputText = draftsByContext[newValue] ?? ""
+            persistDraftsForCurrentUser()
             loadOrCreateSession()
+        }
+        .onChange(of: inputText) { _, newValue in
+            draftsByContext[chatContext] = newValue
+            persistDraftsForCurrentUser()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .openChatQuickAction)) { notification in
+            if let rawContext = notification.userInfo?[AppNavigationPayload.context] as? String,
+               let targetContext = ChatContext(rawValue: rawContext) {
+                chatContext = targetContext
+            }
+
+            if let prompt = notification.userInfo?[AppNavigationPayload.prompt] as? String {
+                inputText = prompt
+                draftsByContext[chatContext] = prompt
+                persistDraftsForCurrentUser()
+            }
+        }
+        .sheet(isPresented: $showMoreContexts) {
+            moreContextsSheet
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
         }
     }
 
@@ -106,11 +171,10 @@ struct ChatView: View {
         let session = chatService.activeSession(for: userId, context: chatContext)
         currentSessionId = session.id
 
-        // Add welcome message if this is a brand new session
         if session.messages.isEmpty {
             let welcome = ChatMessage(
                 role: .assistant,
-                content: "✨ Merhaba! Ben Mystic, AI astroloji danışmanınızım. Natal haritanız, transitler, rüyalarınız veya merak ettiğiniz herhangi bir konu hakkında benimle sohbet edebilirsiniz.\n\nSize nasıl yardımcı olabilirim?",
+                content: String(localized: "chat.welcome"),
                 context: chatContext
             )
             chatService.addMessage(welcome, to: session.id)
@@ -124,32 +188,70 @@ struct ChatView: View {
 
         let welcome = ChatMessage(
             role: .assistant,
-            content: "✨ Yeni bir sohbet başlattınız! Size nasıl yardımcı olabilirim?",
+            content: String(localized: "chat.welcome_new"),
             context: chatContext
         )
         chatService.addMessage(welcome, to: session.id)
+        failedRequest = nil
+        transientErrorMessage = nil
+    }
+
+    // MARK: - Draft Persistence
+
+    private func draftsStorageKey(for userId: String) -> String {
+        "chat_drafts_\(userId)"
+    }
+
+    private func loadDraftsForCurrentUser() {
+        guard let userId = authService.currentUser?.id else {
+            draftsByContext = [:]
+            inputText = ""
+            return
+        }
+
+        guard let raw = UserDefaults.standard.dictionary(forKey: draftsStorageKey(for: userId)) as? [String: String] else {
+            draftsByContext = [:]
+            inputText = ""
+            return
+        }
+
+        var restored: [ChatContext: String] = [:]
+        for (key, value) in raw {
+            if let context = ChatContext(rawValue: key) {
+                restored[context] = value
+            }
+        }
+        draftsByContext = restored
+        inputText = restored[chatContext] ?? ""
+    }
+
+    private func persistDraftsForCurrentUser() {
+        guard let userId = authService.currentUser?.id else { return }
+
+        let raw = Dictionary(uniqueKeysWithValues: draftsByContext.map { ($0.key.rawValue, $0.value) })
+        UserDefaults.standard.set(raw, forKey: draftsStorageKey(for: userId))
     }
 
     // MARK: - Context Picker
     private var contextPickerBar: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: MysticSpacing.sm) {
-                contextChip("Genel", context: .general, icon: "sparkles")
-                contextChip("Natal", context: .natal, icon: "moon.stars")
-                contextChip("Transit", context: .transit, icon: "arrow.triangle.2.circlepath")
-                contextChip("Rüya", context: .dream, icon: "moon.zzz")
-                contextChip("El Falı", context: .palmReading, icon: "hand.raised")
+                ForEach(primaryContexts, id: \.self) { context in
+                    contextChip(context)
+                }
+                moreContextsButton
             }
             .padding(.horizontal, MysticSpacing.md)
             .padding(.vertical, MysticSpacing.sm)
         }
     }
 
-    private func contextChip(_ title: String, context: ChatContext, icon: String) -> some View {
-        Button {
-            withAnimation(.spring(response: 0.3)) {
-                chatContext = context
-            }
+    private func contextChip(_ context: ChatContext) -> some View {
+        let title = titleForContext(context)
+        let icon = iconForContext(context)
+
+        return Button {
+            chatContext = context
         } label: {
             HStack(spacing: MysticSpacing.xs) {
                 Image(systemName: icon)
@@ -159,6 +261,7 @@ struct ChatView: View {
             }
             .padding(.horizontal, MysticSpacing.sm)
             .padding(.vertical, 6)
+            .frame(minHeight: MysticAccessibility.minimumTapTarget)
             .foregroundColor(chatContext == context ? MysticColors.voidBlack : MysticColors.textSecondary)
             .background(
                 chatContext == context
@@ -177,6 +280,131 @@ struct ChatView: View {
             )
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(Text(title))
+        .accessibilityHint(Text(String(localized: "chat.context.select.hint")))
+    }
+
+    private var moreContextsButton: some View {
+        let isAdditionalContextSelected = additionalContexts.contains(chatContext)
+
+        return Button {
+            showMoreContexts = true
+        } label: {
+            HStack(spacing: MysticSpacing.xs) {
+                Image(systemName: "ellipsis.circle.fill")
+                    .font(.system(size: 12))
+                Text("chat.context.more")
+                    .font(MysticFonts.caption(12))
+            }
+            .padding(.horizontal, MysticSpacing.sm)
+            .padding(.vertical, 6)
+            .frame(minHeight: MysticAccessibility.minimumTapTarget)
+            .foregroundColor(isAdditionalContextSelected ? MysticColors.voidBlack : MysticColors.textSecondary)
+            .background(
+                isAdditionalContextSelected
+                    ? AnyShapeStyle(MysticGradients.goldShimmer)
+                    : AnyShapeStyle(MysticColors.cardBackground)
+            )
+            .clipShape(Capsule())
+            .overlay(
+                Capsule()
+                    .stroke(
+                        isAdditionalContextSelected
+                            ? MysticColors.mysticGold.opacity(0.5)
+                            : MysticColors.cardBorder,
+                        lineWidth: 1
+                    )
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(String(localized: "chat.context.more")))
+        .accessibilityHint(Text(String(localized: "chat.context.more.hint")))
+        .accessibilityIdentifier("chat.context.more")
+    }
+
+    private var moreContextsSheet: some View {
+        ZStack {
+            MysticColors.voidBlack.ignoresSafeArea()
+            StarField(starCount: 25)
+
+            VStack(alignment: .leading, spacing: MysticSpacing.md) {
+                Text("chat.context.sheet.title")
+                    .font(MysticFonts.heading(20))
+                    .foregroundColor(MysticColors.textPrimary)
+
+                ForEach(additionalContexts, id: \.self) { context in
+                    Button {
+                        chatContext = context
+                        showMoreContexts = false
+                    } label: {
+                        MysticCard(glowColor: chatContext == context ? MysticColors.mysticGold : MysticColors.neonLavender) {
+                            HStack(spacing: MysticSpacing.md) {
+                                Image(systemName: iconForContext(context))
+                                    .font(.system(size: 16))
+                                    .foregroundColor(chatContext == context ? MysticColors.mysticGold : MysticColors.textSecondary)
+                                    .frame(width: 24)
+
+                                Text(titleForContext(context))
+                                    .font(MysticFonts.body(15))
+                                    .foregroundColor(MysticColors.textPrimary)
+
+                                Spacer()
+
+                                if chatContext == context {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .foregroundColor(MysticColors.mysticGold)
+                                }
+                            }
+                            .frame(minHeight: MysticAccessibility.minimumTapTarget)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(Text(titleForContext(context)))
+                    .accessibilityHint(Text(String(localized: "chat.context.select.hint")))
+                }
+
+                Spacer(minLength: 0)
+            }
+            .padding(MysticSpacing.md)
+        }
+    }
+
+    private func titleForContext(_ context: ChatContext) -> String {
+        switch context {
+        case .general:
+            return String(localized: "chat.context.general")
+        case .natal:
+            return String(localized: "chat.context.natal")
+        case .transit:
+            return String(localized: "chat.context.transit")
+        case .dream:
+            return String(localized: "chat.context.dream")
+        case .palmReading:
+            return String(localized: "chat.context.palm")
+        case .tarot:
+            return String(localized: "chat.context.tarot")
+        case .coffee:
+            return String(localized: "chat.context.coffee")
+        }
+    }
+
+    private func iconForContext(_ context: ChatContext) -> String {
+        switch context {
+        case .general:
+            return "sparkles"
+        case .natal:
+            return "moon.stars"
+        case .transit:
+            return "arrow.triangle.2.circlepath"
+        case .dream:
+            return "moon.zzz"
+        case .palmReading:
+            return "hand.raised"
+        case .tarot:
+            return "suit.diamond"
+        case .coffee:
+            return "cup.and.saucer"
+        }
     }
 
     // MARK: - Empty State
@@ -190,22 +418,21 @@ struct ChatView: View {
                 .shadow(color: MysticColors.neonLavender.opacity(0.4), radius: 10)
 
             VStack(spacing: MysticSpacing.sm) {
-                Text("Mistik Sohbet")
+                Text("chat.empty.title")
                     .font(MysticFonts.heading(22))
                     .foregroundColor(MysticColors.textPrimary)
 
-                Text("Natal haritanız, transitler, rüyalar veya herhangi bir konu hakkında AI danışmanınızla sohbet edin.")
+                Text("chat.empty.subtitle")
                     .font(MysticFonts.body(15))
                     .foregroundColor(MysticColors.textSecondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, MysticSpacing.xl)
             }
 
-            // Quick prompts
             VStack(spacing: MysticSpacing.sm) {
-                quickPrompt("Bugün beni neler bekliyor?", icon: "sparkles")
-                quickPrompt("Natal haritamı yorumla", icon: "moon.stars")
-                quickPrompt("Aşk hayatım hakkında ne dersin?", icon: "heart.fill")
+                quickPrompt(String(localized: "chat.quick.today"), icon: "sparkles")
+                quickPrompt(String(localized: "chat.quick.natal"), icon: "moon.stars")
+                quickPrompt(String(localized: "chat.quick.love"), icon: "heart.fill")
             }
         }
     }
@@ -217,21 +444,30 @@ struct ChatView: View {
         } label: {
             HStack(spacing: MysticSpacing.sm) {
                 Image(systemName: icon)
-                    .font(.system(size: 14))
+                    .font(.system(size: 13))
                     .foregroundColor(MysticColors.mysticGold)
                 Text(text)
-                    .font(MysticFonts.body(14))
+                    .font(MysticFonts.caption(13))
                     .foregroundColor(MysticColors.textPrimary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
                 Spacer()
                 Image(systemName: "arrow.up.circle.fill")
-                    .font(.system(size: 18))
+                    .font(.system(size: 16))
                     .foregroundColor(MysticColors.neonLavender.opacity(0.5))
             }
-            .padding(.horizontal, MysticSpacing.md)
-            .padding(.vertical, MysticSpacing.sm)
-            .mysticCardStyle(glowColor: MysticColors.mysticGold.opacity(0.5))
+            .padding(.horizontal, MysticSpacing.sm)
+            .padding(.vertical, 10)
+            .background(MysticColors.cardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: MysticRadius.md))
+            .overlay(
+                RoundedRectangle(cornerRadius: MysticRadius.md)
+                    .stroke(MysticColors.mysticGold.opacity(0.22), lineWidth: 1)
+            )
+            .frame(minHeight: MysticAccessibility.minimumTapTarget)
         }
         .buttonStyle(.plain)
+        .accessibilityHint(Text(String(localized: "chat.quick.hint")))
     }
 
     // MARK: - Typing Indicator
@@ -267,9 +503,8 @@ struct ChatView: View {
                 .background(MysticColors.cardBorder)
 
             HStack(spacing: MysticSpacing.sm) {
-                // Text input
                 HStack {
-                    TextField("Mesajınızı yazın...", text: $inputText, axis: .vertical)
+                    TextField(String(localized: "chat.input.placeholder"), text: $inputText, axis: .vertical)
                         .font(MysticFonts.body(15))
                         .foregroundColor(MysticColors.textPrimary)
                         .lineLimit(1...5)
@@ -281,93 +516,69 @@ struct ChatView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 20))
                 .overlay(
                     RoundedRectangle(cornerRadius: 20)
-                        .stroke(MysticColors.cardBorder, lineWidth: 1)
+                        .stroke(canSend ? MysticColors.mysticGold.opacity(0.6) : MysticColors.cardBorder, lineWidth: 1)
                 )
 
-                // Send button
                 Button {
                     sendMessage()
                 } label: {
                     ZStack {
                         Circle()
-                            .fill(
-                                inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                                    ? MysticColors.textMuted.opacity(0.2)
-                                    : MysticColors.mysticGold
-                            )
-                            .frame(width: 40, height: 40)
+                            .fill(canSend ? MysticColors.mysticGold : MysticColors.textMuted.opacity(0.2))
+                            .frame(width: 44, height: 44)
 
                         Image(systemName: "arrow.up")
                             .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(
-                                inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                                    ? MysticColors.textMuted
-                                    : MysticColors.voidBlack
-                            )
+                            .foregroundColor(canSend ? MysticColors.voidBlack : MysticColors.textMuted)
                     }
                 }
-                .disabled(inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isLoading)
+                .disabled(!canSend)
+                .frame(
+                    minWidth: MysticAccessibility.minimumTapTarget,
+                    minHeight: MysticAccessibility.minimumTapTarget
+                )
+                .accessibilityLabel(Text(String(localized: "chat.send")))
+                .accessibilityHint(Text(String(localized: "chat.send.hint")))
             }
             .padding(.horizontal, MysticSpacing.md)
-            .padding(.vertical, MysticSpacing.sm)
-            .background(MysticColors.voidBlack.opacity(0.9))
+            .padding(.top, MysticSpacing.sm)
+
+            if let inlineStatusMessage {
+                Text(inlineStatusMessage)
+                    .font(MysticFonts.caption(12))
+                    .foregroundColor(MysticColors.auroraGreen)
+                    .padding(.top, 4)
+                    .padding(.bottom, MysticSpacing.sm)
+            } else {
+                Color.clear.frame(height: MysticSpacing.sm)
+            }
         }
+        .background(MysticColors.voidBlack.opacity(0.9))
     }
 
-    // MARK: - Actions
+    // MARK: - Error / Retry UI
 
-    private func sendMessage() {
-        let text = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty, let sessionId = currentSessionId else { return }
+    private func retryBanner(for failedRequest: FailedChatRequest) -> some View {
+        HStack(spacing: MysticSpacing.xs) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundColor(MysticColors.celestialPink)
 
-        // Add user message
-        let userMessage = ChatMessage(role: .user, content: text, context: chatContext)
-        chatService.addMessage(userMessage, to: sessionId)
-        inputText = ""
-        let messageHistory = chatService.sessions.first(where: { $0.id == sessionId })?.messages ?? [userMessage]
+            Text(String(localized: "chat.retry.message"))
+                .font(MysticFonts.caption(12))
+                .foregroundColor(MysticColors.celestialPink)
 
-        // Scroll to bottom
-        withAnimation {
-            scrollProxy?.scrollTo("bottom", anchor: .bottom)
-        }
+            Spacer()
 
-        // Get AI response
-        isLoading = true
-        Task {
-            do {
-                let response = try await aiService.getChatResponse(
-                    messages: messageHistory,
-                    context: chatContext,
-                    birthData: authService.currentUser?.birthData
-                )
-
-                await MainActor.run {
-                    let assistantMessage = ChatMessage(
-                        role: .assistant,
-                        content: response,
-                        context: chatContext
-                    )
-                    chatService.addMessage(assistantMessage, to: sessionId)
-
-                    withAnimation {
-                        scrollProxy?.scrollTo("bottom", anchor: .bottom)
-                    }
-                }
-            } catch {
-                let friendly = friendlyChatErrorMessage(for: error)
-                await MainActor.run {
-                    let errorMessage = ChatMessage(
-                        role: .assistant,
-                        content: friendly,
-                        context: chatContext
-                    )
-                    chatService.addMessage(errorMessage, to: sessionId)
-                }
+            Button(String(localized: "chat.retry.action")) {
+                retryLastRequest(failedRequest)
             }
-            await MainActor.run {
-                isLoading = false
-            }
+            .font(MysticFonts.caption(12))
+            .foregroundColor(MysticColors.neonLavender)
         }
+        .padding(.horizontal, MysticSpacing.sm)
+        .padding(.vertical, 8)
+        .background(MysticColors.celestialPink.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: MysticRadius.sm))
     }
 
     private func syncErrorBanner(_ text: String) -> some View {
@@ -380,9 +591,83 @@ struct ChatView: View {
             Spacer()
         }
         .padding(.horizontal, MysticSpacing.sm)
-        .padding(.vertical, 6)
+        .padding(.vertical, 8)
         .background(MysticColors.celestialPink.opacity(0.08))
         .clipShape(RoundedRectangle(cornerRadius: MysticRadius.sm))
+    }
+
+    // MARK: - Actions
+
+    private func sendMessage() {
+        let text = trimmedInput
+        guard !text.isEmpty, let sessionId = currentSessionId else { return }
+
+        let userMessage = ChatMessage(role: .user, content: text, context: chatContext)
+        chatService.addMessage(userMessage, to: sessionId)
+        inputText = ""
+        draftsByContext[chatContext] = ""
+        persistDraftsForCurrentUser()
+
+        let history = chatService.sessions.first(where: { $0.id == sessionId })?.messages ?? [userMessage]
+        failedRequest = nil
+
+        withAnimation {
+            scrollProxy?.scrollTo("bottom", anchor: .bottom)
+        }
+
+        inlineStatusMessage = String(localized: "chat.sent")
+        Task {
+            try? await Task.sleep(nanoseconds: 1_000_000_000)
+            await MainActor.run {
+                inlineStatusMessage = nil
+            }
+        }
+
+        requestAssistantResponse(history: history, sessionId: sessionId, context: chatContext)
+    }
+
+    private func retryLastRequest(_ request: FailedChatRequest) {
+        requestAssistantResponse(history: request.messageHistory, sessionId: request.sessionId, context: request.context)
+    }
+
+    private func requestAssistantResponse(history: [ChatMessage], sessionId: String, context: ChatContext) {
+        isLoading = true
+
+        Task {
+            do {
+                let response = try await aiService.getChatResponse(
+                    messages: history,
+                    context: context,
+                    birthData: authService.currentUser?.birthData
+                )
+
+                await MainActor.run {
+                    let assistantMessage = ChatMessage(role: .assistant, content: response, context: context)
+                    chatService.addMessage(assistantMessage, to: sessionId)
+                    failedRequest = nil
+                    transientErrorMessage = nil
+
+                    withAnimation {
+                        scrollProxy?.scrollTo("bottom", anchor: .bottom)
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    failedRequest = FailedChatRequest(
+                        sessionId: sessionId,
+                        context: context,
+                        messageHistory: history
+                    )
+
+                    let fallback = friendlyChatErrorMessage(for: error)
+                    transientErrorMessage = fallback
+                }
+            }
+
+            await MainActor.run {
+                isLoading = false
+            }
+        }
     }
 
     private func friendlyChatErrorMessage(for error: Error) -> String {
@@ -393,15 +678,15 @@ struct ChatView: View {
         if let urlError = error as? URLError {
             switch urlError.code {
             case .notConnectedToInternet:
-                return "İnternet bağlantısı yok. Bağlantıyı kontrol edip tekrar deneyin."
+                return String(localized: "chat.error.offline")
             case .timedOut:
-                return "İstek zaman aşımına uğradı. Lütfen tekrar deneyin."
+                return String(localized: "chat.error.timeout")
             default:
-                return "Sunucuya ulaşılamadı. Birazdan tekrar deneyin."
+                return String(localized: "chat.error.server")
             }
         }
 
-        return "Üzgünüm, şu an yanıt üretemedim. Lütfen tekrar deneyin."
+        return String(localized: "chat.error.generic")
     }
 }
 
@@ -418,19 +703,17 @@ struct ChatBubbleView: View {
             if isUser { Spacer(minLength: 60) }
 
             VStack(alignment: isUser ? .trailing : .leading, spacing: MysticSpacing.xs) {
-                // Avatar + Name
                 if !isUser {
                     HStack(spacing: MysticSpacing.xs) {
                         Image(systemName: "moon.stars.fill")
                             .font(.system(size: 12))
                             .foregroundColor(MysticColors.mysticGold)
-                        Text("Mystic")
+                        Text("chat.assistant.name")
                             .font(MysticFonts.caption(11))
                             .foregroundColor(MysticColors.mysticGold)
                     }
                 }
 
-                // Bubble
                 Text(message.content)
                     .font(MysticFonts.body(15))
                     .foregroundColor(isUser ? MysticColors.voidBlack : MysticColors.textPrimary)
@@ -442,9 +725,7 @@ struct ChatBubbleView: View {
                             ? AnyShapeStyle(MysticGradients.goldShimmer)
                             : AnyShapeStyle(MysticColors.cardBackground)
                     )
-                    .clipShape(
-                        RoundedRectangle(cornerRadius: MysticRadius.lg)
-                    )
+                    .clipShape(RoundedRectangle(cornerRadius: MysticRadius.lg))
                     .overlay(
                         RoundedRectangle(cornerRadius: MysticRadius.lg)
                             .stroke(
@@ -455,7 +736,6 @@ struct ChatBubbleView: View {
                             )
                     )
 
-                // Timestamp
                 Text(message.timestamp.formatted(as: "HH:mm"))
                     .font(MysticFonts.caption(10))
                     .foregroundColor(MysticColors.textMuted)

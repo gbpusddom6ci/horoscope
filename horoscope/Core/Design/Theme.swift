@@ -121,6 +121,11 @@ enum MysticRadius {
     static let full: CGFloat = 100
 }
 
+// MARK: - Accessibility
+enum MysticAccessibility {
+    static let minimumTapTarget: CGFloat = 44
+}
+
 // MARK: - Color Hex Init
 extension Color {
     init(hex: String) {

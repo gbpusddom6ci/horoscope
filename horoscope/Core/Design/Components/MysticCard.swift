@@ -50,6 +50,7 @@ struct MysticCard<Content: View>: View {
 
 // MARK: - Feature Card (for home screen)
 struct FeatureCard: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let icon: String
     let title: String
     let subtitle: String
@@ -101,8 +102,20 @@ struct FeatureCard: View {
         .buttonStyle(.plain)
         .simultaneousGesture(
             DragGesture(minimumDistance: 0)
-                .onChanged { _ in withAnimation(.easeInOut(duration: 0.1)) { isPressed = true } }
-                .onEnded { _ in withAnimation(.easeInOut(duration: 0.1)) { isPressed = false } }
+                .onChanged { _ in
+                    if reduceMotion {
+                        isPressed = true
+                    } else {
+                        withAnimation(.easeInOut(duration: 0.1)) { isPressed = true }
+                    }
+                }
+                .onEnded { _ in
+                    if reduceMotion {
+                        isPressed = false
+                    } else {
+                        withAnimation(.easeInOut(duration: 0.1)) { isPressed = false }
+                    }
+                }
         )
     }
 }

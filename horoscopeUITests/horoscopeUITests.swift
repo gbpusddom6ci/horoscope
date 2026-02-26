@@ -22,6 +22,24 @@ final class horoscopeUITests: XCTestCase {
         // Put teardown code here. This method is called after the invocation of each test method in the class.
     }
 
+    private func launchAuthenticatedApp() -> XCUIApplication {
+        let app = XCUIApplication()
+        app.launchArguments += [
+            "UITEST_AUTHENTICATED",
+            "-selected_language", "en"
+        ]
+        app.launch()
+        return app
+    }
+
+    private func revealElementIfNeeded(_ element: XCUIElement, in app: XCUIApplication, maxScrolls: Int = 4) {
+        var attempts = 0
+        while !element.exists && attempts < maxScrolls {
+            app.swipeUp()
+            attempts += 1
+        }
+    }
+
     @MainActor
     func testExample() throws {
         // UI tests must launch the application that they test.
@@ -29,6 +47,73 @@ final class horoscopeUITests: XCTestCase {
         app.launch()
 
         XCTAssertTrue(app.staticTexts["Mystic"].waitForExistence(timeout: 5))
+    }
+
+    @MainActor
+    func testQuickActionsSheetShowsItems() throws {
+        let app = launchAuthenticatedApp()
+
+        let quickButton = app.buttons["quick_actions.button"]
+        XCTAssertTrue(quickButton.waitForExistence(timeout: 8))
+        quickButton.tap()
+
+        XCTAssertTrue(app.buttons["quick_action.new_chat"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["quick_action.new_dream"].exists)
+        XCTAssertTrue(app.buttons["quick_action.open_tarot"].exists)
+        XCTAssertTrue(app.buttons["quick_action.open_palm"].exists)
+    }
+
+    @MainActor
+    func testQuickActionDreamOpensComposer() throws {
+        let app = launchAuthenticatedApp()
+
+        let quickButton = app.buttons["quick_actions.button"]
+        XCTAssertTrue(quickButton.waitForExistence(timeout: 8))
+        quickButton.tap()
+        app.buttons["quick_action.new_dream"].tap()
+
+        XCTAssertTrue(app.navigationBars["New Dream"].waitForExistence(timeout: 5))
+    }
+
+    @MainActor
+    func testChatMoreContextsSheetOpens() throws {
+        let app = launchAuthenticatedApp()
+
+        let chatTab = app.buttons["tab.chat"]
+        XCTAssertTrue(chatTab.waitForExistence(timeout: 8))
+        chatTab.tap()
+
+        let moreButton = app.buttons["chat.context.more"]
+        XCTAssertTrue(moreButton.waitForExistence(timeout: 5))
+        moreButton.tap()
+
+        XCTAssertTrue(app.staticTexts["More Contexts"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["Tarot"].exists)
+    }
+
+    @MainActor
+    func testHomeGridShowsCompactTiles() throws {
+        let app = launchAuthenticatedApp()
+
+        let homeTab = app.buttons["tab.home"]
+        XCTAssertTrue(homeTab.waitForExistence(timeout: 8))
+        homeTab.tap()
+
+        let chatTile = app.buttons["home.feature.chat"]
+        revealElementIfNeeded(chatTile, in: app)
+        XCTAssertTrue(chatTile.waitForExistence(timeout: 3))
+
+        let dreamTile = app.buttons["home.feature.dream"]
+        revealElementIfNeeded(dreamTile, in: app)
+        XCTAssertTrue(dreamTile.exists)
+
+        let palmTile = app.buttons["home.feature.palm"]
+        revealElementIfNeeded(palmTile, in: app)
+        XCTAssertTrue(palmTile.exists)
+
+        let tarotTile = app.buttons["home.feature.tarot"]
+        revealElementIfNeeded(tarotTile, in: app)
+        XCTAssertTrue(tarotTile.exists)
     }
 
     @MainActor

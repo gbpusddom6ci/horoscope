@@ -25,11 +25,11 @@ struct PaywallView: View {
                                 .font(.system(size: 52))
                                 .foregroundStyle(MysticGradients.goldShimmer)
 
-                            Text("Mystic Premium")
+                            Text("settings.paywall.title")
                                 .font(MysticFonts.heading(24))
                                 .foregroundColor(MysticColors.textPrimary)
 
-                            Text("Sınırsız AI yorumları ve gelişmiş mistik özellikler.")
+                            Text("settings.paywall.subtitle")
                                 .font(MysticFonts.body(14))
                                 .foregroundColor(MysticColors.textSecondary)
                                 .multilineTextAlignment(.center)
@@ -40,7 +40,7 @@ struct PaywallView: View {
                                 HStack(spacing: MysticSpacing.sm) {
                                     Image(systemName: "checkmark.seal.fill")
                                         .foregroundColor(MysticColors.auroraGreen)
-                                    Text("Premium aktif. Teşekkürler!")
+                                    Text("settings.paywall.active")
                                         .font(MysticFonts.body(15))
                                         .foregroundColor(MysticColors.textPrimary)
                                     Spacer()
@@ -57,10 +57,10 @@ struct PaywallView: View {
                         if !premiumService.isLoadingProducts && premiumService.products.isEmpty {
                             MysticCard(glowColor: MysticColors.celestialPink) {
                                 VStack(alignment: .leading, spacing: MysticSpacing.xs) {
-                                    Text("Paketler Yüklenemedi")
+                                    Text("settings.paywall.packages_failed_title")
                                         .font(MysticFonts.heading(15))
                                         .foregroundColor(MysticColors.textPrimary)
-                                    Text("Şu an premium paket listesi alınamadı. İnternetinizi kontrol edip tekrar deneyin.")
+                                    Text("settings.paywall.packages_failed_body")
                                         .font(MysticFonts.caption(12))
                                         .foregroundColor(MysticColors.textSecondary)
                                 }
@@ -107,7 +107,7 @@ struct PaywallView: View {
                                 .padding(.horizontal, MysticSpacing.md)
                         }
 
-                        MysticButton("Satın Alımları Geri Yükle", icon: "arrow.clockwise", style: .secondary) {
+                        MysticButton(String(localized: "settings.paywall.restore"), icon: "arrow.clockwise", style: .secondary) {
                             Task {
                                 await premiumService.restorePurchases()
                                 await MainActor.run {
@@ -122,12 +122,12 @@ struct PaywallView: View {
                     .padding(.top, MysticSpacing.md)
                 }
             }
-            .navigationTitle("Premium")
+            .navigationTitle(Text("settings.paywall.nav_title"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Kapat") {
+                    Button(String(localized: "common.close")) {
                         dismiss()
                     }
                     .foregroundColor(MysticColors.neonLavender)
@@ -182,7 +182,7 @@ struct NotificationPreferencesView: View {
                                     }
                                 }
                             )) {
-                                Text("Günlük Burç Bildirimi")
+                                Text("settings.notifications.daily_toggle")
                                     .font(MysticFonts.body(15))
                                     .foregroundColor(MysticColors.textPrimary)
                             }
@@ -190,7 +190,7 @@ struct NotificationPreferencesView: View {
 
                             if notificationService.dailyNotificationsEnabled {
                                 DatePicker(
-                                    "Bildirim Saati",
+                                    String(localized: "settings.notifications.time"),
                                     selection: Binding(
                                         get: { notificationService.notificationTime },
                                         set: { newValue in
@@ -207,8 +207,8 @@ struct NotificationPreferencesView: View {
                             }
 
                             Text(notificationService.isAuthorized ?
-                                 "Bildirim izni açık." :
-                                 "Bildirim izni kapalı. Açmak için sistem uyarısını onaylayın.")
+                                 String(localized: "settings.notifications.permission_on") :
+                                 String(localized: "settings.notifications.permission_off"))
                                 .font(MysticFonts.caption(12))
                                 .foregroundColor(MysticColors.textMuted)
 
@@ -225,12 +225,12 @@ struct NotificationPreferencesView: View {
                 }
                 .padding(.top, MysticSpacing.md)
             }
-            .navigationTitle("Bildirimler")
+            .navigationTitle(Text("settings.notifications.title"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Kapat") {
+                    Button(String(localized: "common.close")) {
                         dismiss()
                     }
                     .foregroundColor(MysticColors.neonLavender)
@@ -281,7 +281,7 @@ struct LanguageSettingsView: View {
                         .buttonStyle(.plain)
                     }
 
-                    Text("Dil değişikliği anında uygulanır. Eksik çeviriler varsayılan dile dönebilir.")
+                    Text("settings.language.info")
                         .font(MysticFonts.caption(12))
                         .foregroundColor(MysticColors.textMuted)
                         .multilineTextAlignment(.center)
@@ -291,12 +291,12 @@ struct LanguageSettingsView: View {
                 }
                 .padding(MysticSpacing.md)
             }
-            .navigationTitle("Dil")
+            .navigationTitle(Text("settings.language.title"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Kapat") {
+                    Button(String(localized: "common.close")) {
                         dismiss()
                     }
                     .foregroundColor(MysticColors.neonLavender)
@@ -324,19 +324,19 @@ struct HelpCenterView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: MysticSpacing.md) {
                         helpCard(
-                            title: "Hesap",
-                            body: "Giriş sorunlarında internet bağlantınızı ve Apple/Firebase oturum durumunu kontrol edin."
+                            title: String(localized: "settings.help.account.title"),
+                            body: String(localized: "settings.help.account.body")
                         )
                         helpCard(
-                            title: "Doğum Verisi",
-                            body: "Doğum saati bilinmiyorsa yükselen ve ev yorumları sınırlı olabilir."
+                            title: String(localized: "settings.help.birth.title"),
+                            body: String(localized: "settings.help.birth.body")
                         )
                         helpCard(
-                            title: "AI Yanıtları",
-                            body: "Yanıt alamazsanız API anahtarlarının doğru yapılandırıldığından emin olun."
+                            title: String(localized: "settings.help.ai.title"),
+                            body: String(localized: "settings.help.ai.body")
                         )
 
-                        MysticButton("Destek E-postası", icon: "envelope.fill", style: .secondary) {
+                        MysticButton(String(localized: "settings.help.email"), icon: "envelope.fill", style: .secondary) {
                             if let url = URL(string: "mailto:support@rkhoroscope.app") {
                                 openURL(url)
                             }
@@ -345,12 +345,12 @@ struct HelpCenterView: View {
                     .padding(MysticSpacing.md)
                 }
             }
-            .navigationTitle("Yardım & Destek")
+            .navigationTitle(Text("settings.help.title"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Kapat") {
+                    Button(String(localized: "common.close")) {
                         dismiss()
                     }
                     .foregroundColor(MysticColors.neonLavender)
@@ -385,20 +385,20 @@ struct PrivacyPolicyView: View {
                 ScrollView {
                     MysticCard(glowColor: MysticColors.mysticGold) {
                         VStack(alignment: .leading, spacing: MysticSpacing.md) {
-                            Text("Gizlilik Politikası")
+                            Text("settings.privacy.title")
                                 .font(MysticFonts.heading(18))
                                 .foregroundColor(MysticColors.textPrimary)
 
-                            Text("1. Uygulama içi hesap verileri Firebase üzerinde saklanır.")
+                            Text("settings.privacy.item1")
                                 .font(MysticFonts.body(14))
                                 .foregroundColor(MysticColors.textSecondary)
-                            Text("2. AI yorumları için kullanıcı girdileri OpenRouter üzerinden işlenir.")
+                            Text("settings.privacy.item2")
                                 .font(MysticFonts.body(14))
                                 .foregroundColor(MysticColors.textSecondary)
-                            Text("3. API anahtarları uygulama kodunda tutulmaz; yalnızca güvenli yapılandırma ile sağlanır.")
+                            Text("settings.privacy.item3")
                                 .font(MysticFonts.body(14))
                                 .foregroundColor(MysticColors.textSecondary)
-                            Text("4. Bildirim tercihleriniz cihazınızda saklanır.")
+                            Text("settings.privacy.item4")
                                 .font(MysticFonts.body(14))
                                 .foregroundColor(MysticColors.textSecondary)
                         }
@@ -406,12 +406,12 @@ struct PrivacyPolicyView: View {
                     .padding(MysticSpacing.md)
                 }
             }
-            .navigationTitle("Gizlilik")
+            .navigationTitle(Text("settings.privacy.nav_title"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Kapat") {
+                    Button(String(localized: "common.close")) {
                         dismiss()
                     }
                     .foregroundColor(MysticColors.neonLavender)

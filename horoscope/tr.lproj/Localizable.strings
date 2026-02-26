@@ -15,3 +15,233 @@
 "İptal" = "İptal";
 "Doğum Bilgilerini Düzenle" = "Doğum Bilgilerini Düzenle";
 "Kullanıcı" = "Kullanıcı";
+
+"tab.home" = "Ana Sayfa";
+"tab.chart" = "Harita";
+"tab.chat" = "AI Sohbet";
+"tab.dream" = "Rüya";
+"tab.profile" = "Profil";
+
+"common.cancel" = "İptal";
+"common.save" = "Kaydet";
+"common.user" = "Kullanıcı";
+
+"settings.title" = "Profil";
+"settings.menu.open_hint" = "Bu menüyü açar.";
+
+"auth.subtitle" = "Yıldızlarınız size ne söylüyor?";
+"auth.or" = "veya";
+"auth.email_signin" = "E-posta ile Giriş Yap";
+"auth.name" = "İsminiz";
+"auth.email" = "E-posta";
+"auth.password" = "Şifre";
+"auth.signup" = "Kayıt Ol";
+"auth.signin" = "Giriş Yap";
+"auth.already_have_account" = "Zaten hesabım var";
+"auth.create_account" = "Hesap oluştur";
+"auth.back" = "Geri";
+
+"onboarding.progress" = "Onboarding ilerleme";
+"onboarding.navigation.back" = "Geri";
+"onboarding.navigation.back.hint" = "Önceki adıma döner.";
+"onboarding.navigation.next" = "Devam";
+"onboarding.navigation.next.hint" = "Sonraki adıma geçer.";
+"onboarding.navigation.start" = "Keşfetmeye Başla ✨";
+"onboarding.navigation.start.hint" = "Onboarding tamamlanır ve uygulamaya geçilir.";
+"onboarding.birth_date.title" = "Doğum Tarihiniz";
+"onboarding.birth_date.subtitle" = "Natal haritanızı hesaplamak için doğum tarihinize ihtiyacımız var";
+"onboarding.birth_date.label" = "Doğum Tarihi";
+"onboarding.birth_date.sun_sign_format" = "Güneş Burcunuz: %@";
+"onboarding.birth_time.title" = "Doğum Saatiniz";
+"onboarding.birth_time.subtitle" = "Yükselen burcunuzu ve ev yerleşimlerinizi hesaplamak için doğum saatinizi bilmemiz gerekiyor";
+"onboarding.birth_time.label" = "Doğum Saati";
+"onboarding.birth_time.known" = "Doğum saatimi biliyorum";
+"onboarding.birth_time.unknown" = "Doğum saatimi bilmiyorum";
+"onboarding.birth_time.toggle.hint" = "Doğum saati biliniyor durumunu değiştirir.";
+"onboarding.birth_time.unknown_note" = "Doğum saati bilinmiyorsa yükselen burç ve ev yerleşimleri hesaplanamaz. Gezegen burçları yine gösterilir.";
+"onboarding.birth_location.title" = "Doğum Yeriniz";
+"onboarding.birth_location.subtitle" = "Ev yerleşimlerinin doğru hesaplanması için doğum yerinizi belirtin";
+"onboarding.birth_location.search_placeholder" = "Şehir ara...";
+"onboarding.birth_location.resolving" = "Konum doğrulanıyor...";
+"onboarding.birth_location.resolve_failed" = "Konum doğrulanamadı. Lütfen farklı bir sonuç seçin.";
+"onboarding.birth_location.select_required" = "Devam etmek için geçerli bir doğum yeri seçin.";
+
+"home.first_value.title" = "İlk Yoruma Hazır mısın?";
+"home.first_value.subtitle" = "Başlamak için tek adım kaldı. AI sohbetiyle ilk kişisel yorumunu al veya ilk rüyanı kaydet.";
+"home.first_value.chat_button" = "AI ile Başla";
+"home.first_value.chat_prompt" = "Bugün beni neler bekliyor?";
+"home.first_value.chat_hint" = "Sohbet sekmesini açar ve ilk soruyu hazırlar.";
+"home.first_value.dream_button" = "Rüya Yaz";
+"home.first_value.dream_hint" = "Rüya sekmesini açar ve yeni rüya ekranını gösterir.";
+
+"chat.title" = "AI Sohbet";
+"chat.new_chat" = "Yeni sohbet";
+"chat.new_chat.hint" = "Seçili bağlamda yeni bir sohbet başlatır.";
+"chat.context.general" = "Genel";
+"chat.context.natal" = "Natal";
+"chat.context.transit" = "Transit";
+"chat.context.dream" = "Rüya";
+"chat.context.palm" = "El Falı";
+"chat.empty.title" = "Mistik Sohbet";
+"chat.empty.subtitle" = "Natal haritanız, transitler, rüyalar veya herhangi bir konu hakkında AI danışmanınızla sohbet edin.";
+"chat.quick.today" = "Bugün beni neler bekliyor?";
+"chat.quick.natal" = "Natal haritamı yorumla";
+"chat.quick.love" = "Aşk hayatım hakkında ne dersin?";
+"chat.quick.hint" = "Hazır soruyu sohbete gönderir.";
+"chat.input.placeholder" = "Mesajınızı yazın...";
+"chat.retry.message" = "Yanıt alınamadı.";
+"chat.retry.action" = "Tekrar dene";
+"chat.sent" = "Gönderildi";
+"chat.send" = "Gönder";
+"chat.send.hint" = "Yazdığınız mesajı gönderir.";
+"chat.error.offline" = "İnternet bağlantısı yok. Bağlantıyı kontrol edip tekrar deneyin.";
+"chat.error.timeout" = "İstek zaman aşımına uğradı. Lütfen tekrar deneyin.";
+"chat.error.server" = "Sunucuya ulaşılamadı. Birazdan tekrar deneyin.";
+"chat.error.generic" = "Üzgünüm, şu an yanıt üretemedim. Lütfen tekrar deneyin.";
+"chat.assistant.name" = "Mystic";
+"chat.welcome" = "✨ Merhaba! Ben Mystic, AI astroloji danışmanınızım. Natal haritanız, transitler, rüyalarınız veya merak ettiğiniz herhangi bir konu hakkında benimle sohbet edebilirsiniz.\n\nSize nasıl yardımcı olabilirim?";
+"chat.welcome_new" = "✨ Yeni bir sohbet başlattınız! Size nasıl yardımcı olabilirim?";
+
+"dream.title" = "Rüya Günlüğü";
+"dream.count_suffix" = "rüya";
+"dream.header.subtitle" = "Rüyalarınız bilinçaltınızın kapısıdır. Rüyanızı yazın, AI ile sembollerini çözümleyin.";
+"dream.new" = "Yeni Rüya Yaz";
+"dream.empty.title" = "Henüz rüya kaydınız yok";
+"dream.empty.subtitle" = "İlk rüyanızı yazarak başlayın";
+"dream.empty.cta" = "Yeni Rüya Yaz";
+"dream.saved" = "Rüya kaydedildi";
+"dream.new_sheet.title" = "Yeni Rüya";
+"dream.new_sheet.mood" = "Rüyanızın havası";
+"dream.new_sheet.input_title" = "Rüyanızı anlatın";
+"dream.new_sheet.ai_title" = "AI Yorumu";
+"dream.new_sheet.steps" = "1) İstersen yorum al  2) Rüyanı kaydet";
+"dream.new_sheet.interpret" = "Rüyamı Yorumla ✨";
+"dream.new_sheet.interpret_hint" = "Rüya metniniz için AI yorumu üretir.";
+"dream.new_sheet.save_hint" = "Rüyanızı günlüğe kaydeder.";
+"dream.validation.required" = "Rüya metni boş olamaz.";
+"dream.validation.interpret_failed" = "Rüya yorumu alınamadı. Kaydetmeye devam edebilirsiniz.";
+
+"tab.switch.hint" = "Bu sekmeye gecis yapar.";
+
+"quick_actions.title" = "Hizli";
+"quick_actions.hint" = "Hizli aksiyonlari acar.";
+"quick_actions.subtitle" = "En cok kullandigin islemlere tek dokunusla git.";
+"quick_actions.chat" = "Yeni AI Sohbet";
+"quick_actions.chat.subtitle" = "Yeni bir sohbet baslat.";
+"quick_actions.dream" = "Yeni Ruya";
+"quick_actions.dream.subtitle" = "Ruya yazma ekranini ac.";
+"quick_actions.tarot" = "Tarot Ac";
+"quick_actions.tarot.subtitle" = "Tarot yorumuna hizli gecis.";
+"quick_actions.palm" = "El Fali Ac";
+"quick_actions.palm.subtitle" = "El analizi akisini baslat.";
+"quick_actions.item.hint" = "Bu hizli aksiyonu calistirir.";
+
+"home.energy.title" = "Gunun Enerjisi";
+"home.energy.personalized_format" = "%@ %@ enerjisi bugun guclu. Niyetini netlestirip odakla ilerleyebilirsin.";
+"home.energy.fallback" = "Yildizlar senin icin guclu mesajlar hazirliyor. Kisisel yonlendirme icin dogum bilgilerini ekle.";
+"home.energy.love" = "Ask";
+"home.energy.career" = "Kariyer";
+"home.energy.health" = "Saglik";
+"home.natal.title" = "Natal Ozetin";
+"home.natal.sun" = "Gunes";
+"home.natal.moon" = "Ay";
+"home.natal.ascendant" = "Yukselen";
+"home.natal.mercury" = "Merkur";
+"home.transits.title" = "Aktif Transitler";
+"home.transits.show_all" = "Tumunu Gor";
+"home.transits.show_less" = "Daha Az";
+"home.explore.title" = "Kesfet";
+"home.explore.chat" = "AI Sohbet";
+"home.explore.chat.subtitle" = "Kisisel yorum al";
+"home.explore.dream" = "Ruyalar";
+"home.explore.dream.subtitle" = "Sembolleri cozumle";
+"home.explore.palm" = "El Fali";
+"home.explore.palm.subtitle" = "Avuc ici analizi";
+"home.explore.tarot" = "Tarot";
+"home.explore.tarot.subtitle" = "Kart cek";
+"home.explore.item.hint" = "Bu ozelligi acar.";
+"home.greeting.morning" = "Gunaydin ☀️";
+"home.greeting.day" = "Iyi gunler 🌤️";
+"home.greeting.evening" = "Iyi aksamlar 🌙";
+"home.greeting.night" = "Iyi geceler ✨";
+"home.transit.duration_days" = "%d gun";
+"home.transit.exact_date" = "Tam tarih: %@";
+
+"common.expand_collapse" = "Bolumu ac veya kapat";
+
+"chat.context.more" = "Daha Fazla";
+"chat.context.more.hint" = "Ek sohbet baglamlarini gosterir.";
+"chat.context.sheet.title" = "Daha Fazla Baglam";
+"chat.context.select.hint" = "Sohbet baglamini degistirir.";
+"chat.context.tarot" = "Tarot";
+"chat.context.coffee" = "Kahve";
+
+"dream.quick_add.hint" = "Yeni ruya ekranini hizlica acar.";
+"dream.compact.title" = "Ruya Akisi";
+"dream.compact.subtitle" = "Kayitlarini duzenli tut";
+
+"settings.section.quick" = "Hizli Ayarlar";
+"settings.section.account" = "Hesap";
+"settings.section.support" = "Destek ve Gizlilik";
+"settings.plan.premium" = "Premium Uye";
+"settings.plan.free" = "Ucretsiz Plan";
+"settings.birth.title" = "Dogum Bilgileri";
+"settings.birth.edit" = "Duzenle";
+"settings.birth.date" = "Dogum Tarihi";
+"settings.birth.time" = "Dogum Saati";
+"settings.birth.place" = "Dogum Yeri";
+"settings.birth.sun" = "Gunes Burcu";
+"settings.item.birth_add.title" = "Dogum Bilgisi Ekle";
+"settings.item.birth_add.subtitle" = "Harita profilini tamamla";
+"settings.item.premium.title" = "Premium'a Yukselt";
+"settings.item.premium.subtitle" = "Sinirsiz AI yorumlarini ac";
+"settings.item.notifications.title" = "Bildirimler";
+"settings.item.notifications.subtitle" = "Gunluk burc hatirlatmalari";
+"settings.item.language.title" = "Dil";
+"settings.item.language.subtitle" = "Uygulama dilini degistir";
+"settings.item.help.title" = "Yardim ve Destek";
+"settings.item.help.subtitle" = "Yanit bul ve destekle iletisime gec";
+"settings.item.privacy.title" = "Gizlilik Politikasi";
+"settings.item.privacy.subtitle" = "Verilerinin nasil kullanildigi";
+"settings.signout" = "Cikis Yap";
+
+"common.close" = "Kapat";
+
+"settings.edit.title" = "Dogum Bilgilerini Duzenle";
+"settings.edit.birth_date" = "Dogum Tarihi";
+"settings.edit.birth_time" = "Dogum Saati";
+"settings.edit.birth_place" = "Dogum Yeri";
+"settings.edit.search_placeholder" = "Sehir arayin...";
+
+"settings.paywall.title" = "Mystic Premium";
+"settings.paywall.subtitle" = "Sinirsiz AI yorumlari ve gelismis mistik ozellikler.";
+"settings.paywall.active" = "Premium aktif. Tesekkurler!";
+"settings.paywall.packages_failed_title" = "Paketler Yuklenemedi";
+"settings.paywall.packages_failed_body" = "Su an premium paket listesi alinamadi. Internetinizi kontrol edip tekrar deneyin.";
+"settings.paywall.restore" = "Satin Alimlari Geri Yukle";
+"settings.paywall.nav_title" = "Premium";
+
+"settings.notifications.title" = "Bildirimler";
+"settings.notifications.daily_toggle" = "Gunluk Burc Bildirimi";
+"settings.notifications.time" = "Bildirim Saati";
+"settings.notifications.permission_on" = "Bildirim izni acik.";
+"settings.notifications.permission_off" = "Bildirim izni kapali. Acmak icin sistem uyarisini onaylayin.";
+
+"settings.language.title" = "Dil";
+"settings.language.info" = "Dil degisikligi aninda uygulanir. Eksik ceviriler varsayilan dile donebilir.";
+
+"settings.help.title" = "Yardim ve Destek";
+"settings.help.account.title" = "Hesap";
+"settings.help.account.body" = "Giris sorunlarinda internet baglantinizi ve Apple/Firebase oturum durumunu kontrol edin.";
+"settings.help.birth.title" = "Dogum Verisi";
+"settings.help.birth.body" = "Dogum saati bilinmiyorsa yukselen ve ev yorumlari sinirli olabilir.";
+"settings.help.ai.title" = "AI Yanitlari";
+"settings.help.ai.body" = "Yanit alamazsaniz API anahtarlarinin dogru yapilandirildigindan emin olun.";
+"settings.help.email" = "Destek E-postasi";
+
+"settings.privacy.nav_title" = "Gizlilik";
+"settings.privacy.title" = "Gizlilik Politikasi";
+"settings.privacy.item1" = "1. Uygulama ici hesap verileri Firebase uzerinde saklanir.";
+"settings.privacy.item2" = "2. AI yorumlari icin kullanici girdileri OpenRouter uzerinden islenir.";
+"settings.privacy.item3" = "3. API anahtarlari uygulama kodunda tutulmaz; yalnizca guvenli yapilandirma ile saglanir.";
+"settings.privacy.item4" = "4. Bildirim tercihleriniz cihazinizda saklanir.";

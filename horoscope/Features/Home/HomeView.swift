@@ -2,11 +2,27 @@ import SwiftUI
 
 struct HomeView: View {
     @Environment(AuthService.self) private var authService
-    @State private var showGreeting = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    @State private var hasCompletedFirstValue = false
+    @State private var firstValueChecked = false
     @State private var currentTransits: [TransitEvent] = []
     @State private var natalChart: ChartData?
     @State private var showPalmReading = false
     @State private var showTarot = false
+    @State private var isDailyEnergyExpanded = true
+    @State private var isNatalSummaryExpanded = true
+    @State private var showAllTransits = false
+
+    private let chatService = ChatService.shared
+    private let dreamService = DreamService.shared
+
+    private var featureColumns: [GridItem] {
+        [
+            GridItem(.flexible(), spacing: MysticSpacing.sm),
+            GridItem(.flexible(), spacing: MysticSpacing.sm)
+        ]
+    }
 
     private var birthData: BirthData? {
         authService.currentUser?.birthData
@@ -16,45 +32,59 @@ struct HomeView: View {
         birthData?.sunSign
     }
 
+    private var shouldShowFirstValueActions: Bool {
+        birthData != nil && firstValueChecked && !hasCompletedFirstValue
+    }
+
+    private var visibleTransits: [TransitEvent] {
+        showAllTransits ? currentTransits : Array(currentTransits.prefix(2))
+    }
+
     var body: some View {
         ZStack {
             StarField(starCount: 60)
 
             ScrollView(.vertical, showsIndicators: false) {
-                    VStack(spacing: MysticSpacing.lg) {
-                        // Greeting Header
-                        greetingSection
-                            .fadeInOnAppear(delay: 0)
+                VStack(spacing: MysticSpacing.lg) {
+                    greetingSection
+                        .fadeInOnAppear(delay: 0)
 
-                        // Daily Energy Card
-                        dailyEnergyCard
-                            .fadeInOnAppear(delay: 0.1)
+                    if shouldShowFirstValueActions {
+                        firstValueActionCard
+                            .fadeInOnAppear(delay: 0.05)
+                    }
 
-                        // Quick Stats
-                        if let birthData = birthData, let chart = natalChart {
-                            quickStatsSection(birthData: birthData, chart: chart)
-                                .fadeInOnAppear(delay: 0.2)
-                        }
+                    dailyEnergyCard
+                        .fadeInOnAppear(delay: 0.1)
 
-                        // Active Transits
-                        if !currentTransits.isEmpty {
-                            transitSection
-                                .fadeInOnAppear(delay: 0.3)
-                        }
+                    if let birthData, let chart = natalChart {
+                        quickStatsSection(birthData: birthData, chart: chart)
+                            .fadeInOnAppear(delay: 0.15)
+                    }
 
-                // Feature Cards
-                featureCardsSection
-                    .fadeInOnAppear(delay: 0.4)
+                    if !currentTransits.isEmpty {
+                        transitSection
+                            .fadeInOnAppear(delay: 0.2)
+                    }
 
-                // Bottom spacing for tab bar
-                Color.clear.frame(height: 100)
+                    featureGridSection
+                        .fadeInOnAppear(delay: 0.25)
+
+                    Color.clear.frame(height: 100)
+                }
+                .padding(.horizontal, MysticSpacing.md)
+                .padding(.top, MysticSpacing.md)
             }
-            .padding(.horizontal, MysticSpacing.md)
-            .padding(.top, MysticSpacing.md)
         }
-        }
-        .onAppear {
+        .task(id: authService.currentUser?.id) {
             loadData()
+            await refreshFirstValueState()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .openPalmQuickAction)) { _ in
+            showPalmReading = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .openTarotQuickAction)) { _ in
+            showTarot = true
         }
         .sheet(isPresented: $showPalmReading) {
             PalmReadingView()
@@ -66,7 +96,8 @@ struct HomeView: View {
         }
     }
 
-    // MARK: - Greeting Section
+    // MARK: - Greeting
+
     private var greetingSection: some View {
         VStack(alignment: .leading, spacing: MysticSpacing.sm) {
             HStack {
@@ -79,7 +110,7 @@ struct HomeView: View {
                         if let sign = sunSign {
                             ZodiacSymbol(sign, size: 28, color: sign.elementColor)
                         }
-                        Text(authService.currentUser?.displayName ?? "Kaşif")
+                        Text(authService.currentUser?.displayName ?? String(localized: "common.user"))
                             .font(MysticFonts.title(28))
                             .foregroundColor(MysticColors.textPrimary)
                     }
@@ -87,7 +118,6 @@ struct HomeView: View {
 
                 Spacer()
 
-                // Profile avatar
                 ZStack {
                     Circle()
                         .fill(MysticColors.neonLavender.opacity(0.15))
@@ -103,7 +133,48 @@ struct HomeView: View {
         }
     }
 
-    // MARK: - Daily Energy Card
+    // MARK: - First Value
+
+    private var firstValueActionCard: some View {
+        MysticCard(glowColor: MysticColors.auroraGreen) {
+            VStack(alignment: .leading, spacing: MysticSpacing.md) {
+                HStack(spacing: MysticSpacing.xs) {
+                    Image(systemName: "sparkles")
+                        .foregroundColor(MysticColors.auroraGreen)
+                    Text("home.first_value.title")
+                        .font(MysticFonts.heading(16))
+                        .foregroundColor(MysticColors.textPrimary)
+                }
+
+                Text("home.first_value.subtitle")
+                    .font(MysticFonts.body(14))
+                    .foregroundColor(MysticColors.textSecondary)
+                    .lineSpacing(2)
+
+                MysticButton(
+                    String(localized: "home.first_value.chat_button"),
+                    icon: "bubble.left.and.bubble.right.fill",
+                    style: .primary
+                ) {
+                    openFirstChatAction()
+                }
+                .accessibilityHint(Text(String(localized: "home.first_value.chat_hint")))
+
+                Button(String(localized: "home.first_value.dream_button")) {
+                    AppNavigation.switchToTab(.dream)
+                    AppNavigation.openDreamComposer()
+                }
+                .buttonStyle(.plain)
+                .font(MysticFonts.caption(13))
+                .foregroundColor(MysticColors.textMuted)
+                .frame(minHeight: MysticAccessibility.minimumTapTarget, alignment: .leading)
+                .accessibilityHint(Text(String(localized: "home.first_value.dream_hint")))
+            }
+        }
+    }
+
+    // MARK: - Daily Energy
+
     private var dailyEnergyCard: some View {
         MysticCard(glowColor: MysticColors.mysticGold) {
             VStack(alignment: .leading, spacing: MysticSpacing.md) {
@@ -111,100 +182,115 @@ struct HomeView: View {
                     Image(systemName: "sparkles")
                         .font(.system(size: 20))
                         .foregroundColor(MysticColors.mysticGold)
-                    Text("Günün Enerjisi")
+
+                    Text("home.energy.title")
                         .font(MysticFonts.heading(18))
                         .foregroundColor(MysticColors.textPrimary)
+
                     Spacer()
+
                     Text(Date().formatted(as: "d MMMM"))
-                        .font(MysticFonts.caption(13))
+                        .font(MysticFonts.caption(12))
                         .foregroundColor(MysticColors.textMuted)
+
+                    sectionToggleButton(isExpanded: $isDailyEnergyExpanded)
                 }
 
-                if let sign = sunSign {
-                    Text("\(sign.symbol) \(sign.rawValue) olarak bugün \(sign.element) enerjisi güçlü. İçsel gücünüzü kullanarak hedeflerinize odaklanabilirsiniz.")
-                        .font(MysticFonts.mystic(15))
-                        .foregroundColor(MysticColors.textSecondary)
-                        .lineSpacing(4)
-                } else {
-                    Text("Yıldızlar sizin için harika şeyler hazırlıyor. Doğum bilgilerinizi girerek kişisel yorumunuzu alın.")
-                        .font(MysticFonts.mystic(15))
-                        .foregroundColor(MysticColors.textSecondary)
-                        .lineSpacing(4)
-                }
+                if isDailyEnergyExpanded {
+                    if let sign = sunSign {
+                        Text(String(format: String(localized: "home.energy.personalized_format"), sign.symbol, sign.rawValue))
+                            .font(MysticFonts.mystic(15))
+                            .foregroundColor(MysticColors.textSecondary)
+                            .lineSpacing(4)
+                    } else {
+                        Text("home.energy.fallback")
+                            .font(MysticFonts.mystic(15))
+                            .foregroundColor(MysticColors.textSecondary)
+                            .lineSpacing(4)
+                    }
 
-                // Energy bars
-                HStack(spacing: MysticSpacing.md) {
-                    EnergyBar(label: "Aşk", value: 0.7, color: MysticColors.celestialPink)
-                    EnergyBar(label: "Kariyer", value: 0.85, color: MysticColors.mysticGold)
-                    EnergyBar(label: "Sağlık", value: 0.6, color: MysticColors.auroraGreen)
+                    HStack(spacing: MysticSpacing.md) {
+                        EnergyBar(label: String(localized: "home.energy.love"), value: 0.7, color: MysticColors.celestialPink)
+                        EnergyBar(label: String(localized: "home.energy.career"), value: 0.85, color: MysticColors.mysticGold)
+                        EnergyBar(label: String(localized: "home.energy.health"), value: 0.6, color: MysticColors.auroraGreen)
+                    }
+                    .transition(reduceMotion ? .identity : .opacity)
                 }
             }
         }
     }
 
-    // MARK: - Quick Stats
+    // MARK: - Natal Summary
+
     private func quickStatsSection(birthData: BirthData, chart: ChartData) -> some View {
         VStack(alignment: .leading, spacing: MysticSpacing.sm) {
-            Text("Natal Haritanız")
-                .font(MysticFonts.heading(18))
-                .foregroundColor(MysticColors.textPrimary)
+            HStack {
+                Text("home.natal.title")
+                    .font(MysticFonts.heading(18))
+                    .foregroundColor(MysticColors.textPrimary)
 
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: MysticSpacing.sm) {
-                    // Sun sign
-                    StatCard(
-                        label: "Güneş",
-                        value: birthData.sunSign.rawValue,
-                        icon: "sun.max.fill",
-                        color: MysticColors.mysticGold
-                    )
-                    .frame(width: 110)
+                Spacer()
+                sectionToggleButton(isExpanded: $isNatalSummaryExpanded)
+            }
 
-                    // Moon sign (from chart)
-                    if let moonPos = chart.planetPositions.first(where: { $0.planet == .moon }) {
+            if isNatalSummaryExpanded {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: MysticSpacing.sm) {
                         StatCard(
-                            label: "Ay",
-                            value: moonPos.sign.rawValue,
-                            icon: "moon.fill",
-                            color: MysticColors.neonLavender
+                            label: String(localized: "home.natal.sun"),
+                            value: birthData.sunSign.rawValue,
+                            icon: "sun.max.fill",
+                            color: MysticColors.mysticGold
                         )
                         .frame(width: 110)
-                    }
 
-                    // Ascendant
-                    if let firstHouse = chart.houseCusps.first {
-                        StatCard(
-                            label: "Yükselen",
-                            value: firstHouse.sign.rawValue,
-                            icon: "arrow.up.circle.fill",
-                            color: MysticColors.auroraGreen
-                        )
-                        .frame(width: 110)
-                    }
+                        if let moonPos = chart.planetPositions.first(where: { $0.planet == .moon }) {
+                            StatCard(
+                                label: String(localized: "home.natal.moon"),
+                                value: moonPos.sign.rawValue,
+                                icon: "moon.fill",
+                                color: MysticColors.neonLavender
+                            )
+                            .frame(width: 110)
+                        }
 
-                    // Mercury
-                    if let mercuryPos = chart.planetPositions.first(where: { $0.planet == .mercury }) {
-                        StatCard(
-                            label: "Merkür",
-                            value: mercuryPos.sign.rawValue,
-                            icon: "circle.fill",
-                            color: MysticColors.celestialPink
-                        )
-                        .frame(width: 110)
+                        if let firstHouse = chart.houseCusps.first {
+                            StatCard(
+                                label: String(localized: "home.natal.ascendant"),
+                                value: firstHouse.sign.rawValue,
+                                icon: "arrow.up.circle.fill",
+                                color: MysticColors.auroraGreen
+                            )
+                            .frame(width: 110)
+                        }
+
+                        if let mercuryPos = chart.planetPositions.first(where: { $0.planet == .mercury }) {
+                            StatCard(
+                                label: String(localized: "home.natal.mercury"),
+                                value: mercuryPos.sign.rawValue,
+                                icon: "circle.fill",
+                                color: MysticColors.celestialPink
+                            )
+                            .frame(width: 110)
+                        }
                     }
                 }
+                .transition(reduceMotion ? .identity : .opacity)
             }
         }
     }
 
-    // MARK: - Transit Section
+    // MARK: - Transits
+
     private var transitSection: some View {
         VStack(alignment: .leading, spacing: MysticSpacing.sm) {
             HStack {
-                Text("Aktif Transitler")
+                Text("home.transits.title")
                     .font(MysticFonts.heading(18))
                     .foregroundColor(MysticColors.textPrimary)
+
                 Spacer()
+
                 Text("\(currentTransits.count)")
                     .font(MysticFonts.caption(13))
                     .foregroundColor(MysticColors.mysticGold)
@@ -214,53 +300,72 @@ struct HomeView: View {
                     .clipShape(Capsule())
             }
 
-            ForEach(currentTransits) { transit in
+            ForEach(visibleTransits) { transit in
                 TransitCard(transit: transit)
+            }
+
+            if currentTransits.count > 2 {
+                Button(showAllTransits ? String(localized: "home.transits.show_less") : String(localized: "home.transits.show_all")) {
+                    withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) {
+                        showAllTransits.toggle()
+                    }
+                }
+                .buttonStyle(.plain)
+                .font(MysticFonts.caption(13))
+                .foregroundColor(MysticColors.neonLavender)
+                .frame(minHeight: MysticAccessibility.minimumTapTarget)
             }
         }
     }
 
-    // MARK: - Feature Cards Section
-    private var featureCardsSection: some View {
+    // MARK: - Explore Grid
+
+    private var featureGridSection: some View {
         VStack(alignment: .leading, spacing: MysticSpacing.sm) {
-            Text("Keşfet")
+            Text("home.explore.title")
                 .font(MysticFonts.heading(18))
                 .foregroundColor(MysticColors.textPrimary)
 
-            FeatureCard(
-                icon: "bubble.left.and.bubble.right.fill",
-                title: "AI Astroloji Sohbeti",
-                subtitle: "Yapay zeka ile natal haritanızı derinlemesine keşfedin",
-                color: MysticColors.auroraGreen
-            ) {
-                NotificationCenter.default.post(name: .switchToMainTab, object: AppTab.chat)
-            }
+            LazyVGrid(columns: featureColumns, spacing: MysticSpacing.sm) {
+                HomeQuickFeatureTile(
+                    id: "home.feature.chat",
+                    icon: "bubble.left.and.bubble.right.fill",
+                    title: String(localized: "home.explore.chat"),
+                    subtitle: String(localized: "home.explore.chat.subtitle"),
+                    color: MysticColors.auroraGreen
+                ) {
+                    AppNavigation.switchToTab(.chat)
+                }
 
-            FeatureCard(
-                icon: "moon.zzz.fill",
-                title: "Rüya Yorumu",
-                subtitle: "Rüyalarınızın gizli mesajlarını çözün",
-                color: MysticColors.celestialPink
-            ) {
-                NotificationCenter.default.post(name: .switchToMainTab, object: AppTab.dream)
-            }
+                HomeQuickFeatureTile(
+                    id: "home.feature.dream",
+                    icon: "moon.zzz.fill",
+                    title: String(localized: "home.explore.dream"),
+                    subtitle: String(localized: "home.explore.dream.subtitle"),
+                    color: MysticColors.celestialPink
+                ) {
+                    AppNavigation.switchToTab(.dream)
+                }
 
-            FeatureCard(
-                icon: "hand.raised.fill",
-                title: "El Falı",
-                subtitle: "AI destekli avuç içi analizi",
-                color: MysticColors.neonLavender
-            ) {
-                showPalmReading = true
-            }
+                HomeQuickFeatureTile(
+                    id: "home.feature.palm",
+                    icon: "hand.raised.fill",
+                    title: String(localized: "home.explore.palm"),
+                    subtitle: String(localized: "home.explore.palm.subtitle"),
+                    color: MysticColors.neonLavender
+                ) {
+                    showPalmReading = true
+                }
 
-            FeatureCard(
-                icon: "suit.diamond.fill",
-                title: "Tarot",
-                subtitle: "Günlük kart çekimi ve yorum",
-                color: MysticColors.mysticGold
-            ) {
-                showTarot = true
+                HomeQuickFeatureTile(
+                    id: "home.feature.tarot",
+                    icon: "suit.diamond.fill",
+                    title: String(localized: "home.explore.tarot"),
+                    subtitle: String(localized: "home.explore.tarot.subtitle"),
+                    color: MysticColors.mysticGold
+                ) {
+                    showTarot = true
+                }
             }
         }
     }
@@ -270,30 +375,126 @@ struct HomeView: View {
     private var greetingText: String {
         let hour = Calendar.current.component(.hour, from: Date())
         switch hour {
-        case 6..<12: return "Günaydın ☀️"
-        case 12..<18: return "İyi günler 🌤️"
-        case 18..<22: return "İyi akşamlar 🌙"
-        default: return "İyi geceler ✨"
+        case 6..<12:
+            return String(localized: "home.greeting.morning")
+        case 12..<18:
+            return String(localized: "home.greeting.day")
+        case 18..<22:
+            return String(localized: "home.greeting.evening")
+        default:
+            return String(localized: "home.greeting.night")
+        }
+    }
+
+    private func sectionToggleButton(isExpanded: Binding<Bool>) -> some View {
+        Button {
+            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) {
+                isExpanded.wrappedValue.toggle()
+            }
+        } label: {
+            Image(systemName: isExpanded.wrappedValue ? "chevron.up.circle.fill" : "chevron.down.circle")
+                .font(.system(size: 18))
+                .foregroundColor(MysticColors.textMuted)
+        }
+        .buttonStyle(.plain)
+        .frame(minWidth: MysticAccessibility.minimumTapTarget, minHeight: MysticAccessibility.minimumTapTarget)
+        .accessibilityLabel(Text(String(localized: "common.expand_collapse")))
+    }
+
+    private func openFirstChatAction() {
+        AppNavigation.switchToTab(.chat)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+            AppNavigation.openChat(
+                context: .general,
+                prompt: String(localized: "home.first_value.chat_prompt")
+            )
         }
     }
 
     private func loadData() {
-        guard let birthData = birthData else { return }
+        guard let birthData else { return }
 
         Task {
-            // Calculate natal chart (API-first, local fallback)
             natalChart = await AstrologyEngine.shared.calculateNatalChartAsync(birthData: birthData)
 
-            // Get transits
             if let chart = natalChart {
                 currentTransits = AstrologyEngine.shared.calculateCurrentTransits(natalChart: chart)
             }
         }
     }
+
+    private func refreshFirstValueState() async {
+        guard let userId = authService.currentUser?.id else {
+            firstValueChecked = true
+            hasCompletedFirstValue = false
+            return
+        }
+
+        await chatService.loadSessions(for: userId)
+        await dreamService.loadEntries(for: userId)
+
+        let hasFirstChat = chatService.hasUserMessages(for: userId)
+        let hasFirstDream = dreamService.hasEntries(for: userId)
+        hasCompletedFirstValue = hasFirstChat || hasFirstDream
+        firstValueChecked = true
+    }
+}
+
+private struct HomeQuickFeatureTile: View {
+    let id: String
+    let icon: String
+    let title: String
+    let subtitle: String
+    let color: Color
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            MysticCard(glowColor: color) {
+                VStack(alignment: .leading, spacing: MysticSpacing.xs) {
+                    HStack {
+                        ZStack {
+                            Circle()
+                                .fill(color.opacity(0.18))
+                                .frame(width: 34, height: 34)
+                            Image(systemName: icon)
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(color)
+                        }
+
+                        Spacer()
+
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(MysticColors.textMuted)
+                    }
+
+                    Text(title)
+                        .font(MysticFonts.body(14))
+                        .fontWeight(.semibold)
+                        .foregroundColor(MysticColors.textPrimary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
+
+                    Text(subtitle)
+                        .font(MysticFonts.caption(11))
+                        .foregroundColor(MysticColors.textSecondary)
+                        .lineLimit(2)
+                        .frame(maxHeight: 30, alignment: .topLeading)
+                }
+                .frame(maxWidth: .infinity, minHeight: 116, alignment: .topLeading)
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(title))
+        .accessibilityHint(Text(String(localized: "home.explore.item.hint")))
+        .accessibilityIdentifier(id)
+    }
 }
 
 // MARK: - Energy Bar
 struct EnergyBar: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let label: String
     let value: Double
     let color: Color
@@ -323,8 +524,12 @@ struct EnergyBar: View {
                 .foregroundColor(color)
         }
         .onAppear {
-            withAnimation(.easeOut(duration: 1.0).delay(0.5)) {
+            if reduceMotion {
                 animatedValue = value
+            } else {
+                withAnimation(.easeOut(duration: 1.0).delay(0.5)) {
+                    animatedValue = value
+                }
             }
         }
     }
@@ -343,7 +548,7 @@ struct TransitCard: View {
                         .font(MysticFonts.heading(16))
                         .foregroundColor(MysticColors.textPrimary)
                     Spacer()
-                    Text("\(transit.durationDays) gün")
+                    Text(String(format: String(localized: "home.transit.duration_days"), transit.durationDays))
                         .font(MysticFonts.caption(12))
                         .foregroundColor(MysticColors.textMuted)
                         .padding(.horizontal, 8)
@@ -358,7 +563,7 @@ struct TransitCard: View {
                     .lineSpacing(2)
 
                 HStack {
-                    Text("Tam tarih: \(transit.exactDate.formatted(as: "d MMM yyyy"))")
+                    Text(String(format: String(localized: "home.transit.exact_date"), transit.exactDate.formatted(as: "d MMM yyyy")))
                         .font(MysticFonts.caption(12))
                         .foregroundColor(MysticColors.textMuted)
                     Spacer()

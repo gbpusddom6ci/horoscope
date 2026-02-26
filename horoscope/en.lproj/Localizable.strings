@@ -40,15 +40,12 @@
 
 "Ana Sayfa" = "Home";
 "Harita" = "Chart";
-"AI Sohbet" = "AI Chat";
-"Rüya" = "Dream";
 "Keşfet" = "Discover";
 "Aktif Transitler" = "Active Transits";
 "Günün Enerjisi" = "Today's Energy";
 "Natal Haritanız" = "Your Natal Chart";
 "Tarot" = "Tarot";
 
-"El Falı" = "Palm Reading";
 "Kamera" = "Camera";
 "Galeri" = "Gallery";
 "Analiz Et" = "Analyze";
@@ -59,7 +56,6 @@
 "Akıl Çizgisi" = "Head Line";
 "Kader Çizgisi" = "Fate Line";
 
-"Tarot" = "Tarot";
 "Kart Çek" = "Draw Card";
 
 "Mystic Premium" = "Mystic Premium";
@@ -88,7 +84,236 @@
 "Doğum Yeriniz" = "Your Birth Place";
 "Şehir ara..." = "Search city...";
 "Devam" = "Continue";
-"Geri" = "Back";
 "Keşfetmeye Başla ✨" = "Start Exploring ✨";
 
 "Kullanıcı" = "User";
+
+"tab.home" = "Home";
+"tab.chart" = "Chart";
+"tab.chat" = "AI Chat";
+"tab.dream" = "Dream";
+"tab.profile" = "Profile";
+
+"common.cancel" = "Cancel";
+"common.save" = "Save";
+"common.user" = "User";
+
+"settings.title" = "Profile";
+"settings.menu.open_hint" = "Opens this menu item.";
+
+"auth.subtitle" = "What are your stars telling you?";
+"auth.or" = "or";
+"auth.email_signin" = "Sign in with Email";
+"auth.name" = "Your Name";
+"auth.email" = "Email";
+"auth.password" = "Password";
+"auth.signup" = "Sign Up";
+"auth.signin" = "Sign In";
+"auth.already_have_account" = "I already have an account";
+"auth.create_account" = "Create account";
+"auth.back" = "Back";
+
+"onboarding.progress" = "Onboarding progress";
+"onboarding.navigation.back" = "Back";
+"onboarding.navigation.back.hint" = "Returns to the previous step.";
+"onboarding.navigation.next" = "Continue";
+"onboarding.navigation.next.hint" = "Moves to the next step.";
+"onboarding.navigation.start" = "Start Exploring ✨";
+"onboarding.navigation.start.hint" = "Completes onboarding and enters the app.";
+"onboarding.birth_date.title" = "Your Birth Date";
+"onboarding.birth_date.subtitle" = "We need your birth date to calculate your natal chart";
+"onboarding.birth_date.label" = "Birth Date";
+"onboarding.birth_date.sun_sign_format" = "Your Sun Sign: %@";
+"onboarding.birth_time.title" = "Your Birth Time";
+"onboarding.birth_time.subtitle" = "We need your birth time to calculate your ascendant and houses";
+"onboarding.birth_time.label" = "Birth Time";
+"onboarding.birth_time.known" = "I know my birth time";
+"onboarding.birth_time.unknown" = "I don't know my birth time";
+"onboarding.birth_time.toggle.hint" = "Toggles whether birth time is known.";
+"onboarding.birth_time.unknown_note" = "If birth time is unknown, ascendant and house placements cannot be calculated. Planet signs are still available.";
+"onboarding.birth_location.title" = "Your Birth Place";
+"onboarding.birth_location.subtitle" = "Specify your birth place for accurate house calculations";
+"onboarding.birth_location.search_placeholder" = "Search city...";
+"onboarding.birth_location.resolving" = "Validating location...";
+"onboarding.birth_location.resolve_failed" = "Location could not be validated. Please choose another result.";
+"onboarding.birth_location.select_required" = "Please select a valid birth place to continue.";
+
+"home.first_value.title" = "Ready for Your First Insight?";
+"home.first_value.subtitle" = "One step left. Start with AI chat for a personal reading or save your first dream.";
+"home.first_value.chat_button" = "Start with AI";
+"home.first_value.chat_prompt" = "What should I expect today?";
+"home.first_value.chat_hint" = "Opens chat and prepares your first prompt.";
+"home.first_value.dream_button" = "Write a Dream";
+"home.first_value.dream_hint" = "Opens dreams and shows the new dream composer.";
+
+"chat.title" = "AI Chat";
+"chat.new_chat" = "New chat";
+"chat.new_chat.hint" = "Starts a new chat in the selected context.";
+"chat.context.general" = "General";
+"chat.context.natal" = "Natal";
+"chat.context.transit" = "Transit";
+"chat.context.dream" = "Dream";
+"chat.context.palm" = "Palm";
+"chat.empty.title" = "Mystic Chat";
+"chat.empty.subtitle" = "Talk with your AI astrologer about natal chart, transits, dreams, or anything else.";
+"chat.quick.today" = "What should I expect today?";
+"chat.quick.natal" = "Interpret my natal chart";
+"chat.quick.love" = "What about my love life?";
+"chat.quick.hint" = "Sends this quick prompt.";
+"chat.input.placeholder" = "Type your message...";
+"chat.retry.message" = "Response could not be generated.";
+"chat.retry.action" = "Retry";
+"chat.sent" = "Sent";
+"chat.send" = "Send";
+"chat.send.hint" = "Sends your typed message.";
+"chat.error.offline" = "No internet connection. Check your connection and try again.";
+"chat.error.timeout" = "Request timed out. Please try again.";
+"chat.error.server" = "Server could not be reached. Please try again shortly.";
+"chat.error.generic" = "Sorry, I couldn't generate a response right now. Please try again.";
+"chat.assistant.name" = "Mystic";
+"chat.welcome" = "✨ Hello! I'm Mystic, your AI astrology guide. You can chat with me about your natal chart, transits, dreams, or any topic you're curious about.\n\nHow can I help you today?";
+"chat.welcome_new" = "✨ You started a new chat. How can I help you?";
+
+"dream.title" = "Dream Journal";
+"dream.count_suffix" = "dreams";
+"dream.header.subtitle" = "Your dreams are the gate to your subconscious. Write them down and decode symbols with AI.";
+"dream.new" = "Write New Dream";
+"dream.empty.title" = "No dream entries yet";
+"dream.empty.subtitle" = "Start by writing your first dream";
+"dream.empty.cta" = "Write New Dream";
+"dream.saved" = "Dream saved";
+"dream.new_sheet.title" = "New Dream";
+"dream.new_sheet.mood" = "Dream Mood";
+"dream.new_sheet.input_title" = "Describe your dream";
+"dream.new_sheet.ai_title" = "AI Interpretation";
+"dream.new_sheet.steps" = "1) Optionally interpret  2) Save your dream";
+"dream.new_sheet.interpret" = "Interpret My Dream ✨";
+"dream.new_sheet.interpret_hint" = "Generates AI interpretation for your dream text.";
+"dream.new_sheet.save_hint" = "Saves your dream entry.";
+"dream.validation.required" = "Dream text cannot be empty.";
+"dream.validation.interpret_failed" = "Interpretation could not be generated. You can still save your dream.";
+
+"tab.switch.hint" = "Switches to this tab.";
+
+"quick_actions.title" = "Quick";
+"quick_actions.hint" = "Opens quick actions.";
+"quick_actions.subtitle" = "Jump to your most-used actions in one tap.";
+"quick_actions.chat" = "New AI Chat";
+"quick_actions.chat.subtitle" = "Start a fresh chat session.";
+"quick_actions.dream" = "New Dream";
+"quick_actions.dream.subtitle" = "Open the dream composer.";
+"quick_actions.tarot" = "Open Tarot";
+"quick_actions.tarot.subtitle" = "Go directly to tarot reading.";
+"quick_actions.palm" = "Open Palm Reading";
+"quick_actions.palm.subtitle" = "Start palm analysis.";
+"quick_actions.item.hint" = "Runs this quick action.";
+
+"home.energy.title" = "Today's Energy";
+"home.energy.personalized_format" = "%@ %@ energy is strong today. Focus your intention and move with clarity.";
+"home.energy.fallback" = "The stars are preparing powerful insight for you. Add birth details for personalized guidance.";
+"home.energy.love" = "Love";
+"home.energy.career" = "Career";
+"home.energy.health" = "Health";
+"home.natal.title" = "Your Natal Snapshot";
+"home.natal.sun" = "Sun";
+"home.natal.moon" = "Moon";
+"home.natal.ascendant" = "Asc";
+"home.natal.mercury" = "Mercury";
+"home.transits.title" = "Active Transits";
+"home.transits.show_all" = "See All";
+"home.transits.show_less" = "Show Less";
+"home.explore.title" = "Explore";
+"home.explore.chat" = "AI Chat";
+"home.explore.chat.subtitle" = "Personal insights";
+"home.explore.dream" = "Dreams";
+"home.explore.dream.subtitle" = "Interpret symbols";
+"home.explore.palm" = "Palm";
+"home.explore.palm.subtitle" = "Hand analysis";
+"home.explore.tarot" = "Tarot";
+"home.explore.tarot.subtitle" = "Draw a card";
+"home.explore.item.hint" = "Opens this feature.";
+"home.greeting.morning" = "Good morning ☀️";
+"home.greeting.day" = "Good day 🌤️";
+"home.greeting.evening" = "Good evening 🌙";
+"home.greeting.night" = "Good night ✨";
+"home.transit.duration_days" = "%d days";
+"home.transit.exact_date" = "Exact date: %@";
+
+"common.expand_collapse" = "Expand or collapse section";
+
+"chat.context.more" = "More";
+"chat.context.more.hint" = "Shows additional chat contexts.";
+"chat.context.sheet.title" = "More Contexts";
+"chat.context.select.hint" = "Switches chat context.";
+"chat.context.tarot" = "Tarot";
+"chat.context.coffee" = "Coffee";
+
+"dream.quick_add.hint" = "Opens new dream composer quickly.";
+"dream.compact.title" = "Dream Flow";
+"dream.compact.subtitle" = "Keep your entries coming";
+
+"settings.section.quick" = "Quick Settings";
+"settings.section.account" = "Account";
+"settings.section.support" = "Support & Privacy";
+"settings.plan.premium" = "Premium Member";
+"settings.plan.free" = "Free Plan";
+"settings.birth.title" = "Birth Details";
+"settings.birth.edit" = "Edit";
+"settings.birth.date" = "Birth Date";
+"settings.birth.time" = "Birth Time";
+"settings.birth.place" = "Birth Place";
+"settings.birth.sun" = "Sun Sign";
+"settings.item.birth_add.title" = "Add Birth Details";
+"settings.item.birth_add.subtitle" = "Complete your chart profile";
+"settings.item.premium.title" = "Upgrade to Premium";
+"settings.item.premium.subtitle" = "Unlock unlimited AI readings";
+"settings.item.notifications.title" = "Notifications";
+"settings.item.notifications.subtitle" = "Daily horoscope alerts";
+"settings.item.language.title" = "Language";
+"settings.item.language.subtitle" = "Switch app language";
+"settings.item.help.title" = "Help & Support";
+"settings.item.help.subtitle" = "Get answers and contact support";
+"settings.item.privacy.title" = "Privacy Policy";
+"settings.item.privacy.subtitle" = "How your data is handled";
+"settings.signout" = "Sign Out";
+
+"common.close" = "Close";
+
+"settings.edit.title" = "Edit Birth Details";
+"settings.edit.birth_date" = "Birth Date";
+"settings.edit.birth_time" = "Birth Time";
+"settings.edit.birth_place" = "Birth Place";
+"settings.edit.search_placeholder" = "Search city...";
+
+"settings.paywall.title" = "Mystic Premium";
+"settings.paywall.subtitle" = "Unlimited AI readings and advanced mystic features.";
+"settings.paywall.active" = "Premium is active. Thank you!";
+"settings.paywall.packages_failed_title" = "Packages Could Not Be Loaded";
+"settings.paywall.packages_failed_body" = "Premium packages could not be loaded right now. Check your connection and try again.";
+"settings.paywall.restore" = "Restore Purchases";
+"settings.paywall.nav_title" = "Premium";
+
+"settings.notifications.title" = "Notifications";
+"settings.notifications.daily_toggle" = "Daily Horoscope Notification";
+"settings.notifications.time" = "Notification Time";
+"settings.notifications.permission_on" = "Notification permission is enabled.";
+"settings.notifications.permission_off" = "Notification permission is disabled. Approve the system prompt to enable it.";
+
+"settings.language.title" = "Language";
+"settings.language.info" = "Language changes apply instantly. Missing translations may fallback to default language.";
+
+"settings.help.title" = "Help & Support";
+"settings.help.account.title" = "Account";
+"settings.help.account.body" = "For sign-in issues, verify your connection and Apple/Firebase session status.";
+"settings.help.birth.title" = "Birth Data";
+"settings.help.birth.body" = "If birth time is unknown, ascendant and house interpretations can be limited.";
+"settings.help.ai.title" = "AI Responses";
+"settings.help.ai.body" = "If responses fail, check whether your API keys are configured correctly.";
+"settings.help.email" = "Support Email";
+
+"settings.privacy.nav_title" = "Privacy";
+"settings.privacy.title" = "Privacy Policy";
+"settings.privacy.item1" = "1. In-app account data is stored on Firebase.";
+"settings.privacy.item2" = "2. User inputs for AI interpretations are processed via OpenRouter.";
+"settings.privacy.item3" = "3. API keys are not stored in app source code; they are provided through secure configuration only.";
+"settings.privacy.item4" = "4. Notification preferences are stored on your device.";

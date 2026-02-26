@@ -54,6 +54,23 @@ class ChatService {
             .sorted { $0.updatedAt > $1.updatedAt }
     }
 
+    /// True if the user has sent at least one message (first value metric).
+    func hasUserMessages(for userId: String) -> Bool {
+        sessionsForUser(userId)
+            .contains(where: { session in
+                session.messages.contains(where: { $0.role == .user })
+            })
+    }
+
+    /// Earliest user message timestamp for first-value timing.
+    func firstUserMessageDate(for userId: String) -> Date? {
+        sessionsForUser(userId)
+            .flatMap { session in
+                session.messages.filter { $0.role == .user }.map(\.timestamp)
+            }
+            .min()
+    }
+
     /// Appends a message to a session and persists.
     func addMessage(_ message: ChatMessage, to sessionId: String) {
         guard let index = sessions.firstIndex(where: { $0.id == sessionId }) else { return }

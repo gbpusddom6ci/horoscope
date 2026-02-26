@@ -29,8 +29,14 @@ class AuthService {
     private let logger = Logger(subsystem: "rk.horoscope", category: "AuthService")
     private let sessionStorageKey = "currentUserSession"
     private let pendingFCMTokenKey = "pending_fcm_token"
+    private let isUITestAuthenticated = ProcessInfo.processInfo.arguments.contains("UITEST_AUTHENTICATED")
 
     init() {
+        if isUITestAuthenticated {
+            configureUITestSession()
+            return
+        }
+
         // Only check local session initially to show UI quickly
         checkLocalAuthState()
         
@@ -266,19 +272,28 @@ class AuthService {
         }
     }
 
-    func completeOnboarding(with birthData: BirthData) {
-        // Update local state
-        currentUser?.birthData = birthData
+    @MainActor
+    func completeOnboarding(with birthData: BirthData) async throws {
+        guard var user = currentUser else {
+            throw AuthServiceError.notAuthenticated
+        }
+
+        let previousUser = user
+        user.birthData = birthData
+        currentUser = user
         authState = .authenticated
-        if let user = currentUser {
-            saveSession(user)
-            Task {
-                do {
-                    try await syncBirthDataToFirestore(userId: user.id, birthData: birthData, setOnboarding: true)
-                } catch {
-                    logger.error("Failed to complete onboarding sync: \(error.localizedDescription, privacy: .public)")
-                }
-            }
+        saveSession(user)
+
+        do {
+            try await syncBirthDataToFirestore(userId: user.id, birthData: birthData, setOnboarding: true)
+            errorMessage = nil
+        } catch {
+            // Revert local state if backend sync fails.
+            currentUser = previousUser
+            authState = previousUser.hasCompletedOnboarding ? .authenticated : .onboarding
+            saveSession(previousUser)
+            errorMessage = error.localizedDescription
+            throw error
         }
     }
 
@@ -455,6 +470,34 @@ class AuthService {
         } else {
             authState = .unauthenticated
         }
+    }
+
+    private func configureUITestSession() {
+        let calendar = Calendar(identifier: .gregorian)
+        let birthDate = calendar.date(from: DateComponents(year: 1993, month: 9, day: 14)) ?? Date()
+        let birthTime = calendar.date(from: DateComponents(year: 1993, month: 9, day: 14, hour: 8, minute: 30))
+
+        let birthData = BirthData(
+            birthDate: birthDate,
+            birthTime: birthTime,
+            birthPlace: "Istanbul, Turkey",
+            latitude: 41.0082,
+            longitude: 28.9784,
+            timeZoneIdentifier: "Europe/Istanbul"
+        )
+
+        let user = AppUser(
+            id: "ui-test-user",
+            displayName: "UI Tester",
+            email: "ui@test.local",
+            birthData: birthData,
+            isPremium: true,
+            createdAt: Date()
+        )
+
+        currentUser = user
+        authState = .authenticated
+        saveSession(user)
     }
 
     private func saveSession(_ user: AppUser) {

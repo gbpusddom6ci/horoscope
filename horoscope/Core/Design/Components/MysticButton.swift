@@ -9,6 +9,7 @@ enum MysticButtonStyle {
 }
 
 struct MysticButton: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let title: String
     let icon: String?
     let style: MysticButtonStyle
@@ -62,16 +63,28 @@ struct MysticButton: View {
             .clipShape(RoundedRectangle(cornerRadius: MysticRadius.lg))
             .overlay(borderOverlay)
             .shadow(color: glowColor.opacity(glowAnimation ? 0.4 : 0.1), radius: glowAnimation ? 12 : 4)
-            .scaleEffect(isPressed ? 0.97 : 1.0)
+            .scaleEffect((isPressed && !reduceMotion) ? 0.97 : 1.0)
         }
         .buttonStyle(.plain)
         .simultaneousGesture(
             DragGesture(minimumDistance: 0)
-                .onChanged { _ in withAnimation(.easeInOut(duration: 0.1)) { isPressed = true } }
-                .onEnded { _ in withAnimation(.easeInOut(duration: 0.1)) { isPressed = false } }
+                .onChanged { _ in
+                    if reduceMotion {
+                        isPressed = true
+                    } else {
+                        withAnimation(.easeInOut(duration: 0.1)) { isPressed = true }
+                    }
+                }
+                .onEnded { _ in
+                    if reduceMotion {
+                        isPressed = false
+                    } else {
+                        withAnimation(.easeInOut(duration: 0.1)) { isPressed = false }
+                    }
+                }
         )
         .onAppear {
-            if style == .primary {
+            if style == .primary && !reduceMotion {
                 withAnimation(
                     .easeInOut(duration: 2)
                     .repeatForever(autoreverses: true)
@@ -145,6 +158,7 @@ struct MysticButton: View {
 
 // MARK: - Apple Sign In Button
 struct AppleSignInButton: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let action: () -> Void
     @State private var isPressed = false
 
@@ -170,13 +184,25 @@ struct AppleSignInButton: View {
                 RoundedRectangle(cornerRadius: MysticRadius.lg)
                     .stroke(Color.white.opacity(0.3), lineWidth: 1)
             )
-            .scaleEffect(isPressed ? 0.97 : 1.0)
+            .scaleEffect((isPressed && !reduceMotion) ? 0.97 : 1.0)
         }
         .buttonStyle(.plain)
         .simultaneousGesture(
             DragGesture(minimumDistance: 0)
-                .onChanged { _ in withAnimation(.easeInOut(duration: 0.1)) { isPressed = true } }
-                .onEnded { _ in withAnimation(.easeInOut(duration: 0.1)) { isPressed = false } }
+                .onChanged { _ in
+                    if reduceMotion {
+                        isPressed = true
+                    } else {
+                        withAnimation(.easeInOut(duration: 0.1)) { isPressed = true }
+                    }
+                }
+                .onEnded { _ in
+                    if reduceMotion {
+                        isPressed = false
+                    } else {
+                        withAnimation(.easeInOut(duration: 0.1)) { isPressed = false }
+                    }
+                }
         )
     }
 }

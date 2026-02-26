@@ -35,11 +35,12 @@ extension View {
 
 // MARK: - Shimmer Modifier
 struct ShimmerModifier: ViewModifier {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let isActive: Bool
     @State private var phase: CGFloat = 0
 
     func body(content: Content) -> some View {
-        if isActive {
+        if isActive && !reduceMotion {
             content
                 .overlay(
                     GeometryReader { geometry in
@@ -73,6 +74,7 @@ struct ShimmerModifier: ViewModifier {
 
 // MARK: - Fade In Modifier
 struct FadeInModifier: ViewModifier {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let delay: Double
     @State private var opacity: Double = 0
     @State private var offset: CGFloat = 20
@@ -82,9 +84,14 @@ struct FadeInModifier: ViewModifier {
             .opacity(opacity)
             .offset(y: offset)
             .onAppear {
-                withAnimation(.easeOut(duration: 0.6).delay(delay)) {
+                if reduceMotion {
                     opacity = 1
                     offset = 0
+                } else {
+                    withAnimation(.easeOut(duration: 0.6).delay(delay)) {
+                        opacity = 1
+                        offset = 0
+                    }
                 }
             }
     }
@@ -102,13 +109,13 @@ extension Date {
     func formatted(as format: String) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = format
-        formatter.locale = Locale(identifier: "tr_TR")
+        formatter.locale = Locale.autoupdatingCurrent
         return formatter.string(from: self)
     }
 
     var relativeFormatted: String {
         let formatter = RelativeDateTimeFormatter()
-        formatter.locale = Locale(identifier: "tr_TR")
+        formatter.locale = Locale.autoupdatingCurrent
         formatter.unitsStyle = .short
         return formatter.localizedString(for: self, relativeTo: Date())
     }

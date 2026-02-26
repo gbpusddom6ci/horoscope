@@ -5,6 +5,7 @@ import os
 // MARK: - Onboarding View
 struct OnboardingView: View {
     @Environment(AuthService.self) private var authService
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var viewModel = OnboardingViewModel()
 
     var body: some View {
@@ -12,11 +13,9 @@ struct OnboardingView: View {
             StarField(starCount: 80)
 
             VStack(spacing: 0) {
-                // Progress Indicator
                 progressBar
                     .padding(.top, MysticSpacing.md)
 
-                // Step Content
                 TabView(selection: $viewModel.currentStep) {
                     BirthDateStep(selectedDate: $viewModel.birthDate)
                         .tag(0)
@@ -25,20 +24,33 @@ struct OnboardingView: View {
                         selectedTime: $viewModel.birthTime,
                         isTimeKnown: $viewModel.isTimeKnown
                     )
-                        .tag(1)
+                    .tag(1)
 
                     BirthLocationStep(viewModel: viewModel)
                         .tag(2)
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
-                .animation(.spring(response: 0.4), value: viewModel.currentStep)
+                .animation(reduceMotion ? nil : .spring(response: 0.4), value: viewModel.currentStep)
 
-                // Navigation Buttons
+                if case .failed(let message) = viewModel.submissionState {
+                    Text(message)
+                        .font(MysticFonts.caption(13))
+                        .foregroundColor(MysticColors.celestialPink)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, MysticSpacing.lg)
+                        .padding(.bottom, MysticSpacing.sm)
+                }
+
                 navigationButtons
                     .padding(.horizontal, MysticSpacing.lg)
                     .padding(.bottom, MysticSpacing.xl)
             }
         }
+        .onChange(of: viewModel.currentStep) { _, _ in viewModel.persistDraft() }
+        .onChange(of: viewModel.birthDate) { _, _ in viewModel.persistDraft() }
+        .onChange(of: viewModel.birthTime) { _, _ in viewModel.persistDraft() }
+        .onChange(of: viewModel.isTimeKnown) { _, _ in viewModel.persistDraft() }
+        .onChange(of: viewModel.locationQuery) { _, _ in viewModel.persistDraft() }
     }
 
     // MARK: - Progress Bar
@@ -52,39 +64,46 @@ struct OnboardingView: View {
                             : MysticColors.textMuted.opacity(0.3)
                     )
                     .frame(height: 4)
-                    .animation(.spring(response: 0.3), value: viewModel.currentStep)
+                    .animation(reduceMotion ? nil : .spring(response: 0.3), value: viewModel.currentStep)
             }
         }
         .padding(.horizontal, MysticSpacing.lg)
+        .accessibilityLabel(Text(String(localized: "onboarding.progress")))
+        .accessibilityValue(Text("\(viewModel.currentStep + 1)/3"))
     }
 
     // MARK: - Navigation Buttons
     private var navigationButtons: some View {
         HStack(spacing: MysticSpacing.md) {
             if viewModel.currentStep > 0 {
-                MysticButton("Geri", icon: "chevron.left", style: .ghost) {
-                    withAnimation {
+                MysticButton(String(localized: "onboarding.navigation.back"), icon: "chevron.left", style: .ghost) {
+                    withAnimation(reduceMotion ? nil : .spring(response: 0.25)) {
                         viewModel.currentStep -= 1
                     }
                 }
                 .frame(maxWidth: 120)
+                .accessibilityHint(Text(String(localized: "onboarding.navigation.back.hint")))
             }
 
             if viewModel.currentStep < 2 {
-                MysticButton("Devam", icon: "arrow.right", style: .primary) {
-                    withAnimation {
+                MysticButton(String(localized: "onboarding.navigation.next"), icon: "arrow.right", style: .primary) {
+                    withAnimation(reduceMotion ? nil : .spring(response: 0.25)) {
                         viewModel.currentStep += 1
                     }
                 }
+                .accessibilityHint(Text(String(localized: "onboarding.navigation.next.hint")))
             } else {
                 MysticButton(
-                    "Keşfetmeye Başla ✨",
+                    String(localized: "onboarding.navigation.start"),
                     style: .primary,
                     isLoading: viewModel.isSubmitting || viewModel.isResolvingLocation
                 ) {
-                    viewModel.completeOnboarding(authService: authService)
+                    Task {
+                        await viewModel.completeOnboarding(authService: authService)
+                    }
                 }
                 .disabled(!viewModel.canComplete)
+                .accessibilityHint(Text(String(localized: "onboarding.navigation.start.hint")))
             }
         }
     }
@@ -104,11 +123,11 @@ struct BirthDateStep: View {
                     .foregroundStyle(MysticGradients.goldShimmer)
                     .shadow(color: MysticColors.mysticGold.opacity(0.4), radius: 10)
 
-                Text("Doğum Tarihiniz")
+                Text("onboarding.birth_date.title")
                     .font(MysticFonts.heading(24))
                     .foregroundColor(MysticColors.textPrimary)
 
-                Text("Natal haritanızı hesaplamak için doğum tarihinize ihtiyacımız var")
+                Text("onboarding.birth_date.subtitle")
                     .font(MysticFonts.body(15))
                     .foregroundColor(MysticColors.textSecondary)
                     .multilineTextAlignment(.center)
@@ -117,25 +136,26 @@ struct BirthDateStep: View {
 
             MysticCard(glowColor: MysticColors.mysticGold) {
                 DatePicker(
-                    "Doğum Tarihi",
+                    String(localized: "onboarding.birth_date.label"),
                     selection: $selectedDate,
                     in: ...Date(),
                     displayedComponents: .date
                 )
                 .datePickerStyle(.wheel)
                 .labelsHidden()
-                .environment(\.locale, Locale(identifier: "tr_TR"))
                 .colorScheme(.dark)
+                .accessibilityLabel(Text(String(localized: "onboarding.birth_date.label")))
             }
             .padding(.horizontal, MysticSpacing.lg)
 
-            // Show selected zodiac
             let sign = selectedDate.zodiacSign
             HStack(spacing: MysticSpacing.sm) {
                 ZodiacSymbol(sign, size: 24, color: sign.elementColor)
-                Text("Güneş Burcunuz: \(sign.rawValue)")
+                Text(String(format: String(localized: "onboarding.birth_date.sun_sign_format"), sign.rawValue))
                     .font(MysticFonts.body(16))
                     .foregroundColor(sign.elementColor)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
             }
             .padding(.vertical, MysticSpacing.sm)
             .padding(.horizontal, MysticSpacing.md)
@@ -149,6 +169,7 @@ struct BirthDateStep: View {
 
 // MARK: - Birth Time Step
 struct BirthTimeStep: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Binding var selectedTime: Date
     @Binding var isTimeKnown: Bool
 
@@ -162,11 +183,11 @@ struct BirthTimeStep: View {
                     .foregroundStyle(MysticGradients.lavenderGlow)
                     .shadow(color: MysticColors.neonLavender.opacity(0.4), radius: 10)
 
-                Text("Doğum Saatiniz")
+                Text("onboarding.birth_time.title")
                     .font(MysticFonts.heading(24))
                     .foregroundColor(MysticColors.textPrimary)
 
-                Text("Yükselen burcunuzu ve ev yerleşimlerinizi hesaplamak için doğum saatini bilmemiz gerekiyor")
+                Text("onboarding.birth_time.subtitle")
                     .font(MysticFonts.body(15))
                     .foregroundColor(MysticColors.textSecondary)
                     .multilineTextAlignment(.center)
@@ -176,28 +197,28 @@ struct BirthTimeStep: View {
             if isTimeKnown {
                 MysticCard(glowColor: MysticColors.neonLavender) {
                     DatePicker(
-                        "Doğum Saati",
+                        String(localized: "onboarding.birth_time.label"),
                         selection: $selectedTime,
                         displayedComponents: .hourAndMinute
                     )
                     .datePickerStyle(.wheel)
                     .labelsHidden()
                     .colorScheme(.dark)
+                    .accessibilityLabel(Text(String(localized: "onboarding.birth_time.label")))
                 }
                 .padding(.horizontal, MysticSpacing.lg)
-                .transition(.opacity.combined(with: .scale))
+                .transition(reduceMotion ? .identity : .opacity.combined(with: .scale))
             }
 
-            // Toggle
             Button {
-                withAnimation(.spring(response: 0.3)) {
+                withAnimation(reduceMotion ? nil : .spring(response: 0.3)) {
                     isTimeKnown.toggle()
                 }
             } label: {
                 HStack(spacing: MysticSpacing.sm) {
                     Image(systemName: isTimeKnown ? "checkmark.circle.fill" : "circle")
                         .foregroundColor(isTimeKnown ? MysticColors.auroraGreen : MysticColors.textMuted)
-                    Text(isTimeKnown ? "Doğum saatimi biliyorum" : "Doğum saatimi bilmiyorum")
+                    Text(isTimeKnown ? String(localized: "onboarding.birth_time.known") : String(localized: "onboarding.birth_time.unknown"))
                         .font(MysticFonts.body(15))
                         .foregroundColor(MysticColors.textSecondary)
                 }
@@ -206,9 +227,11 @@ struct BirthTimeStep: View {
                 .background(MysticColors.inputBackground)
                 .clipShape(Capsule())
             }
+            .frame(minHeight: 44)
+            .accessibilityHint(Text(String(localized: "onboarding.birth_time.toggle.hint")))
 
             if !isTimeKnown {
-                Text("💡 Doğum saatinizi bilmiyorsanız, yükselen burcunuz ve ev yerleşimleriniz hesaplanamaz. Ancak gezegen burçları yine de gösterilecektir.")
+                Text("onboarding.birth_time.unknown_note")
                     .font(MysticFonts.caption(13))
                     .foregroundColor(MysticColors.textMuted)
                     .multilineTextAlignment(.center)
@@ -222,6 +245,7 @@ struct BirthTimeStep: View {
 
 // MARK: - Birth Location Step
 struct BirthLocationStep: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Bindable var viewModel: OnboardingViewModel
 
     var body: some View {
@@ -234,11 +258,11 @@ struct BirthLocationStep: View {
                     .foregroundStyle(MysticGradients.auroraShift)
                     .shadow(color: MysticColors.auroraGreen.opacity(0.4), radius: 10)
 
-                Text("Doğum Yeriniz")
+                Text("onboarding.birth_location.title")
                     .font(MysticFonts.heading(24))
                     .foregroundColor(MysticColors.textPrimary)
 
-                Text("Ev yerleşimlerinin doğru hesaplanması için doğum yerinizi belirtin")
+                Text("onboarding.birth_location.subtitle")
                     .font(MysticFonts.body(15))
                     .foregroundColor(MysticColors.textSecondary)
                     .multilineTextAlignment(.center)
@@ -247,7 +271,7 @@ struct BirthLocationStep: View {
 
             VStack(spacing: MysticSpacing.sm) {
                 MysticTextField(
-                    "Şehir ara...",
+                    String(localized: "onboarding.birth_location.search_placeholder"),
                     text: $viewModel.locationQuery,
                     icon: "magnifyingglass"
                 )
@@ -256,7 +280,6 @@ struct BirthLocationStep: View {
                     viewModel.searchLocation(query: newValue)
                 }
 
-                // Search Results
                 if !viewModel.searchResults.isEmpty {
                     MysticCard {
                         VStack(spacing: 0) {
@@ -279,7 +302,9 @@ struct BirthLocationStep: View {
                                     }
                                     .padding(.vertical, MysticSpacing.sm)
                                     .padding(.horizontal, MysticSpacing.sm)
+                                    .frame(minHeight: 44)
                                 }
+                                .buttonStyle(.plain)
 
                                 if result != viewModel.searchResults.last {
                                     Divider()
@@ -289,11 +314,10 @@ struct BirthLocationStep: View {
                         }
                     }
                     .padding(.horizontal, MysticSpacing.lg)
-                    .transition(.opacity.combined(with: .move(edge: .top)))
+                    .transition(reduceMotion ? .identity : .opacity.combined(with: .move(edge: .top)))
                 }
             }
 
-            // Selected location
             if let selected = viewModel.selectedLocationName {
                 HStack(spacing: MysticSpacing.sm) {
                     Image(systemName: "checkmark.circle.fill")
@@ -301,19 +325,21 @@ struct BirthLocationStep: View {
                     Text(selected)
                         .font(MysticFonts.body(15))
                         .foregroundColor(MysticColors.auroraGreen)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.8)
                 }
                 .padding(.vertical, MysticSpacing.sm)
                 .padding(.horizontal, MysticSpacing.md)
                 .background(MysticColors.auroraGreen.opacity(0.1))
                 .clipShape(Capsule())
-                .transition(.scale.combined(with: .opacity))
+                .transition(reduceMotion ? .identity : .scale.combined(with: .opacity))
             }
 
             if viewModel.isResolvingLocation {
                 HStack(spacing: MysticSpacing.sm) {
                     ProgressView()
                         .tint(MysticColors.neonLavender)
-                    Text("Konum doğrulanıyor...")
+                    Text("onboarding.birth_location.resolving")
                         .font(MysticFonts.caption(13))
                         .foregroundColor(MysticColors.textMuted)
                 }
@@ -327,10 +353,30 @@ struct BirthLocationStep: View {
 // MARK: - Onboarding ViewModel
 @Observable
 class OnboardingViewModel: NSObject, MKLocalSearchCompleterDelegate {
+    enum OnboardingSubmissionState: Equatable {
+        case idle
+        case resolvingLocation
+        case submitting
+        case failed(String)
+        case succeeded
+    }
+
+    private struct OnboardingDraft: Codable {
+        var currentStep: Int
+        var birthDate: Date
+        var birthTime: Date
+        var isTimeKnown: Bool
+        var locationQuery: String
+        var selectedLocationName: String?
+        var selectedLatitude: Double?
+        var selectedLongitude: Double?
+        var selectedTimezone: String
+    }
+
+    private static let draftKey = "onboarding_draft_v1"
+
     var currentStep: Int = 0
-    var birthDate: Date = Calendar.current.date(
-        from: DateComponents(year: 1995, month: 6, day: 15)
-    )!
+    var birthDate: Date = Calendar.current.date(from: DateComponents(year: 1995, month: 6, day: 15)) ?? Date()
     var birthTime: Date = Date()
     var isTimeKnown: Bool = true
     var locationQuery: String = ""
@@ -339,8 +385,17 @@ class OnboardingViewModel: NSObject, MKLocalSearchCompleterDelegate {
     var selectedLatitude: Double?
     var selectedLongitude: Double?
     var selectedTimezone: String = TimeZone.current.identifier
-    var isSubmitting: Bool = false
-    var isResolvingLocation: Bool = false
+    var submissionState: OnboardingSubmissionState = .idle
+
+    var isSubmitting: Bool {
+        if case .submitting = submissionState { return true }
+        return false
+    }
+
+    var isResolvingLocation: Bool {
+        if case .resolvingLocation = submissionState { return true }
+        return false
+    }
 
     var canComplete: Bool {
         selectedLocationName != nil
@@ -357,12 +412,39 @@ class OnboardingViewModel: NSObject, MKLocalSearchCompleterDelegate {
         super.init()
         searchCompleter.delegate = self
         searchCompleter.resultTypes = .address
+        loadDraftIfAvailable()
+    }
+
+    func persistDraft() {
+        let draft = OnboardingDraft(
+            currentStep: currentStep,
+            birthDate: birthDate,
+            birthTime: birthTime,
+            isTimeKnown: isTimeKnown,
+            locationQuery: locationQuery,
+            selectedLocationName: selectedLocationName,
+            selectedLatitude: selectedLatitude,
+            selectedLongitude: selectedLongitude,
+            selectedTimezone: selectedTimezone
+        )
+
+        if let encoded = try? JSONEncoder().encode(draft) {
+            UserDefaults.standard.set(encoded, forKey: Self.draftKey)
+        }
+    }
+
+    func clearDraft() {
+        UserDefaults.standard.removeObject(forKey: Self.draftKey)
     }
 
     func searchLocation(query: String) {
-        guard !query.isEmpty else {
+        guard !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             searchResults = []
             return
+        }
+
+        if case .failed = submissionState {
+            submissionState = .idle
         }
         searchCompleter.queryFragment = query
     }
@@ -373,14 +455,12 @@ class OnboardingViewModel: NSObject, MKLocalSearchCompleterDelegate {
         searchResults = []
         selectedLatitude = nil
         selectedLongitude = nil
-        isResolvingLocation = true
+        submissionState = .resolvingLocation
 
-        // Geocode to get coordinates
         let request = MKLocalSearch.Request(completion: completion)
         let search = MKLocalSearch(request: request)
 
         Task {
-            defer { isResolvingLocation = false }
             do {
                 let response = try await search.start()
                 if let item = response.mapItems.first {
@@ -390,22 +470,28 @@ class OnboardingViewModel: NSObject, MKLocalSearchCompleterDelegate {
                     if let tz = item.placemark.timeZone {
                         selectedTimezone = tz.identifier
                     }
+                    submissionState = .idle
+                    persistDraft()
+                } else {
+                    submissionState = .failed(String(localized: "onboarding.birth_location.resolve_failed"))
                 }
             } catch {
+                submissionState = .failed(String(localized: "onboarding.birth_location.resolve_failed"))
                 logger.error("Geocoding error: \(error.localizedDescription, privacy: .public)")
             }
         }
     }
 
-    func completeOnboarding(authService: AuthService) {
+    func completeOnboarding(authService: AuthService) async {
         guard canComplete,
               let selectedLocationName,
               let selectedLatitude,
               let selectedLongitude else {
+            submissionState = .failed(String(localized: "onboarding.birth_location.select_required"))
             return
         }
 
-        isSubmitting = true
+        submissionState = .submitting
 
         let birthData = BirthData(
             birthDate: birthDate,
@@ -416,8 +502,30 @@ class OnboardingViewModel: NSObject, MKLocalSearchCompleterDelegate {
             timeZoneIdentifier: selectedTimezone
         )
 
-        authService.completeOnboarding(with: birthData)
-        isSubmitting = false
+        do {
+            try await authService.completeOnboarding(with: birthData)
+            submissionState = .succeeded
+            clearDraft()
+        } catch {
+            submissionState = .failed(error.localizedDescription)
+        }
+    }
+
+    private func loadDraftIfAvailable() {
+        guard let data = UserDefaults.standard.data(forKey: Self.draftKey),
+              let draft = try? JSONDecoder().decode(OnboardingDraft.self, from: data) else {
+            return
+        }
+
+        currentStep = min(max(draft.currentStep, 0), 2)
+        birthDate = draft.birthDate
+        birthTime = draft.birthTime
+        isTimeKnown = draft.isTimeKnown
+        locationQuery = draft.locationQuery
+        selectedLocationName = draft.selectedLocationName
+        selectedLatitude = draft.selectedLatitude
+        selectedLongitude = draft.selectedLongitude
+        selectedTimezone = draft.selectedTimezone
     }
 
     // MARK: - MKLocalSearchCompleterDelegate
@@ -427,6 +535,7 @@ class OnboardingViewModel: NSObject, MKLocalSearchCompleterDelegate {
     }
 
     func completer(_ completer: MKLocalSearchCompleter, didFailWithError error: Error) {
+        submissionState = .failed(String(localized: "onboarding.birth_location.resolve_failed"))
         logger.error("Location search completer error: \(error.localizedDescription, privacy: .public)")
     }
 }
