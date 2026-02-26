@@ -1,13 +1,43 @@
 import Foundation
 
 /// Defines keys and secrets for the application.
-/// IMPORTANT: Do not commit actual API keys to public repositories.
+/// IMPORTANT: Never hardcode secrets in source code.
+/// Secrets should be provided via Info.plist keys or environment variables.
 enum Secrets {
-    // ⚠️ TODO: Replace with your actual OpenRouter API Key.
-    // Get one at: https://openrouter.ai/keys
-    static let openRouterAPIKey = "REDACTED_OPENROUTER_KEY"
+    static var openRouterAPIKey: String {
+        value(for: "OPENROUTER_API_KEY")
+    }
 
-    // ⚠️ TODO: Replace with your actual FreeAstroAPI key.
-    // Get one for free at: https://freeastroapi.com/login
-    static let freeAstroAPIKey = "REDACTED_FREE_ASTRO_KEY"
+    static var freeAstroAPIKey: String {
+        value(for: "FREE_ASTRO_API_KEY")
+    }
+
+    private static func value(for key: String) -> String {
+        if let plistValue = Bundle.main.object(forInfoDictionaryKey: key) as? String {
+            let trimmed = plistValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty {
+                return trimmed
+            }
+        }
+
+        if let envValue = ProcessInfo.processInfo.environment[key] {
+            let trimmed = envValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty {
+                return trimmed
+            }
+        }
+
+        return ""
+    }
+}
+
+enum ConfigurationError: LocalizedError {
+    case missingSecret(String)
+
+    var errorDescription: String? {
+        switch self {
+        case .missingSecret(let key):
+            return "Eksik konfigürasyon: \(key) ayarlanmadı."
+        }
+    }
 }

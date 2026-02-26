@@ -426,20 +426,24 @@ struct ChartWheelView: View {
     // MARK: 4 — Zodiac Symbols
     private func zodiacSymbols(center: CGPoint, r: CGFloat) -> some View {
         let symR = r * (outerRatio + zodiacInnerRatio) / 2
-
-        return ForEach(0..<12, id: \.self) { i in
-            let sign = ZodiacSign.allCases[i]
-            let angle = (Double(i) * 30 + 15 - 90) * .pi / 180
-
-            Text(sign.symbol)
-                .font(.system(size: 13, weight: .medium))
-                .foregroundColor(sign.elementColor)
-                .position(
-                    x: center.x + cos(angle) * symR,
-                    y: center.y + sin(angle) * symR
-                )
+        return ZStack {
+            ForEach(0..<12, id: \.self) { i in
+                zodiacSymbol(index: i, center: center, radius: symR)
+            }
         }
         .allowsHitTesting(false)
+    }
+
+    private func zodiacSymbol(index: Int, center: CGPoint, radius: CGFloat) -> some View {
+        let sign = ZodiacSign.allCases[index]
+        let angle = (Double(index) * 30 + 15 - 90) * .pi / 180
+        let x = center.x + cos(angle) * radius
+        let y = center.y + sin(angle) * radius
+
+        return Text(sign.symbol)
+            .font(.system(size: 13, weight: .medium))
+            .foregroundColor(sign.elementColor)
+            .position(x: x, y: y)
     }
 
     // MARK: 5 — House Cusps
@@ -447,48 +451,55 @@ struct ChartWheelView: View {
         let outer = r * houseOuterRatio
         let inner = r * houseInnerRatio
 
-        return ForEach(chartData.houseCusps) { cusp in
-            let angle = (cusp.degree - 90) * .pi / 180
-            let isAngular = [1, 4, 7, 10].contains(cusp.houseNumber)
-            let lineWidth: CGFloat = isAngular ? 1.2 : 0.5
-            let opacity: Double = isAngular ? 0.4 : 0.15
-
-            ZStack {
-                // Cusp line
-                Path { p in
-                    p.move(to: CGPoint(x: center.x + cos(angle) * inner, y: center.y + sin(angle) * inner))
-                    p.addLine(to: CGPoint(x: center.x + cos(angle) * outer, y: center.y + sin(angle) * outer))
-                }
-                .stroke(MysticColors.neonLavender.opacity(opacity), lineWidth: lineWidth)
-
-                // House number
-                let numR = (inner + outer) / 2 * 0.65
-                let nextCusp = chartData.houseCusps.first(where: { $0.houseNumber == (cusp.houseNumber % 12) + 1 })
-                let midDeg = houseMidDegree(cusp: cusp.degree, next: nextCusp?.degree ?? cusp.degree + 30)
-                let midAngle = (midDeg - 90) * .pi / 180
-                Text("\(cusp.houseNumber)")
-                    .font(.system(size: 9, weight: .light))
-                    .foregroundColor(MysticColors.textMuted.opacity(0.6))
-                    .position(
-                        x: center.x + cos(midAngle) * numR,
-                        y: center.y + sin(midAngle) * numR
-                    )
-
-                // Angular labels (ASC, MC, DSC, IC)
-                if isAngular {
-                    let labelR = outer + 2
-                    let label = angularLabel(cusp.houseNumber)
-                    Text(label)
-                        .font(.system(size: 8, weight: .bold))
-                        .foregroundColor(MysticColors.mysticGold)
-                        .position(
-                            x: center.x + cos(angle) * labelR,
-                            y: center.y + sin(angle) * labelR
-                        )
-                }
+        return ZStack {
+            ForEach(chartData.houseCusps) { cusp in
+                singleHouseCusp(cusp: cusp, center: center, inner: inner, outer: outer)
             }
         }
         .allowsHitTesting(false)
+    }
+
+    private func singleHouseCusp(cusp: HouseCusp, center: CGPoint, inner: CGFloat, outer: CGFloat) -> some View {
+        let angle = (cusp.degree - 90) * .pi / 180
+        let isAngular = [1, 4, 7, 10].contains(cusp.houseNumber)
+        let lineWidth: CGFloat = isAngular ? 1.2 : 0.5
+        let opacity: Double = isAngular ? 0.4 : 0.15
+
+        let numR = (inner + outer) / 2 * 0.65
+        let nextCusp = chartData.houseCusps.first(where: { $0.houseNumber == (cusp.houseNumber % 12) + 1 })
+        let midDeg = houseMidDegree(cusp: cusp.degree, next: nextCusp?.degree ?? cusp.degree + 30)
+        let midAngle = (midDeg - 90) * .pi / 180
+
+        return ZStack {
+            // Cusp line
+            Path { p in
+                p.move(to: CGPoint(x: center.x + cos(angle) * inner, y: center.y + sin(angle) * inner))
+                p.addLine(to: CGPoint(x: center.x + cos(angle) * outer, y: center.y + sin(angle) * outer))
+            }
+            .stroke(MysticColors.neonLavender.opacity(opacity), lineWidth: lineWidth)
+
+            // House number
+            Text("\(cusp.houseNumber)")
+                .font(.system(size: 9, weight: .light))
+                .foregroundColor(MysticColors.textMuted.opacity(0.6))
+                .position(
+                    x: center.x + cos(midAngle) * numR,
+                    y: center.y + sin(midAngle) * numR
+                )
+
+            // Angular labels (ASC, MC, DSC, IC)
+            if isAngular {
+                let labelR = outer + 2
+                let label = angularLabel(cusp.houseNumber)
+                Text(label)
+                    .font(.system(size: 8, weight: .bold))
+                    .foregroundColor(MysticColors.mysticGold)
+                    .position(
+                        x: center.x + cos(angle) * labelR,
+                        y: center.y + sin(angle) * labelR
+                    )
+            }
+        }
     }
 
     private func houseMidDegree(cusp: Double, next: Double) -> Double {
@@ -680,212 +691,6 @@ struct ChartWheelView: View {
             }
         }
         .padding(.horizontal, MysticSpacing.md)
-    }
-}
-
-#Preview {
-    NatalChartView()
-        .environment(AuthService())
-}
-    let chartData: ChartData
-    @Binding var selectedPlanet: PlanetPosition?
-    @State private var ringGlow: Double = 0
-
-    var body: some View {
-        GeometryReader { geometry in
-            let size = min(geometry.size.width, geometry.size.height)
-            let center = CGPoint(x: geometry.size.width / 2, y: geometry.size.height / 2)
-            let outerRadius = size / 2 - 10
-            let signRadius = outerRadius * 0.82
-            let innerRadius = outerRadius * 0.65
-            let planetRadius = (signRadius + innerRadius) / 2
-
-            ZStack {
-                ringsLayer(outerRadius: outerRadius, signRadius: signRadius, innerRadius: innerRadius)
-                zodiacLayer(center: center, outerRadius: outerRadius, signRadius: signRadius, innerRadius: innerRadius)
-                aspectLinesLayer(center: center, innerRadius: innerRadius)
-                centerInfoView(innerRadius: innerRadius)
-            }
-            // Planets on top in their own layer for reliable taps
-            .overlay {
-                planetsOverlay(center: center, planetRadius: planetRadius)
-            }
-        }
-        .onAppear {
-            withAnimation(.easeInOut(duration: 3).repeatForever(autoreverses: true)) {
-                ringGlow = 1
-            }
-        }
-    }
-
-    private func ringsLayer(outerRadius: Double, signRadius: Double, innerRadius: Double) -> some View {
-        ZStack {
-            Circle()
-                .stroke(
-                    AngularGradient(
-                        colors: [.red.opacity(0.25), .orange.opacity(0.25), .green.opacity(0.25), .cyan.opacity(0.25), .blue.opacity(0.25), .purple.opacity(0.25), .red.opacity(0.25)],
-                        center: .center
-                    ),
-                    lineWidth: 3
-                )
-                .frame(width: outerRadius * 2, height: outerRadius * 2)
-                .blur(radius: 2)
-                .opacity(0.5 + ringGlow * 0.5)
-
-            Circle()
-                .stroke(MysticColors.neonLavender.opacity(0.25), lineWidth: 1.5)
-                .frame(width: outerRadius * 2, height: outerRadius * 2)
-
-            Circle()
-                .stroke(MysticColors.neonLavender.opacity(0.15), lineWidth: 1)
-                .frame(width: signRadius * 2, height: signRadius * 2)
-
-            Circle()
-                .stroke(MysticColors.neonLavender.opacity(0.1), lineWidth: 1)
-                .frame(width: innerRadius * 2, height: innerRadius * 2)
-        }
-    }
-
-    private func zodiacLayer(center: CGPoint, outerRadius: Double, signRadius: Double, innerRadius: Double) -> some View {
-        ForEach(0..<12, id: \.self) { i in
-            zodiacSegment(index: i, center: center, outerRadius: outerRadius, signRadius: signRadius, innerRadius: innerRadius)
-        }
-    }
-
-    private func zodiacSegment(index i: Int, center: CGPoint, outerRadius: Double, signRadius: Double, innerRadius: Double) -> some View {
-        let sign = ZodiacSign.allCases[i]
-        let midAngle = Double(i) * 30.0 + 15.0 - 90
-        let lineAngle = Double(i) * 30.0 - 90
-        let symRadius = (outerRadius + signRadius) / 2
-
-        return ZStack {
-            Text(sign.symbol)
-                .font(.system(size: 15))
-                .foregroundColor(sign.elementColor.opacity(0.8))
-                .position(
-                    x: center.x + cos(midAngle * .pi / 180) * symRadius,
-                    y: center.y + sin(midAngle * .pi / 180) * symRadius
-                )
-
-            Path { path in
-                path.move(to: CGPoint(
-                    x: center.x + cos(lineAngle * .pi / 180) * innerRadius,
-                    y: center.y + sin(lineAngle * .pi / 180) * innerRadius
-                ))
-                path.addLine(to: CGPoint(
-                    x: center.x + cos(lineAngle * .pi / 180) * outerRadius,
-                    y: center.y + sin(lineAngle * .pi / 180) * outerRadius
-                ))
-            }
-            .stroke(MysticColors.cardBorder.opacity(0.5), lineWidth: 0.5)
-        }
-        .allowsHitTesting(false)
-    }
-
-    private func aspectLinesLayer(center: CGPoint, innerRadius: Double) -> some View {
-        ForEach(chartData.aspects) { aspect in
-            aspectLine(aspect: aspect, center: center, innerRadius: innerRadius)
-        }
-        .allowsHitTesting(false)
-    }
-
-    @ViewBuilder
-    private func aspectLine(aspect: Aspect, center: CGPoint, innerRadius: Double) -> some View {
-        if let p1 = chartData.planetPositions.first(where: { $0.planet == aspect.planet1 }),
-           let p2 = chartData.planetPositions.first(where: { $0.planet == aspect.planet2 }) {
-            let a1 = (p1.degree - 90) * .pi / 180
-            let a2 = (p2.degree - 90) * .pi / 180
-            let r = innerRadius * 0.62
-            let color: Color = aspect.type.isHarmonious ? MysticColors.auroraGreen : MysticColors.celestialPink
-
-            Path { path in
-                path.move(to: CGPoint(x: center.x + cos(a1) * r, y: center.y + sin(a1) * r))
-                path.addLine(to: CGPoint(x: center.x + cos(a2) * r, y: center.y + sin(a2) * r))
-            }
-            .stroke(color.opacity(0.2), lineWidth: 0.8)
-        }
-    }
-
-    // Planets as overlay for reliable tap detection
-    private func planetsOverlay(center: CGPoint, planetRadius: Double) -> some View {
-        ForEach(chartData.planetPositions) { position in
-            planetDot(position: position, center: center, planetRadius: planetRadius)
-        }
-    }
-
-    private func planetDot(position: PlanetPosition, center: CGPoint, planetRadius: Double) -> some View {
-        let angle = position.degree - 90
-        let x = center.x + cos(angle * .pi / 180) * planetRadius
-        let y = center.y + sin(angle * .pi / 180) * planetRadius
-        let isSelected = selectedPlanet?.id == position.id
-        let dotSize: CGFloat = 36
-
-        return Button {
-            withAnimation(.spring(response: 0.3)) {
-                if isSelected {
-                    selectedPlanet = nil
-                } else {
-                    selectedPlanet = position
-                }
-            }
-            // Haptic feedback
-            let impact = UIImpactFeedbackGenerator(style: .light)
-            impact.impactOccurred()
-        } label: {
-            ZStack {
-                Circle()
-                    .fill(position.sign.elementColor.opacity(isSelected ? 0.5 : 0.2))
-                    .frame(width: dotSize, height: dotSize)
-                Circle()
-                    .stroke(position.sign.elementColor.opacity(isSelected ? 1.0 : 0.5), lineWidth: isSelected ? 2.5 : 1)
-                    .frame(width: dotSize, height: dotSize)
-                Text(position.planet.symbol)
-                    .font(.system(size: 16))
-                    .foregroundColor(isSelected ? .white : position.sign.elementColor)
-            }
-            .scaleEffect(isSelected ? 1.15 : 1.0)
-        }
-        .buttonStyle(.plain)
-        .contentShape(Circle())
-        .frame(width: dotSize, height: dotSize)
-        .position(x: x, y: y)
-    }
-
-    private func centerInfoView(innerRadius: Double) -> some View {
-        let centerSize = innerRadius * 0.55
-
-        return ZStack {
-            Circle()
-                .fill(MysticColors.voidBlack.opacity(0.9))
-                .frame(width: centerSize, height: centerSize)
-            Circle()
-                .stroke(MysticColors.mysticGold.opacity(0.3), lineWidth: 1)
-                .frame(width: centerSize, height: centerSize)
-
-            if let selected = selectedPlanet {
-                VStack(spacing: 2) {
-                    Text(selected.planet.symbol).font(.system(size: 20))
-                    Text(selected.sign.symbol).font(.system(size: 14))
-                    Text(selected.formattedDegree)
-                        .font(MysticFonts.caption(8))
-                        .foregroundColor(selected.sign.elementColor)
-                    Text("\(selected.house). Ev")
-                        .font(MysticFonts.caption(8))
-                        .foregroundColor(MysticColors.textMuted)
-                }
-            } else {
-                VStack(spacing: 2) {
-                    Image(systemName: "moon.stars")
-                        .font(.system(size: 18))
-                        .foregroundColor(MysticColors.mysticGold.opacity(0.5))
-                    Text("Gezegene\ndokunun")
-                        .font(MysticFonts.caption(8))
-                        .foregroundColor(MysticColors.textMuted)
-                        .multilineTextAlignment(.center)
-                }
-            }
-        }
-        .allowsHitTesting(false)
     }
 }
 

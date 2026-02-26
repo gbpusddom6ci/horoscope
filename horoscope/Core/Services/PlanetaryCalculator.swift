@@ -116,7 +116,6 @@ struct PlanetaryCalculator {
         // For low-inclination orbits (all planets except Pluto), heliocentric longitude ≈ lonInPlane
         // Full 3D projection for completeness
         let iRad = rad(i)
-        let omegaRad = rad(omega)
         let lonRad = rad(lonInPlane - omega)
 
         let lambda = deg(atan2(sin(lonRad) * cos(iRad), cos(lonRad))) + omega
@@ -167,7 +166,6 @@ struct PlanetaryCalculator {
     // MARK: - Mercury
 
     private static func mercuryLongitude(t: Double) -> Double {
-        let L = normalize(252.2509 + 149474.0722 * t)
         let M = normalize(174.7948 + 149472.5153 * t)
         let e = 0.205635 + 0.000023 * t
         let w = normalize(77.4561 + 1.5564 * t)

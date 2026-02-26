@@ -36,10 +36,15 @@ class AIService {
         guard let url = URL(string: "https://openrouter.ai/api/v1/chat/completions") else {
             throw URLError(.badURL)
         }
+
+        let apiKey = Secrets.openRouterAPIKey
+        guard !apiKey.isEmpty else {
+            throw ConfigurationError.missingSecret("OPENROUTER_API_KEY")
+        }
         
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        request.setValue("Bearer \(Secrets.openRouterAPIKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         // Optional OpenRouter headers
         request.setValue("Mystik Astroloji", forHTTPHeaderField: "X-Title")
@@ -165,10 +170,15 @@ class AIService {
         guard let url = URL(string: "https://openrouter.ai/api/v1/chat/completions") else {
             throw URLError(.badURL)
         }
+
+        let apiKey = Secrets.openRouterAPIKey
+        guard !apiKey.isEmpty else {
+            throw ConfigurationError.missingSecret("OPENROUTER_API_KEY")
+        }
         
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        request.setValue("Bearer \(Secrets.openRouterAPIKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Mystik Astroloji", forHTTPHeaderField: "X-Title")
         

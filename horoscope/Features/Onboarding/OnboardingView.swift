@@ -79,10 +79,11 @@ struct OnboardingView: View {
                 MysticButton(
                     "Keşfetmeye Başla ✨",
                     style: .primary,
-                    isLoading: viewModel.isSubmitting
+                    isLoading: viewModel.isSubmitting || viewModel.isResolvingLocation
                 ) {
                     viewModel.completeOnboarding(authService: authService)
                 }
+                .disabled(!viewModel.canComplete)
             }
         }
     }
@@ -307,6 +308,16 @@ struct BirthLocationStep: View {
                 .transition(.scale.combined(with: .opacity))
             }
 
+            if viewModel.isResolvingLocation {
+                HStack(spacing: MysticSpacing.sm) {
+                    ProgressView()
+                        .tint(MysticColors.neonLavender)
+                    Text("Konum doğrulanıyor...")
+                        .font(MysticFonts.caption(13))
+                        .foregroundColor(MysticColors.textMuted)
+                }
+            }
+
             Spacer()
         }
     }
@@ -324,10 +335,19 @@ class OnboardingViewModel: NSObject, MKLocalSearchCompleterDelegate {
     var locationQuery: String = ""
     var searchResults: [MKLocalSearchCompletion] = []
     var selectedLocationName: String?
-    var selectedLatitude: Double = 0
-    var selectedLongitude: Double = 0
+    var selectedLatitude: Double?
+    var selectedLongitude: Double?
     var selectedTimezone: String = TimeZone.current.identifier
     var isSubmitting: Bool = false
+    var isResolvingLocation: Bool = false
+
+    var canComplete: Bool {
+        selectedLocationName != nil
+            && selectedLatitude != nil
+            && selectedLongitude != nil
+            && !isResolvingLocation
+            && !isSubmitting
+    }
 
     private let searchCompleter = MKLocalSearchCompleter()
 
@@ -349,12 +369,16 @@ class OnboardingViewModel: NSObject, MKLocalSearchCompleterDelegate {
         selectedLocationName = "\(completion.title), \(completion.subtitle)"
         locationQuery = completion.title
         searchResults = []
+        selectedLatitude = nil
+        selectedLongitude = nil
+        isResolvingLocation = true
 
         // Geocode to get coordinates
         let request = MKLocalSearch.Request(completion: completion)
         let search = MKLocalSearch(request: request)
 
         Task {
+            defer { isResolvingLocation = false }
             do {
                 let response = try await search.start()
                 if let item = response.mapItems.first {
@@ -372,14 +396,19 @@ class OnboardingViewModel: NSObject, MKLocalSearchCompleterDelegate {
     }
 
     func completeOnboarding(authService: AuthService) {
-        guard selectedLocationName != nil else { return }
+        guard canComplete,
+              let selectedLocationName,
+              let selectedLatitude,
+              let selectedLongitude else {
+            return
+        }
 
         isSubmitting = true
 
         let birthData = BirthData(
             birthDate: birthDate,
             birthTime: isTimeKnown ? birthTime : nil,
-            birthPlace: selectedLocationName ?? locationQuery,
+            birthPlace: selectedLocationName,
             latitude: selectedLatitude,
             longitude: selectedLongitude,
             timeZoneIdentifier: selectedTimezone

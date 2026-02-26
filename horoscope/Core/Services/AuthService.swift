@@ -21,12 +21,21 @@ class AuthService {
     var errorMessage: String?
     var isLoading: Bool = false
 
+    private let firestoreService = FirestoreService.shared
+    private var authListenerHandle: AuthStateDidChangeListenerHandle?
+
     init() {
         // Only check local session initially to show UI quickly
         checkLocalAuthState()
         
         // Listen to real Firebase Auth state changes
         setupFirebaseAuthListener()
+    }
+
+    deinit {
+        if let authListenerHandle {
+            Auth.auth().removeStateDidChangeListener(authListenerHandle)
+        }
     }
 
     // MARK: - Auth Methods
@@ -72,9 +81,7 @@ class AuthService {
                 .joined(separator: " ")
 
             // 7. Check if user document exists in Firestore
-            let db = Firestore.firestore()
-            let docRef = db.collection("users").document(fbUser.uid)
-            let doc = try? await docRef.getDocument()
+            let doc = try? await firestoreService.fetchUserDocument(userId: fbUser.uid)
 
             var displayName: String
             var hasCompletedOnboarding = false
@@ -84,21 +91,12 @@ class AuthService {
 
             if let data = doc?.data(), doc?.exists == true {
                 // Existing user — read stored data
-                displayName = data["displayName"] as? String ?? appleDisplayName
+                displayName = data["displayName"] as? String
+                    ?? (appleDisplayName.isEmpty ? "Kullanıcı" : appleDisplayName)
                 hasCompletedOnboarding = data["hasCompletedOnboarding"] as? Bool ?? false
                 isPremium = data["isPremium"] as? Bool ?? false
                 createdAt = (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
-
-                // Extract birthData if available
-                if let bdMap = data["birthData"] as? [String: Any],
-                   let date = (bdMap["date"] as? Timestamp)?.dateValue(),
-                   let city = bdMap["city"] as? String,
-                   let lat = bdMap["latitude"] as? Double,
-                   let lon = bdMap["longitude"] as? Double,
-                   let tz = bdMap["timeZone"] as? String {
-                    let time = (bdMap["time"] as? Timestamp)?.dateValue()
-                    birthData = BirthData(birthDate: date, birthTime: time, birthPlace: city, latitude: lat, longitude: lon, timeZoneIdentifier: tz)
-                }
+                birthData = extractBirthData(from: data)
             } else {
                 // New user — create Firestore document
                 displayName = appleDisplayName.isEmpty ? "Kullanıcı" : appleDisplayName
@@ -110,7 +108,7 @@ class AuthService {
                     "hasCompletedOnboarding": false,
                     "createdAt": FieldValue.serverTimestamp()
                 ]
-                try await docRef.setData(userData)
+                try await firestoreService.setUserDocument(userId: fbUser.uid, data: userData, merge: true)
             }
 
             let appUser = AppUser(
@@ -155,32 +153,21 @@ class AuthService {
             let result = try await Auth.auth().signIn(withEmail: email, password: password)
             let fbUser = result.user
             
-            // Check if user document exists in Firestore to get displayName
-            let db = Firestore.firestore()
-            let doc = try? await db.collection("users").document(fbUser.uid).getDocument()
-            
-            let displayName = doc?.data()?["displayName"] as? String ?? email.components(separatedBy: "@").first ?? "Kullanıcı"
-            let hasCompletedOnboarding = doc?.data()?["hasCompletedOnboarding"] as? Bool ?? false
-            
-            // Extract birthData if available
-            var birthData: BirthData? = nil
-            if let bdMap = doc?.data()?["birthData"] as? [String: Any],
-               let date = (bdMap["date"] as? Timestamp)?.dateValue(),
-               let city = bdMap["city"] as? String,
-               let lat = bdMap["latitude"] as? Double,
-               let lon = bdMap["longitude"] as? Double,
-               let tz = bdMap["timeZone"] as? String {
-                let time = (bdMap["time"] as? Timestamp)?.dateValue()
-                birthData = BirthData(birthDate: date, birthTime: time, birthPlace: city, latitude: lat, longitude: lon, timeZoneIdentifier: tz)
-            }
+            // Check if user document exists in Firestore to get user metadata
+            let doc = try? await firestoreService.fetchUserDocument(userId: fbUser.uid)
+            let data = doc?.data()
+
+            let displayName = data?["displayName"] as? String ?? email.components(separatedBy: "@").first ?? "Kullanıcı"
+            let birthData = extractBirthData(from: data)
+            let hasCompletedOnboarding = (data?["hasCompletedOnboarding"] as? Bool) ?? (birthData != nil)
             
             let appUser = AppUser(
                 id: fbUser.uid,
                 displayName: displayName,
                 email: email,
                 birthData: birthData,
-                isPremium: doc?.data()?["isPremium"] as? Bool ?? false,
-                createdAt: (doc?.data()?["createdAt"] as? Timestamp)?.dateValue() ?? Date()
+                isPremium: data?["isPremium"] as? Bool ?? false,
+                createdAt: (data?["createdAt"] as? Timestamp)?.dateValue() ?? Date()
             )
 
             await MainActor.run {
@@ -219,7 +206,6 @@ class AuthService {
             let finalName = displayName.isEmpty ? "Kullanıcı" : displayName
             
             // Create user document in Firestore
-            let db = Firestore.firestore()
             let userData: [String: Any] = [
                 "id": fbUser.uid,
                 "email": email,
@@ -229,7 +215,7 @@ class AuthService {
                 "createdAt": FieldValue.serverTimestamp()
             ]
             
-            try await db.collection("users").document(fbUser.uid).setData(userData)
+            try await firestoreService.setUserDocument(userId: fbUser.uid, data: userData, merge: false)
             
             let appUser = AppUser(
                 id: fbUser.uid,
@@ -254,12 +240,6 @@ class AuthService {
     }
 
     func signOut() {
-        // Clean up local data for the current user
-        if let userId = currentUser?.id {
-            ChatService.shared.clearAllSessions(for: userId)
-            DreamService.shared.clearAllEntries(for: userId)
-        }
-
         do {
             try Auth.auth().signOut()
             currentUser = nil
@@ -290,7 +270,6 @@ class AuthService {
     }
 
     private func syncBirthDataToFirestore(userId: String, birthData: BirthData, setOnboarding: Bool) {
-        let db = Firestore.firestore()
         var bdMap: [String: Any] = [
             "date": Timestamp(date: birthData.birthDate),
             "city": birthData.birthPlace,
@@ -307,8 +286,10 @@ class AuthService {
             updateData["hasCompletedOnboarding"] = true
         }
 
-        db.collection("users").document(userId).updateData(updateData) { error in
-            if let error = error {
+        Task {
+            do {
+                try await firestoreService.updateUserDocument(userId: userId, data: updateData)
+            } catch {
                 print("Error updating birth data in Firestore: \(error)")
             }
         }
@@ -317,16 +298,71 @@ class AuthService {
     // MARK: - Session Persistence (UserDefaults — replace with Keychain for production)
 
     private func setupFirebaseAuthListener() {
-        Auth.auth().addStateDidChangeListener { [weak self] auth, user in
+        authListenerHandle = Auth.auth().addStateDidChangeListener { [weak self] _, user in
             guard let self = self else { return }
-            
-            if user == nil {
+
+            if let firebaseUser = user {
+                Task {
+                    await self.restoreSessionFromFirebaseIfNeeded(firebaseUser)
+                }
+            } else {
                 // User is signed out from Firebase
                 self.currentUser = nil
                 self.authState = .unauthenticated
                 self.clearSession()
             }
         }
+    }
+
+    private func restoreSessionFromFirebaseIfNeeded(_ firebaseUser: User) async {
+        if let current = currentUser, current.id == firebaseUser.uid {
+            return
+        }
+
+        let doc = try? await firestoreService.fetchUserDocument(userId: firebaseUser.uid)
+        let data = doc?.data()
+        let birthData = extractBirthData(from: data)
+        let hasCompletedOnboarding = (data?["hasCompletedOnboarding"] as? Bool) ?? (birthData != nil)
+
+        let fallbackName = firebaseUser.displayName
+            ?? firebaseUser.email?.components(separatedBy: "@").first
+            ?? "Kullanıcı"
+
+        let appUser = AppUser(
+            id: firebaseUser.uid,
+            displayName: data?["displayName"] as? String ?? fallbackName,
+            email: firebaseUser.email,
+            birthData: birthData,
+            isPremium: data?["isPremium"] as? Bool ?? false,
+            createdAt: (data?["createdAt"] as? Timestamp)?.dateValue() ?? Date()
+        )
+
+        await MainActor.run {
+            self.currentUser = appUser
+            self.authState = hasCompletedOnboarding ? .authenticated : .onboarding
+            self.saveSession(appUser)
+        }
+    }
+
+    private func extractBirthData(from data: [String: Any]?) -> BirthData? {
+        guard let bdMap = data?["birthData"] as? [String: Any],
+              let date = (bdMap["date"] as? Timestamp)?.dateValue(),
+              let city = bdMap["city"] as? String,
+              let lat = bdMap["latitude"] as? Double,
+              let lon = bdMap["longitude"] as? Double,
+              let tz = bdMap["timeZone"] as? String else {
+            return nil
+        }
+
+        let time = (bdMap["time"] as? Timestamp)?.dateValue()
+        return BirthData(
+            birthDate: date,
+            birthTime: time,
+            birthPlace: city,
+            latitude: lat,
+            longitude: lon,
+            timeZoneIdentifier: tz
+        )
     }
 
     private func checkLocalAuthState() {

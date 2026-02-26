@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import FirebaseFirestore
 
 // MARK: - Firestore Service
 /// Firestore wrapper for reading/writing user data, chat sessions, etc.
@@ -7,8 +8,26 @@ import Observation
 @Observable
 class FirestoreService {
     static let shared = FirestoreService()
+    private let db = Firestore.firestore()
 
     private init() {}
+
+    // MARK: - Remote User Document (Firestore)
+
+    /// Fetches `users/{userId}` document from Firestore.
+    func fetchUserDocument(userId: String) async throws -> DocumentSnapshot {
+        try await db.collection("users").document(userId).getDocument()
+    }
+
+    /// Creates or updates `users/{userId}` document in Firestore.
+    func setUserDocument(userId: String, data: [String: Any], merge: Bool = true) async throws {
+        try await db.collection("users").document(userId).setData(data, merge: merge)
+    }
+
+    /// Updates fields of `users/{userId}` in Firestore.
+    func updateUserDocument(userId: String, data: [String: Any]) async throws {
+        try await db.collection("users").document(userId).updateData(data)
+    }
 
     // MARK: - User
 

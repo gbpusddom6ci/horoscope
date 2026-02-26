@@ -71,8 +71,8 @@ class AstrologyEngine {
 
     private func fetchNatalChartFromAPI(birthData: BirthData) async throws -> ChartData {
         let apiKey = Secrets.freeAstroAPIKey
-        guard apiKey != "YOUR_API_KEY_HERE" else {
-            throw URLError(.userAuthenticationRequired)
+        guard !apiKey.isEmpty else {
+            throw ConfigurationError.missingSecret("FREE_ASTRO_API_KEY")
         }
 
         guard let url = URL(string: "https://api.freeastroapi.com/api/v1/natal/calculate") else {
@@ -125,8 +125,6 @@ class AstrologyEngine {
 
     /// Converts FreeAstroAPI JSON response to our ChartData model.
     private func convertAPIResponse(_ response: AstroAPIResponse, birthData: BirthData) -> ChartData {
-        let ascendant = response.angles?.asc ?? 0
-
         // Convert planets
         var positions: [PlanetPosition] = []
         for apiPlanet in response.planets ?? [] {
