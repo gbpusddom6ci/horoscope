@@ -1,4 +1,5 @@
 import Foundation
+import os
 
 // MARK: - FreeAstroAPI Response Models
 private struct AstroAPIResponse: Codable {
@@ -43,6 +44,7 @@ private struct AstroAPIAspect: Codable {
 /// Falls back to local PlanetaryCalculator if API is unavailable.
 class AstrologyEngine {
     static let shared = AstrologyEngine()
+    private let logger = Logger(subsystem: "rk.horoscope", category: "AstrologyEngine")
 
     private init() {}
 
@@ -59,10 +61,10 @@ class AstrologyEngine {
         // Try API first with proper error logging
         do {
             let apiChart = try await fetchNatalChartFromAPI(birthData: birthData)
-            print("✅ FreeAstroAPI: natal chart loaded successfully")
+            logger.debug("FreeAstroAPI natal chart loaded successfully")
             return apiChart
         } catch {
-            print("⚠️ FreeAstroAPI failed: \(error). Using local calculations.")
+            logger.error("FreeAstroAPI failed, using local fallback: \(error.localizedDescription, privacy: .public)")
             return calculateNatalChartLocally(birthData: birthData)
         }
     }
@@ -99,8 +101,6 @@ class AstrologyEngine {
             "city": birthData.birthPlace
         ]
 
-        print("📡 AstroAPI request: \(body)")
-
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -112,12 +112,9 @@ class AstrologyEngine {
 
         guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
             let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
-            let body = String(data: data, encoding: .utf8) ?? ""
-            print("🔴 AstroAPI error \(statusCode): \(body)")
+            logger.error("AstroAPI request failed with status \(statusCode)")
             throw URLError(.badServerResponse)
         }
-
-        print("✅ AstroAPI response: \(data.count) bytes")
 
         let apiResponse = try JSONDecoder().decode(AstroAPIResponse.self, from: data)
         return convertAPIResponse(apiResponse, birthData: birthData)

@@ -1,5 +1,6 @@
 import SwiftUI
 import MapKit
+import os
 
 // MARK: - Onboarding View
 struct OnboardingView: View {
@@ -350,6 +351,7 @@ class OnboardingViewModel: NSObject, MKLocalSearchCompleterDelegate {
     }
 
     private let searchCompleter = MKLocalSearchCompleter()
+    private let logger = Logger(subsystem: "rk.horoscope", category: "Onboarding")
 
     override init() {
         super.init()
@@ -390,7 +392,7 @@ class OnboardingViewModel: NSObject, MKLocalSearchCompleterDelegate {
                     }
                 }
             } catch {
-                print("Geocoding error: \(error)")
+                logger.error("Geocoding error: \(error.localizedDescription, privacy: .public)")
             }
         }
     }
@@ -425,7 +427,7 @@ class OnboardingViewModel: NSObject, MKLocalSearchCompleterDelegate {
     }
 
     func completer(_ completer: MKLocalSearchCompleter, didFailWithError error: Error) {
-        print("Search completer error: \(error)")
+        logger.error("Location search completer error: \(error.localizedDescription, privacy: .public)")
     }
 }
 

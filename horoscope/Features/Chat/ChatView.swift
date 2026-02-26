@@ -48,6 +48,12 @@ struct ChatView: View {
                 // Context Picker
                     contextPickerBar
 
+                    if let syncError = chatService.lastErrorMessage {
+                        syncErrorBanner(syncError)
+                            .padding(.horizontal, MysticSpacing.md)
+                            .padding(.bottom, MysticSpacing.xs)
+                    }
+
                     // Messages
                     ScrollViewReader { proxy in
                         ScrollView(.vertical, showsIndicators: false) {
@@ -79,8 +85,8 @@ struct ChatView: View {
             // Input Bar
             inputBar
         }
-        .onAppear {
-            loadOrCreateSession()
+        .task(id: authService.currentUser?.id) {
+            await loadSessionsForCurrentUser()
         }
         .onChange(of: chatContext) { _, _ in
             loadOrCreateSession()
@@ -88,6 +94,12 @@ struct ChatView: View {
     }
 
     // MARK: - Session Management
+
+    private func loadSessionsForCurrentUser() async {
+        guard let userId = authService.currentUser?.id else { return }
+        await chatService.loadSessions(for: userId)
+        loadOrCreateSession()
+    }
 
     private func loadOrCreateSession() {
         guard let userId = authService.currentUser?.id else { return }
@@ -312,6 +324,7 @@ struct ChatView: View {
         let userMessage = ChatMessage(role: .user, content: text, context: chatContext)
         chatService.addMessage(userMessage, to: sessionId)
         inputText = ""
+        let messageHistory = chatService.sessions.first(where: { $0.id == sessionId })?.messages ?? [userMessage]
 
         // Scroll to bottom
         withAnimation {
@@ -323,31 +336,72 @@ struct ChatView: View {
         Task {
             do {
                 let response = try await aiService.getChatResponse(
-                    messages: messages,
+                    messages: messageHistory,
                     context: chatContext,
                     birthData: authService.currentUser?.birthData
                 )
 
-                let assistantMessage = ChatMessage(
-                    role: .assistant,
-                    content: response,
-                    context: chatContext
-                )
-                chatService.addMessage(assistantMessage, to: sessionId)
+                await MainActor.run {
+                    let assistantMessage = ChatMessage(
+                        role: .assistant,
+                        content: response,
+                        context: chatContext
+                    )
+                    chatService.addMessage(assistantMessage, to: sessionId)
 
-                withAnimation {
-                    scrollProxy?.scrollTo("bottom", anchor: .bottom)
+                    withAnimation {
+                        scrollProxy?.scrollTo("bottom", anchor: .bottom)
+                    }
                 }
             } catch {
-                let errorMessage = ChatMessage(
-                    role: .assistant,
-                    content: "Üzgünüm, bir hata oluştu. Lütfen tekrar deneyin.",
-                    context: chatContext
-                )
-                chatService.addMessage(errorMessage, to: sessionId)
+                let friendly = friendlyChatErrorMessage(for: error)
+                await MainActor.run {
+                    let errorMessage = ChatMessage(
+                        role: .assistant,
+                        content: friendly,
+                        context: chatContext
+                    )
+                    chatService.addMessage(errorMessage, to: sessionId)
+                }
             }
-            isLoading = false
+            await MainActor.run {
+                isLoading = false
+            }
         }
+    }
+
+    private func syncErrorBanner(_ text: String) -> some View {
+        HStack(spacing: MysticSpacing.xs) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundColor(MysticColors.celestialPink)
+            Text(text)
+                .font(MysticFonts.caption(12))
+                .foregroundColor(MysticColors.celestialPink)
+            Spacer()
+        }
+        .padding(.horizontal, MysticSpacing.sm)
+        .padding(.vertical, 6)
+        .background(MysticColors.celestialPink.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: MysticRadius.sm))
+    }
+
+    private func friendlyChatErrorMessage(for error: Error) -> String {
+        if let configError = error as? ConfigurationError {
+            return configError.localizedDescription
+        }
+
+        if let urlError = error as? URLError {
+            switch urlError.code {
+            case .notConnectedToInternet:
+                return "İnternet bağlantısı yok. Bağlantıyı kontrol edip tekrar deneyin."
+            case .timedOut:
+                return "İstek zaman aşımına uğradı. Lütfen tekrar deneyin."
+            default:
+                return "Sunucuya ulaşılamadı. Birazdan tekrar deneyin."
+            }
+        }
+
+        return "Üzgünüm, şu an yanıt üretemedim. Lütfen tekrar deneyin."
     }
 }
 

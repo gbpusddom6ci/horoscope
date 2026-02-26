@@ -1,0 +1,54 @@
+name: iOS CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -switch /Applications/Xcode.app
+
+      - name: Resolve dependencies
+        run: xcodebuild -resolvePackageDependencies -project horoscope.xcodeproj
+
+      - name: Secret scan
+        run: |
+          if grep -R -n -E --exclude-dir=.git --exclude=ios-ci.yml 'sk-or-|Authorization:[[:space:]]*Bearer[[:space:]]+sk-' .; then
+            echo "Potential hardcoded secret found."
+            exit 1
+          fi
+
+      - name: Select simulator
+        run: |
+          SIMULATOR_NAME=$(xcrun simctl list devices available | awk -F '[()]' '/iPhone/ {gsub(/^[ \t]+|[ \t]+$/, "", $1); print $1; exit}')
+          if [ -z "$SIMULATOR_NAME" ]; then
+            echo "No available iPhone simulator found."
+            exit 1
+          fi
+          echo "Using simulator: $SIMULATOR_NAME"
+          echo "SIMULATOR_NAME=$SIMULATOR_NAME" >> "$GITHUB_ENV"
+
+      - name: Build
+        run: |
+          xcodebuild \
+            -project horoscope.xcodeproj \
+            -scheme horoscope \
+            -destination "platform=iOS Simulator,name=${SIMULATOR_NAME}" \
+            build
+
+      - name: Unit tests
+        run: |
+          xcodebuild \
+            -project horoscope.xcodeproj \
+            -scheme horoscope \
+            -destination "platform=iOS Simulator,name=${SIMULATOR_NAME}" \
+            -only-testing:horoscopeTests \
+            test

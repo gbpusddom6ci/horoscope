@@ -3,6 +3,7 @@ import Observation
 import FirebaseAuth
 import FirebaseFirestore
 import AuthenticationServices
+import os
 
 // MARK: - Auth State
 enum AuthState: Equatable {
@@ -22,7 +23,12 @@ class AuthService {
     var isLoading: Bool = false
 
     private let firestoreService = FirestoreService.shared
+    private let legacyMigrationService = LegacyDataMigrationService.shared
     private var authListenerHandle: AuthStateDidChangeListenerHandle?
+    private var fcmTokenObserver: NSObjectProtocol?
+    private let logger = Logger(subsystem: "rk.horoscope", category: "AuthService")
+    private let sessionStorageKey = "currentUserSession"
+    private let pendingFCMTokenKey = "pending_fcm_token"
 
     init() {
         // Only check local session initially to show UI quickly
@@ -30,11 +36,15 @@ class AuthService {
         
         // Listen to real Firebase Auth state changes
         setupFirebaseAuthListener()
+        setupFCMTokenListener()
     }
 
     deinit {
         if let authListenerHandle {
             Auth.auth().removeStateDidChangeListener(authListenerHandle)
+        }
+        if let fcmTokenObserver {
+            NotificationCenter.default.removeObserver(fcmTokenObserver)
         }
     }
 
@@ -124,6 +134,8 @@ class AuthService {
                 self.currentUser = appUser
                 self.authState = hasCompletedOnboarding ? .authenticated : .onboarding
                 self.saveSession(appUser)
+                self.applyPendingFCMTokenIfNeeded()
+                Task { await self.runLegacyMigrationIfNeeded(for: appUser.id) }
                 self.isLoading = false
             }
         } catch let error as ASAuthorizationError where error.code == .canceled {
@@ -174,6 +186,8 @@ class AuthService {
                 self.currentUser = appUser
                 self.authState = hasCompletedOnboarding ? .authenticated : .onboarding
                 self.saveSession(appUser)
+                self.applyPendingFCMTokenIfNeeded()
+                Task { await self.runLegacyMigrationIfNeeded(for: appUser.id) }
                 self.isLoading = false
             }
         } catch {
@@ -229,6 +243,8 @@ class AuthService {
                 self.currentUser = appUser
                 self.authState = .onboarding
                 self.saveSession(appUser)
+                self.applyPendingFCMTokenIfNeeded()
+                Task { await self.runLegacyMigrationIfNeeded(for: appUser.id) }
                 self.isLoading = false
             }
         } catch {
@@ -256,20 +272,86 @@ class AuthService {
         authState = .authenticated
         if let user = currentUser {
             saveSession(user)
-            syncBirthDataToFirestore(userId: user.id, birthData: birthData, setOnboarding: true)
+            Task {
+                do {
+                    try await syncBirthDataToFirestore(userId: user.id, birthData: birthData, setOnboarding: true)
+                } catch {
+                    logger.error("Failed to complete onboarding sync: \(error.localizedDescription, privacy: .public)")
+                }
+            }
         }
     }
 
     /// Updates birth data after initial onboarding (e.g., from profile edit).
-    func updateBirthData(_ birthData: BirthData) {
+    func updateBirthData(_ birthData: BirthData) async throws {
         currentUser?.birthData = birthData
-        if let user = currentUser {
-            saveSession(user)
-            syncBirthDataToFirestore(userId: user.id, birthData: birthData, setOnboarding: false)
+        guard let user = currentUser else {
+            throw AuthServiceError.notAuthenticated
+        }
+        saveSession(user)
+        try await syncBirthDataToFirestore(userId: user.id, birthData: birthData, setOnboarding: false)
+    }
+
+    /// Syncs premium state from StoreKit purchases to local session + Firestore.
+    func updatePremiumStatus(_ isPremium: Bool) {
+        currentUser?.isPremium = isPremium
+        guard let user = currentUser else { return }
+
+        saveSession(user)
+        Task {
+            do {
+                try await firestoreService.updateUserDocument(
+                    userId: user.id,
+                    data: ["isPremium": isPremium]
+                )
+            } catch {
+                logger.error("Failed to update premium state in Firestore: \(error.localizedDescription, privacy: .public)")
+            }
         }
     }
 
-    private func syncBirthDataToFirestore(userId: String, birthData: BirthData, setOnboarding: Bool) {
+    private func setupFCMTokenListener() {
+        fcmTokenObserver = NotificationCenter.default.addObserver(
+            forName: .didReceiveFCMToken,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            guard let token = notification.object as? String else { return }
+            self?.handleIncomingFCMToken(token)
+        }
+    }
+
+    private func handleIncomingFCMToken(_ token: String) {
+        UserDefaults.standard.set(token, forKey: pendingFCMTokenKey)
+        applyPendingFCMTokenIfNeeded()
+    }
+
+    private func applyPendingFCMTokenIfNeeded() {
+        guard let token = UserDefaults.standard.string(forKey: pendingFCMTokenKey),
+              !token.isEmpty else { return }
+
+        guard var user = currentUser else { return }
+        if user.fcmToken == token {
+            return
+        }
+
+        user.fcmToken = token
+        currentUser = user
+        saveSession(user)
+
+        Task {
+            do {
+                try await firestoreService.updateUserDocument(
+                    userId: user.id,
+                    data: ["fcmToken": token]
+                )
+            } catch {
+                logger.error("Failed to sync fcmToken to Firestore: \(error.localizedDescription, privacy: .public)")
+            }
+        }
+    }
+
+    private func syncBirthDataToFirestore(userId: String, birthData: BirthData, setOnboarding: Bool) async throws {
         var bdMap: [String: Any] = [
             "date": Timestamp(date: birthData.birthDate),
             "city": birthData.birthPlace,
@@ -285,17 +367,10 @@ class AuthService {
         if setOnboarding {
             updateData["hasCompletedOnboarding"] = true
         }
-
-        Task {
-            do {
-                try await firestoreService.updateUserDocument(userId: userId, data: updateData)
-            } catch {
-                print("Error updating birth data in Firestore: \(error)")
-            }
-        }
+        try await firestoreService.updateUserDocument(userId: userId, data: updateData)
     }
 
-    // MARK: - Session Persistence (UserDefaults — replace with Keychain for production)
+    // MARK: - Session Persistence (Keychain)
 
     private func setupFirebaseAuthListener() {
         authListenerHandle = Auth.auth().addStateDidChangeListener { [weak self] _, user in
@@ -334,14 +409,18 @@ class AuthService {
             email: firebaseUser.email,
             birthData: birthData,
             isPremium: data?["isPremium"] as? Bool ?? false,
-            createdAt: (data?["createdAt"] as? Timestamp)?.dateValue() ?? Date()
+            createdAt: (data?["createdAt"] as? Timestamp)?.dateValue() ?? Date(),
+            fcmToken: data?["fcmToken"] as? String
         )
 
         await MainActor.run {
             self.currentUser = appUser
             self.authState = hasCompletedOnboarding ? .authenticated : .onboarding
             self.saveSession(appUser)
+            self.applyPendingFCMTokenIfNeeded()
         }
+
+        await runLegacyMigrationIfNeeded(for: appUser.id)
     }
 
     private func extractBirthData(from data: [String: Any]?) -> BirthData? {
@@ -366,10 +445,13 @@ class AuthService {
     }
 
     private func checkLocalAuthState() {
-        if let data = UserDefaults.standard.data(forKey: "currentUser"),
+        if let data = KeychainService.get(for: sessionStorageKey),
            let user = try? JSONDecoder().decode(AppUser.self, from: data) {
             currentUser = user
             authState = user.hasCompletedOnboarding ? .authenticated : .onboarding
+        } else if let legacyUser = legacyMigrationService.loadLegacySessionFromUserDefaults() {
+            currentUser = legacyUser
+            authState = legacyUser.hasCompletedOnboarding ? .authenticated : .onboarding
         } else {
             authState = .unauthenticated
         }
@@ -377,11 +459,28 @@ class AuthService {
 
     private func saveSession(_ user: AppUser) {
         if let data = try? JSONEncoder().encode(user) {
-            UserDefaults.standard.set(data, forKey: "currentUser")
+            if !KeychainService.set(data, for: sessionStorageKey) {
+                logger.error("Failed to persist session to keychain")
+            }
         }
     }
 
     private func clearSession() {
-        UserDefaults.standard.removeObject(forKey: "currentUser")
+        KeychainService.remove(for: sessionStorageKey)
+    }
+
+    private func runLegacyMigrationIfNeeded(for userId: String) async {
+        await legacyMigrationService.migrateUserDataIfNeeded(for: userId)
+    }
+}
+
+enum AuthServiceError: LocalizedError {
+    case notAuthenticated
+
+    var errorDescription: String? {
+        switch self {
+        case .notAuthenticated:
+            return "Oturum bulunamadı. Lütfen tekrar giriş yapın."
+        }
     }
 }

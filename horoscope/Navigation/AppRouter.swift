@@ -2,6 +2,9 @@ import SwiftUI
 
 struct AppRouter: View {
     @State private var authService = AuthService()
+    @State private var premiumService = PremiumService.shared
+    @State private var notificationService = NotificationService.shared
+    @AppStorage("selected_language") private var selectedLanguage = "tr"
 
     var body: some View {
         ZStack {
@@ -13,6 +16,9 @@ struct AppRouter: View {
             contentView
         }
         .environment(authService)
+        .environment(premiumService)
+        .environment(notificationService)
+        .environment(\.locale, Locale(identifier: selectedLanguage))
         .preferredColorScheme(.dark)
     }
 

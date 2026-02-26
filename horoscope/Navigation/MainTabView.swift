@@ -1,4 +1,5 @@
 import SwiftUI
+import Foundation
 
 struct MainTabView: View {
     @State private var selectedTab: AppTab = .home
@@ -31,6 +32,12 @@ struct MainTabView: View {
             }
         }
         .ignoresSafeArea(.keyboard, edges: .bottom)
+        .onReceive(NotificationCenter.default.publisher(for: .switchToMainTab)) { notification in
+            guard let tab = notification.object as? AppTab else { return }
+            withAnimation(.spring(response: 0.3)) {
+                selectedTab = tab
+            }
+        }
     }
 
     // MARK: - Custom Tab Bar
@@ -108,6 +115,11 @@ struct MainTabView: View {
         }
         .buttonStyle(.plain)
     }
+}
+
+extension Notification.Name {
+    static let switchToMainTab = Notification.Name("switchToMainTab")
+    static let didReceiveFCMToken = Notification.Name("didReceiveFCMToken")
 }
 
 // MARK: - Tab Configuration

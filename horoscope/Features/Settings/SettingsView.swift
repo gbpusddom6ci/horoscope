@@ -1,12 +1,20 @@
 import SwiftUI
 import MapKit
+import os
 
 struct SettingsView: View {
     @Environment(AuthService.self) private var authService
+    @Environment(PremiumService.self) private var premiumService
     @State private var showEditBirthData = false
+    @State private var showPaywall = false
+    @State private var showNotificationPreferences = false
+    @State private var showLanguageSettings = false
+    @State private var showHelpCenter = false
+    @State private var showPrivacyPolicy = false
 
     private var user: AppUser? { authService.currentUser }
     private var birthData: BirthData? { user?.birthData }
+    private var hasPremiumAccess: Bool { (user?.isPremium ?? false) || premiumService.hasPremiumAccess }
 
     var body: some View {
         ZStack {
@@ -34,6 +42,23 @@ struct SettingsView: View {
             .sheet(isPresented: $showEditBirthData) {
                 EditBirthDataSheet()
                     .environment(authService)
+            }
+            .sheet(isPresented: $showPaywall) {
+                PaywallView()
+                    .environment(authService)
+                    .environment(premiumService)
+            }
+            .sheet(isPresented: $showNotificationPreferences) {
+                NotificationPreferencesView()
+            }
+            .sheet(isPresented: $showLanguageSettings) {
+                LanguageSettingsView()
+            }
+            .sheet(isPresented: $showHelpCenter) {
+                HelpCenterView()
+            }
+            .sheet(isPresented: $showPrivacyPolicy) {
+                PrivacyPolicyView()
             }
         }
     }
@@ -71,9 +96,9 @@ struct SettingsView: View {
 
                 // Premium badge
                 HStack(spacing: MysticSpacing.xs) {
-                    Image(systemName: user?.isPremium == true ? "crown.fill" : "crown")
+                    Image(systemName: hasPremiumAccess ? "crown.fill" : "crown")
                         .font(.system(size: 14))
-                    Text(user?.isPremium == true ? "Premium Üye" : "Ücretsiz Plan")
+                    Text(hasPremiumAccess ? "Premium Üye" : "Ücretsiz Plan")
                         .font(MysticFonts.caption(13))
                 }
                 .foregroundColor(MysticColors.mysticGold)
@@ -140,11 +165,21 @@ struct SettingsView: View {
     // MARK: - Menu
     private var menuSection: some View {
         VStack(spacing: MysticSpacing.sm) {
-            menuItem(icon: "crown.fill", title: "Premium'a Yükselt", color: MysticColors.mysticGold) {}
-            menuItem(icon: "bell.fill", title: "Bildirim Tercihleri", color: MysticColors.neonLavender) {}
-            menuItem(icon: "globe", title: "Dil", color: MysticColors.auroraGreen) {}
-            menuItem(icon: "questionmark.circle", title: "Yardım & Destek", color: MysticColors.textSecondary) {}
-            menuItem(icon: "doc.text", title: "Gizlilik Politikası", color: MysticColors.textSecondary) {}
+            menuItem(icon: "crown.fill", title: "Premium'a Yükselt", color: MysticColors.mysticGold) {
+                showPaywall = true
+            }
+            menuItem(icon: "bell.fill", title: "Bildirim Tercihleri", color: MysticColors.neonLavender) {
+                showNotificationPreferences = true
+            }
+            menuItem(icon: "globe", title: "Dil", color: MysticColors.auroraGreen) {
+                showLanguageSettings = true
+            }
+            menuItem(icon: "questionmark.circle", title: "Yardım & Destek", color: MysticColors.textSecondary) {
+                showHelpCenter = true
+            }
+            menuItem(icon: "doc.text", title: "Gizlilik Politikası", color: MysticColors.textSecondary) {
+                showPrivacyPolicy = true
+            }
         }
     }
 
@@ -202,6 +237,7 @@ struct EditBirthDataSheet: View {
     @State private var searchCompleter = MKLocalSearchCompleter()
     @State private var showLocationResults = false
     @State private var isSaving = false
+    @State private var saveErrorMessage: String?
 
     var body: some View {
         NavigationStack {
@@ -315,6 +351,14 @@ struct EditBirthDataSheet: View {
                             saveBirthData()
                         }
                         .disabled(birthPlace.isEmpty)
+
+                        if let saveErrorMessage {
+                            Text(saveErrorMessage)
+                                .font(MysticFonts.caption(12))
+                                .foregroundColor(MysticColors.celestialPink)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, MysticSpacing.sm)
+                        }
                     }
                     .padding(MysticSpacing.md)
                 }
@@ -371,7 +415,10 @@ struct EditBirthDataSheet: View {
     }
 
     private func saveBirthData() {
+        guard !isSaving else { return }
         isSaving = true
+        saveErrorMessage = nil
+
         let newBirthData = BirthData(
             birthDate: birthDate,
             birthTime: birthTimeKnown ? birthTime : nil,
@@ -380,10 +427,20 @@ struct EditBirthDataSheet: View {
             longitude: longitude,
             timeZoneIdentifier: timeZoneId
         )
-        authService.updateBirthData(newBirthData)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            isSaving = false
-            dismiss()
+
+        Task {
+            do {
+                try await authService.updateBirthData(newBirthData)
+                await MainActor.run {
+                    isSaving = false
+                    dismiss()
+                }
+            } catch {
+                await MainActor.run {
+                    isSaving = false
+                    saveErrorMessage = error.localizedDescription
+                }
+            }
         }
     }
 }
@@ -391,6 +448,7 @@ struct EditBirthDataSheet: View {
 // MARK: - Location Search Delegate
 class LocationSearchDelegate: NSObject, MKLocalSearchCompleterDelegate {
     var onResults: ([MKLocalSearchCompletion]) -> Void
+    private let logger = Logger(subsystem: "rk.horoscope", category: "Settings")
 
     init(onResults: @escaping ([MKLocalSearchCompletion]) -> Void) {
         self.onResults = onResults
@@ -401,8 +459,13 @@ class LocationSearchDelegate: NSObject, MKLocalSearchCompleterDelegate {
     }
 
     func completer(_ completer: MKLocalSearchCompleter, didFailWithError error: Error) {
-        print("Location search error: \(error)")
+        logger.error("Location search error: \(error.localizedDescription, privacy: .public)")
     }
 }
 
-#Preview { SettingsView().environment(AuthService()) }
+#Preview {
+    SettingsView()
+        .environment(AuthService())
+        .environment(PremiumService.shared)
+        .environment(NotificationService.shared)
+}

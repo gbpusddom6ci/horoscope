@@ -1,10 +1,18 @@
 import SwiftUI
+import PhotosUI
+import UIKit
 
 struct PalmReadingView: View {
     @Environment(AuthService.self) private var authService
+
     @State private var showCamera = false
+    @State private var selectedPhotoItem: PhotosPickerItem?
+    @State private var selectedImage: UIImage?
+    @State private var selectedImageData: Data?
+
     @State private var isAnalyzing = false
     @State private var interpretation: String?
+    @State private var errorMessage: String?
 
     var body: some View {
         ZStack {
@@ -15,9 +23,9 @@ struct PalmReadingView: View {
                     .font(MysticFonts.heading(18))
                     .foregroundColor(MysticColors.textPrimary)
                     .padding(.top, 10)
+
                 ScrollView(.vertical, showsIndicators: false) {
                     VStack(spacing: MysticSpacing.lg) {
-                        // Header
                         VStack(spacing: MysticSpacing.md) {
                             Spacer().frame(height: 40)
 
@@ -28,7 +36,7 @@ struct PalmReadingView: View {
 
                             GlowingText("El Falı", font: MysticFonts.title(32), color: MysticColors.neonLavender)
 
-                            Text("Avuç içinizdeki çizgiler, yaşam hikayenizi anlatıyor. Fotoğraf çekin, AI ile detaylı analiz yapın.")
+                            Text("Avuç içinizdeki çizgiler, yaşam hikayenizi anlatıyor. Net bir fotoğraf ekleyin, AI ile analiz alın.")
                                 .font(MysticFonts.body(15))
                                 .foregroundColor(MysticColors.textSecondary)
                                 .multilineTextAlignment(.center)
@@ -36,39 +44,68 @@ struct PalmReadingView: View {
                         }
                         .fadeInOnAppear(delay: 0)
 
-                        // Camera Button
                         MysticCard(glowColor: MysticColors.neonLavender) {
                             VStack(spacing: MysticSpacing.md) {
-                                ZStack {
-                                    RoundedRectangle(cornerRadius: MysticRadius.lg)
-                                        .fill(MysticColors.inputBackground)
-                                        .frame(height: 200)
-                                    VStack(spacing: MysticSpacing.sm) {
-                                        Image(systemName: "camera.fill")
-                                            .font(.system(size: 36))
-                                            .foregroundColor(MysticColors.textMuted)
-                                        Text("Elinizin fotoğrafını çekin")
-                                            .font(MysticFonts.body(14))
-                                            .foregroundColor(MysticColors.textMuted)
+                                imagePreview
+
+                                HStack(spacing: MysticSpacing.sm) {
+                                    MysticButton("Kamera", icon: "camera.fill", style: .secondary) {
+                                        openCamera()
                                     }
+
+                                    PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
+                                        HStack(spacing: 8) {
+                                            Image(systemName: "photo.on.rectangle")
+                                            Text("Galeri")
+                                        }
+                                        .font(MysticFonts.body(14))
+                                        .foregroundColor(MysticColors.textPrimary)
+                                        .frame(maxWidth: .infinity)
+                                        .frame(height: 48)
+                                        .background(MysticColors.inputBackground)
+                                        .clipShape(RoundedRectangle(cornerRadius: MysticRadius.md))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: MysticRadius.md)
+                                                .stroke(MysticColors.cardBorder, lineWidth: 1)
+                                        )
+                                    }
+                                    .buttonStyle(.plain)
                                 }
 
-                                MysticButton("Fotoğraf Çek", icon: "camera.fill", style: .primary) {
+                                MysticButton(
+                                    "Analiz Et",
+                                    icon: "sparkles",
+                                    style: .primary,
+                                    isLoading: isAnalyzing
+                                ) {
                                     analyzePalm()
                                 }
+                                .disabled(selectedImageData == nil || isAnalyzing)
                             }
                         }
                         .padding(.horizontal, MysticSpacing.md)
                         .fadeInOnAppear(delay: 0.15)
 
-                        // Interpretation
-                        if let interpretation = interpretation {
+                        if let errorMessage {
+                            MysticCard(glowColor: MysticColors.celestialPink) {
+                                Text(errorMessage)
+                                    .font(MysticFonts.body(14))
+                                    .foregroundColor(MysticColors.celestialPink)
+                            }
+                            .padding(.horizontal, MysticSpacing.md)
+                        }
+
+                        if let interpretation {
                             MysticCard(glowColor: MysticColors.mysticGold) {
                                 VStack(alignment: .leading, spacing: MysticSpacing.sm) {
                                     HStack {
-                                        Image(systemName: "sparkles").foregroundColor(MysticColors.mysticGold)
-                                        Text("AI Analizi").font(MysticFonts.heading(16)).foregroundColor(MysticColors.textPrimary)
+                                        Image(systemName: "sparkles")
+                                            .foregroundColor(MysticColors.mysticGold)
+                                        Text("AI Analizi")
+                                            .font(MysticFonts.heading(16))
+                                            .foregroundColor(MysticColors.textPrimary)
                                     }
+
                                     Text(interpretation)
                                         .font(MysticFonts.body(14))
                                         .foregroundColor(MysticColors.textSecondary)
@@ -79,7 +116,6 @@ struct PalmReadingView: View {
                             .fadeInOnAppear(delay: 0)
                         }
 
-                        // Info cards
                         VStack(alignment: .leading, spacing: MysticSpacing.sm) {
                             Text("Çizgi Rehberi")
                                 .font(MysticFonts.heading(18))
@@ -92,8 +128,40 @@ struct PalmReadingView: View {
                             lineInfo(name: "Kader Çizgisi", desc: "Kariyer ve yaşam yolu", color: MysticColors.mysticGold)
                         }
                         .fadeInOnAppear(delay: 0.2)
-
                     }
+                }
+            }
+        }
+        .sheet(isPresented: $showCamera) {
+            CameraImagePicker(image: $selectedImage, imageData: $selectedImageData)
+        }
+        .onChange(of: selectedPhotoItem) { _, newValue in
+            guard let newValue else { return }
+            loadPhotoItem(newValue)
+        }
+    }
+
+    private var imagePreview: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: MysticRadius.lg)
+                .fill(MysticColors.inputBackground)
+                .frame(height: 220)
+
+            if let selectedImage {
+                Image(uiImage: selectedImage)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxHeight: 210)
+                    .clipShape(RoundedRectangle(cornerRadius: MysticRadius.md))
+                    .padding(6)
+            } else {
+                VStack(spacing: MysticSpacing.sm) {
+                    Image(systemName: "hand.draw.fill")
+                        .font(.system(size: 36))
+                        .foregroundColor(MysticColors.textMuted)
+                    Text("Elinizin net bir fotoğrafını ekleyin")
+                        .font(MysticFonts.body(14))
+                        .foregroundColor(MysticColors.textMuted)
                 }
             }
         }
@@ -102,24 +170,122 @@ struct PalmReadingView: View {
     private func lineInfo(name: String, desc: String, color: Color) -> some View {
         MysticCard(glowColor: color.opacity(0.5)) {
             HStack(spacing: MysticSpacing.md) {
-                Circle().fill(color.opacity(0.2)).frame(width: 40, height: 40)
+                Circle()
+                    .fill(color.opacity(0.2))
+                    .frame(width: 40, height: 40)
                     .overlay(Circle().stroke(color.opacity(0.4), lineWidth: 1))
                     .overlay(Image(systemName: "line.diagonal").foregroundColor(color))
+
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(name).font(MysticFonts.body(15)).fontWeight(.semibold).foregroundColor(MysticColors.textPrimary)
-                    Text(desc).font(MysticFonts.caption(13)).foregroundColor(MysticColors.textSecondary)
+                    Text(name)
+                        .font(MysticFonts.body(15))
+                        .fontWeight(.semibold)
+                        .foregroundColor(MysticColors.textPrimary)
+                    Text(desc)
+                        .font(MysticFonts.caption(13))
+                        .foregroundColor(MysticColors.textSecondary)
                 }
+
                 Spacer()
             }
         }
         .padding(.horizontal, MysticSpacing.md)
     }
 
-    private func analyzePalm() {
-        isAnalyzing = true
+    private func openCamera() {
+        guard UIImagePickerController.isSourceTypeAvailable(.camera) else {
+            errorMessage = "Bu cihazda kamera kullanılamıyor. Galeriden fotoğraf seçebilirsiniz."
+            return
+        }
+
+        errorMessage = nil
+        showCamera = true
+    }
+
+    private func loadPhotoItem(_ item: PhotosPickerItem) {
         Task {
-            interpretation = try? await AIService.shared.interpretPalm(imageData: nil)
-            isAnalyzing = false
+            if let data = try? await item.loadTransferable(type: Data.self),
+               let image = UIImage(data: data) {
+                await MainActor.run {
+                    selectedImageData = data
+                    selectedImage = image
+                    interpretation = nil
+                    errorMessage = nil
+                }
+            }
+        }
+    }
+
+    private func analyzePalm() {
+        guard let selectedImageData else {
+            errorMessage = "Lütfen önce bir fotoğraf seçin."
+            return
+        }
+
+        isAnalyzing = true
+        interpretation = nil
+        errorMessage = nil
+
+        Task {
+            do {
+                let result = try await AIService.shared.interpretPalm(imageData: selectedImageData)
+                await MainActor.run {
+                    interpretation = result
+                }
+            } catch {
+                await MainActor.run {
+                    errorMessage = error.localizedDescription
+                }
+            }
+
+            await MainActor.run {
+                isAnalyzing = false
+            }
+        }
+    }
+}
+
+private struct CameraImagePicker: UIViewControllerRepresentable {
+    @Environment(\.dismiss) private var dismiss
+
+    @Binding var image: UIImage?
+    @Binding var imageData: Data?
+
+    func makeUIViewController(context: Context) -> UIImagePickerController {
+        let picker = UIImagePickerController()
+        picker.sourceType = .camera
+        picker.cameraCaptureMode = .photo
+        picker.allowsEditing = false
+        picker.delegate = context.coordinator
+        return picker
+    }
+
+    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(parent: self)
+    }
+
+    final class Coordinator: NSObject, UINavigationControllerDelegate, UIImagePickerControllerDelegate {
+        private let parent: CameraImagePicker
+
+        init(parent: CameraImagePicker) {
+            self.parent = parent
+        }
+
+        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+            parent.dismiss()
+        }
+
+        func imagePickerController(
+            _ picker: UIImagePickerController,
+            didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]
+        ) {
+            if let selected = info[.originalImage] as? UIImage {
+                parent.image = selected
+                parent.imageData = selected.jpegData(compressionQuality: 0.85)
+            }
+            parent.dismiss()
         }
     }
 }

@@ -5,6 +5,8 @@ struct HomeView: View {
     @State private var showGreeting = false
     @State private var currentTransits: [TransitEvent] = []
     @State private var natalChart: ChartData?
+    @State private var showPalmReading = false
+    @State private var showTarot = false
 
     private var birthData: BirthData? {
         authService.currentUser?.birthData
@@ -53,6 +55,14 @@ struct HomeView: View {
         }
         .onAppear {
             loadData()
+        }
+        .sheet(isPresented: $showPalmReading) {
+            PalmReadingView()
+                .environment(authService)
+        }
+        .sheet(isPresented: $showTarot) {
+            TarotView()
+                .environment(authService)
         }
     }
 
@@ -222,28 +232,36 @@ struct HomeView: View {
                 title: "AI Astroloji Sohbeti",
                 subtitle: "Yapay zeka ile natal haritanızı derinlemesine keşfedin",
                 color: MysticColors.auroraGreen
-            ) {}
+            ) {
+                NotificationCenter.default.post(name: .switchToMainTab, object: AppTab.chat)
+            }
 
             FeatureCard(
                 icon: "moon.zzz.fill",
                 title: "Rüya Yorumu",
                 subtitle: "Rüyalarınızın gizli mesajlarını çözün",
                 color: MysticColors.celestialPink
-            ) {}
+            ) {
+                NotificationCenter.default.post(name: .switchToMainTab, object: AppTab.dream)
+            }
 
             FeatureCard(
                 icon: "hand.raised.fill",
                 title: "El Falı",
                 subtitle: "AI destekli avuç içi analizi",
                 color: MysticColors.neonLavender
-            ) {}
+            ) {
+                showPalmReading = true
+            }
 
             FeatureCard(
                 icon: "suit.diamond.fill",
                 title: "Tarot",
                 subtitle: "Günlük kart çekimi ve yorum",
                 color: MysticColors.mysticGold
-            ) {}
+            ) {
+                showTarot = true
+            }
         }
     }
 

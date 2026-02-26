@@ -1,0 +1,55 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function validBirthData(data) {
+      return !('birthData' in data)
+        || (
+          data.birthData is map
+          && data.birthData.city is string
+          && data.birthData.latitude is number
+          && data.birthData.longitude is number
+          && data.birthData.timeZone is string
+        );
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) && validBirthData(request.resource.data);
+      allow delete: if false;
+
+      match /chatSessions/{sessionId} {
+        allow read, delete: if isOwner(userId)
+          && resource.data.userId == userId;
+        allow create: if isOwner(userId)
+          && request.resource.data.userId == userId;
+        allow update: if isOwner(userId)
+          && resource.data.userId == userId
+          && request.resource.data.userId == userId;
+      }
+
+      match /dreamEntries/{entryId} {
+        allow read, delete: if isOwner(userId)
+          && resource.data.userId == userId;
+        allow create: if isOwner(userId)
+          && request.resource.data.userId == userId;
+        allow update: if isOwner(userId)
+          && resource.data.userId == userId
+          && request.resource.data.userId == userId;
+      }
+
+      match /charts/{chartType} {
+        allow read, create, update: if isOwner(userId);
+        allow delete: if false;
+      }
+    }
+  }
+}

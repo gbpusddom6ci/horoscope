@@ -3,8 +3,7 @@ import Observation
 import FirebaseFirestore
 
 // MARK: - Firestore Service
-/// Firestore wrapper for reading/writing user data, chat sessions, etc.
-/// Currently uses local storage as mock. Replace with real Firestore after SDK integration.
+/// Firestore wrapper for reading/writing app data.
 @Observable
 class FirestoreService {
     static let shared = FirestoreService()
@@ -12,106 +11,138 @@ class FirestoreService {
 
     private init() {}
 
-    // MARK: - Remote User Document (Firestore)
+    // MARK: - Collections
+
+    private func usersCollection() -> CollectionReference {
+        db.collection("users")
+    }
+
+    private func chatCollection(userId: String) -> CollectionReference {
+        usersCollection().document(userId).collection("chatSessions")
+    }
+
+    private func dreamsCollection(userId: String) -> CollectionReference {
+        usersCollection().document(userId).collection("dreamEntries")
+    }
+
+    private func chartsCollection(userId: String) -> CollectionReference {
+        usersCollection().document(userId).collection("charts")
+    }
+
+    // MARK: - Remote User Document (raw)
 
     /// Fetches `users/{userId}` document from Firestore.
     func fetchUserDocument(userId: String) async throws -> DocumentSnapshot {
-        try await db.collection("users").document(userId).getDocument()
+        try await usersCollection().document(userId).getDocument()
     }
 
     /// Creates or updates `users/{userId}` document in Firestore.
     func setUserDocument(userId: String, data: [String: Any], merge: Bool = true) async throws {
-        try await db.collection("users").document(userId).setData(data, merge: merge)
+        try await usersCollection().document(userId).setData(data, merge: merge)
     }
 
     /// Updates fields of `users/{userId}` in Firestore.
     func updateUserDocument(userId: String, data: [String: Any]) async throws {
-        try await db.collection("users").document(userId).updateData(data)
+        try await usersCollection().document(userId).updateData(data)
     }
 
-    // MARK: - User
+    // MARK: - User (Codable)
 
     func saveUser(_ user: AppUser) async throws {
-        // TODO: Replace with Firestore document write
-        // db.collection("users").document(user.id).setData(...)
-        let data = try JSONEncoder().encode(user)
-        UserDefaults.standard.set(data, forKey: "user_\(user.id)")
+        try usersCollection().document(user.id).setData(from: user, merge: true)
     }
 
     func getUser(id: String) async throws -> AppUser? {
-        // TODO: Replace with Firestore document read
-        guard let data = UserDefaults.standard.data(forKey: "user_\(id)") else {
+        let snapshot = try await usersCollection().document(id).getDocument()
+        guard snapshot.exists else {
             return nil
         }
-        return try JSONDecoder().decode(AppUser.self, from: data)
+        return try snapshot.data(as: AppUser.self)
     }
 
     // MARK: - Chat Sessions
 
     func saveChatSession(_ session: ChatSession) async throws {
-        // TODO: Replace with Firestore subcollection write
-        // db.collection("users").document(session.userId)
-        //   .collection("chatSessions").document(session.id).setData(...)
-        var sessions = loadChatSessions(userId: session.userId)
-        if let index = sessions.firstIndex(where: { $0.id == session.id }) {
-            sessions[index] = session
-        } else {
-            sessions.append(session)
-        }
-        let data = try JSONEncoder().encode(sessions)
-        UserDefaults.standard.set(data, forKey: "chats_\(session.userId)")
+        try chatCollection(userId: session.userId)
+            .document(session.id)
+            .setData(from: session, merge: true)
     }
 
     func getChatSessions(userId: String, context: ChatContext? = nil) async throws -> [ChatSession] {
-        let sessions = loadChatSessions(userId: userId)
-        if let context = context {
-            return sessions.filter { $0.context == context }
+        var query: Query = chatCollection(userId: userId)
+        if let context {
+            query = query.whereField("context", isEqualTo: context.rawValue)
         }
-        return sessions
+        query = query.order(by: "updatedAt", descending: true)
+
+        let snapshot = try await query.getDocuments()
+        return snapshot.documents.compactMap { try? $0.data(as: ChatSession.self) }
     }
 
-    private func loadChatSessions(userId: String) -> [ChatSession] {
-        guard let data = UserDefaults.standard.data(forKey: "chats_\(userId)") else {
-            return []
-        }
-        return (try? JSONDecoder().decode([ChatSession].self, from: data)) ?? []
+    func deleteChatSession(userId: String, sessionId: String) async throws {
+        try await chatCollection(userId: userId).document(sessionId).delete()
+    }
+
+    func clearChatSessions(userId: String) async throws {
+        try await deleteAllDocuments(in: chatCollection(userId: userId))
     }
 
     // MARK: - Dream Entries
 
     func saveDreamEntry(_ entry: DreamEntry) async throws {
-        var entries = loadDreamEntries(userId: entry.userId)
-        if let index = entries.firstIndex(where: { $0.id == entry.id }) {
-            entries[index] = entry
-        } else {
-            entries.append(entry)
-        }
-        let data = try JSONEncoder().encode(entries)
-        UserDefaults.standard.set(data, forKey: "dreams_\(entry.userId)")
+        try dreamsCollection(userId: entry.userId)
+            .document(entry.id)
+            .setData(from: entry, merge: true)
     }
 
     func getDreamEntries(userId: String) async throws -> [DreamEntry] {
-        return loadDreamEntries(userId: userId)
+        let snapshot = try await dreamsCollection(userId: userId)
+            .order(by: "createdAt", descending: true)
+            .getDocuments()
+
+        return snapshot.documents.compactMap { try? $0.data(as: DreamEntry.self) }
     }
 
-    private func loadDreamEntries(userId: String) -> [DreamEntry] {
-        guard let data = UserDefaults.standard.data(forKey: "dreams_\(userId)") else {
-            return []
-        }
-        return (try? JSONDecoder().decode([DreamEntry].self, from: data)) ?? []
+    func deleteDreamEntry(userId: String, entryId: String) async throws {
+        try await dreamsCollection(userId: userId).document(entryId).delete()
+    }
+
+    func clearDreamEntries(userId: String) async throws {
+        try await deleteAllDocuments(in: dreamsCollection(userId: userId))
     }
 
     // MARK: - Chart Data
 
     func saveChartData(_ chart: ChartData, userId: String) async throws {
-        let data = try JSONEncoder().encode(chart)
-        UserDefaults.standard.set(data, forKey: "chart_\(userId)_\(chart.type.rawValue)")
+        try chartsCollection(userId: userId)
+            .document(chart.type.rawValue)
+            .setData(from: chart, merge: true)
     }
 
     func getChartData(userId: String, type: ChartType) async throws -> ChartData? {
-        guard let data = UserDefaults.standard.data(forKey: "chart_\(userId)_\(type.rawValue)") else {
+        let snapshot = try await chartsCollection(userId: userId)
+            .document(type.rawValue)
+            .getDocument()
+
+        guard snapshot.exists else {
             return nil
         }
-        return try JSONDecoder().decode(ChartData.self, from: data)
+
+        return try snapshot.data(as: ChartData.self)
+    }
+
+    // MARK: - Shared Helpers
+
+    private func deleteAllDocuments(in collection: CollectionReference) async throws {
+        let snapshot = try await collection.getDocuments()
+        guard !snapshot.documents.isEmpty else {
+            return
+        }
+
+        let batch = db.batch()
+        for doc in snapshot.documents {
+            batch.deleteDocument(doc.reference)
+        }
+        try await batch.commit()
     }
 }

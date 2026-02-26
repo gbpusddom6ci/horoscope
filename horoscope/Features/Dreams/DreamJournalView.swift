@@ -24,6 +24,12 @@ struct DreamJournalView: View {
 
                 ScrollView(.vertical, showsIndicators: false) {
                     VStack(spacing: MysticSpacing.lg) {
+                        if let syncError = dreamService.lastErrorMessage {
+                            syncErrorBanner(syncError)
+                                .padding(.horizontal, MysticSpacing.md)
+                                .padding(.top, MysticSpacing.xs)
+                        }
+
                         headerCard.fadeInOnAppear(delay: 0)
 
                         if dreams.isEmpty {
@@ -38,10 +44,17 @@ struct DreamJournalView: View {
                     .padding(.top, MysticSpacing.md)
                 }
             }
-            .sheet(isPresented: $showNewDreamSheet) {
+            .sheet(isPresented: $showNewDreamSheet, onDismiss: {
+                Task {
+                    await refreshEntries()
+                }
+            }) {
                 NewDreamSheet()
                     .environment(authService)
             }
+        }
+        .task(id: authService.currentUser?.id) {
+            await refreshEntries()
         }
     }
 
@@ -108,6 +121,26 @@ struct DreamJournalView: View {
                 }
             }
         }
+    }
+
+    private func syncErrorBanner(_ text: String) -> some View {
+        HStack(spacing: MysticSpacing.xs) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundColor(MysticColors.celestialPink)
+            Text(text)
+                .font(MysticFonts.caption(12))
+                .foregroundColor(MysticColors.celestialPink)
+            Spacer()
+        }
+        .padding(.horizontal, MysticSpacing.sm)
+        .padding(.vertical, 8)
+        .background(MysticColors.celestialPink.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: MysticRadius.sm))
+    }
+
+    private func refreshEntries() async {
+        guard let userId = authService.currentUser?.id else { return }
+        await dreamService.loadEntries(for: userId)
     }
 }
 
@@ -222,7 +255,13 @@ struct NewDreamSheet: View {
             .disabled(dreamText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
 
             MysticButton("Kaydet", icon: "checkmark.circle", style: .secondary) {
-                let entry = DreamEntry(userId: authService.currentUser?.id ?? "", dreamText: dreamText, interpretation: interpretation, mood: selectedMood)
+                guard let userId = authService.currentUser?.id else { return }
+                let entry = DreamEntry(
+                    userId: userId,
+                    dreamText: dreamText,
+                    interpretation: interpretation,
+                    mood: selectedMood
+                )
                 dreamService.addEntry(entry)
                 dismiss()
             }

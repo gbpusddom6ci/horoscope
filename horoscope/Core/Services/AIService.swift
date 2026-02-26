@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import os
 
 // MARK: - OpenRouter API Models
 struct OpenRouterRequest: Codable {
@@ -22,12 +23,12 @@ struct OpenRouterChoice: Codable {
 
 // MARK: - AI Service
 /// Gemini API wrapper for AI-powered interpretations.
-/// Currently returns mock responses. Replace with real API calls after setup.
 @Observable
 class AIService {
     static let shared = AIService()
 
     var isGenerating: Bool = false
+    private let logger = Logger(subsystem: "rk.horoscope", category: "AIService")
 
     private init() {}
 
@@ -65,7 +66,8 @@ class AIService {
         let (data, response) = try await URLSession.shared.data(for: request)
         
         guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-            print("API Error: \(String(data: data, encoding: .utf8) ?? "Unknown")")
+            let errorBody = String(data: data, encoding: .utf8) ?? "Unknown"
+            logger.error("OpenRouter text request failed: \(errorBody, privacy: .private(mask: .hash))")
             throw URLError(.badServerResponse)
         }
         
@@ -75,6 +77,97 @@ class AIService {
         }
         
         return text
+    }
+
+    private func generateMultimodalContent(
+        prompt: String,
+        systemInstruction: String? = nil,
+        imageData: Data
+    ) async throws -> String {
+        guard let url = URL(string: "https://openrouter.ai/api/v1/chat/completions") else {
+            throw URLError(.badURL)
+        }
+
+        let apiKey = Secrets.openRouterAPIKey
+        guard !apiKey.isEmpty else {
+            throw ConfigurationError.missingSecret("OPENROUTER_API_KEY")
+        }
+
+        let base64Image = imageData.base64EncodedString()
+        let imageDataURL = "data:image/jpeg;base64,\(base64Image)"
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Mystik Astroloji", forHTTPHeaderField: "X-Title")
+
+        var messages: [[String: Any]] = []
+        if let systemInstruction {
+            messages.append([
+                "role": "system",
+                "content": systemInstruction
+            ])
+        }
+
+        messages.append([
+            "role": "user",
+            "content": [
+                [
+                    "type": "text",
+                    "text": prompt
+                ],
+                [
+                    "type": "image_url",
+                    "image_url": [
+                        "url": imageDataURL
+                    ]
+                ]
+            ]
+        ])
+
+        let requestBody: [String: Any] = [
+            "model": "google/gemini-2.0-flash-001",
+            "messages": messages
+        ]
+        request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+            let errorBody = String(data: data, encoding: .utf8) ?? "Unknown"
+            logger.error("OpenRouter multimodal request failed: \(errorBody, privacy: .private(mask: .hash))")
+            throw URLError(.badServerResponse)
+        }
+
+        if let content = parseAssistantContent(from: data) {
+            return content
+        }
+
+        return "Yorum alınamadı."
+    }
+
+    private func parseAssistantContent(from data: Data) -> String? {
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let choices = json["choices"] as? [[String: Any]],
+              let message = choices.first?["message"] as? [String: Any] else {
+            return nil
+        }
+
+        if let content = message["content"] as? String {
+            let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
+            return trimmed.isEmpty ? nil : trimmed
+        }
+
+        if let parts = message["content"] as? [[String: Any]] {
+            let text = parts
+                .compactMap { $0["text"] as? String }
+                .joined(separator: "\n")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+
+            return text.isEmpty ? nil : text
+        }
+
+        return nil
     }
 
     // MARK: - Natal Chart Interpretation
@@ -139,13 +232,23 @@ class AIService {
         isGenerating = true
         defer { isGenerating = false }
 
-        // Multimodal is complex for MVP, so we will return a fun AI generated general text for now,
-        // unless we want to send base64 image (which gemini-pro-vision or gemini-1.5-flash supports).
-        // Since we are using gemini-pro (text only) in generateContent, we'll keep it as text logic for now.
-        let systemPrompt = "Sen el falı bakan mistik bir yapay zekasın."
-        let prompt = "Kullanıcı elinin fotoğrafını gönderdi (görsel işlemeyi atlıyoruz şimdilik). Ona çok kısa, etkileyici ve genel geçer mistik bir el falı yorumu yap (kalp çizgisi, akıl çizgisi, kariyer gibi şeylerden bahset)."
+        guard let imageData, !imageData.isEmpty else {
+            throw AIServiceError.missingPalmImage
+        }
 
-        return try await generateContent(prompt: prompt, systemInstruction: systemPrompt)
+        let systemPrompt = "Sen el falı bakan mistik bir yapay zekasın."
+        let prompt = """
+        Bu avuç içi fotoğrafını analiz et.
+        Kısa ama kişiselleştirilmiş bir el falı yorumu yaz.
+        Kalp çizgisi, akıl çizgisi, yaşam çizgisi ve kariyer eğiliminden bahset.
+        Ton: samimi, mistik, umut veren.
+        """
+
+        return try await generateMultimodalContent(
+            prompt: prompt,
+            systemInstruction: systemPrompt,
+            imageData: imageData
+        )
     }
 
     // MARK: - Chat Response
@@ -204,7 +307,7 @@ class AIService {
         
         guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
             let errorBody = String(data: data, encoding: .utf8) ?? "Unknown"
-            print("API Error (\((response as? HTTPURLResponse)?.statusCode ?? 0)): \(errorBody)")
+            logger.error("OpenRouter chat request failed (\((response as? HTTPURLResponse)?.statusCode ?? 0)): \(errorBody, privacy: .private(mask: .hash))")
             throw URLError(.badServerResponse)
         }
         
@@ -214,5 +317,16 @@ class AIService {
         }
         
         return text
+    }
+}
+
+enum AIServiceError: LocalizedError {
+    case missingPalmImage
+
+    var errorDescription: String? {
+        switch self {
+        case .missingPalmImage:
+            return "Lütfen önce elinizin fotoğrafını ekleyin."
+        }
     }
 }
