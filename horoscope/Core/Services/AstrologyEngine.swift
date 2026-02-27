@@ -305,15 +305,7 @@ class AstrologyEngine {
                     if orb <= maxOrb {
                         let severity = transitSeverity(planet: transitPlanet, aspect: aspectType)
                         let duration = transitDuration(for: transitPlanet)
-                        let aspectName: String
-                        switch aspectType {
-                        case .conjunction: aspectName = "kavuşum"
-                        case .opposition: aspectName = "karşıt"
-                        case .trine: aspectName = "üçgen"
-                        case .square: aspectName = "kare"
-                        case .sextile: aspectName = "altıgen"
-                        default: aspectName = aspectType.rawValue
-                        }
+                        let aspectName = aspectType.localizedDisplayName
 
                         events.append(TransitEvent(
                             transitPlanet: transitPlanet,
@@ -323,7 +315,12 @@ class AstrologyEngine {
                             startDate: calendar.date(byAdding: .day, value: -duration / 2, to: now) ?? now,
                             endDate: calendar.date(byAdding: .day, value: duration / 2, to: now) ?? now,
                             severity: severity,
-                            description: "\(transitPlanet.rawValue), natal \(natalPos.planet.rawValue) ile \(aspectName) yapıyor."
+                            description: String(
+                                format: String(localized: "transit.description.format"),
+                                transitPlanet.localizedDisplayName,
+                                natalPos.planet.localizedDisplayName,
+                                aspectName
+                            )
                         ))
                         break
                     }

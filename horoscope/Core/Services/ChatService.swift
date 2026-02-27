@@ -26,7 +26,7 @@ class ChatService {
             lastErrorMessage = nil
         } catch {
             logger.error("Failed to load chat sessions: \(error.localizedDescription, privacy: .public)")
-            lastErrorMessage = "Sohbetler yüklenemedi. Lütfen bağlantınızı kontrol edin."
+            lastErrorMessage = String(localized: "chat.service.error.load")
         }
     }
 
@@ -79,7 +79,9 @@ class ChatService {
         sessions[index].updatedAt = Date()
 
         // Auto-title based on first user message.
-        if sessions[index].title == "Yeni Sohbet", message.role == .user {
+        let hasAnyUserMessage = sessions[index].messages.contains(where: { $0.role == .user })
+        let untitledLabels = [String(localized: "chat.session.new_title"), "Yeni Sohbet", "New Chat"]
+        if !hasAnyUserMessage && untitledLabels.contains(sessions[index].title), message.role == .user {
             sessions[index].title = String(message.content.prefix(40))
         }
 
@@ -110,7 +112,7 @@ class ChatService {
             } catch {
                 logger.error("Failed to delete chat session: \(error.localizedDescription, privacy: .public)")
                 await MainActor.run {
-                    self.lastErrorMessage = "Sohbet silinirken bir sorun oluştu."
+                    self.lastErrorMessage = String(localized: "chat.service.error.delete")
                 }
             }
         }
@@ -129,7 +131,7 @@ class ChatService {
             } catch {
                 logger.error("Failed to clear chat sessions: \(error.localizedDescription, privacy: .public)")
                 await MainActor.run {
-                    self.lastErrorMessage = "Sohbetler temizlenemedi."
+                    self.lastErrorMessage = String(localized: "chat.service.error.clear")
                 }
             }
         }
@@ -145,7 +147,7 @@ class ChatService {
             } catch {
                 logger.error("Failed to persist chat session: \(error.localizedDescription, privacy: .public)")
                 await MainActor.run {
-                    self.lastErrorMessage = "Mesaj kaydedilemedi. İnternetinizi kontrol edin."
+                    self.lastErrorMessage = String(localized: "chat.service.error.persist")
                 }
             }
         }

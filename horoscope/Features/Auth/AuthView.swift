@@ -18,6 +18,8 @@ struct AuthView: View {
             StarField(starCount: 150)
 
             VStack(spacing: 0) {
+                MysticTopBar("auth.title")
+
                 Spacer()
 
                 // Logo & Title

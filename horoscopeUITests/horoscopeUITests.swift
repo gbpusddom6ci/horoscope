@@ -22,11 +22,11 @@ final class horoscopeUITests: XCTestCase {
         // Put teardown code here. This method is called after the invocation of each test method in the class.
     }
 
-    private func launchAuthenticatedApp() -> XCUIApplication {
+    private func launchAuthenticatedApp(language: String = "en") -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments += [
             "UITEST_AUTHENTICATED",
-            "-selected_language", "en"
+            "-selected_language", language
         ]
         app.launch()
         return app
@@ -38,6 +38,12 @@ final class horoscopeUITests: XCTestCase {
             app.swipeUp()
             attempts += 1
         }
+    }
+
+    private func waitForNonExistence(_ element: XCUIElement, timeout: TimeInterval) -> Bool {
+        let predicate = NSPredicate(format: "exists == false")
+        let expectation = XCTNSPredicateExpectation(predicate: predicate, object: element)
+        return XCTWaiter.wait(for: [expectation], timeout: timeout) == .completed
     }
 
     @MainActor
@@ -114,6 +120,74 @@ final class horoscopeUITests: XCTestCase {
         let tarotTile = app.buttons["home.feature.tarot"]
         revealElementIfNeeded(tarotTile, in: app)
         XCTAssertTrue(tarotTile.exists)
+    }
+
+    @MainActor
+    func testSelectedTabPersistsAfterRelaunch() throws {
+        let app = launchAuthenticatedApp()
+
+        let dreamTab = app.buttons["tab.dream"]
+        XCTAssertTrue(dreamTab.waitForExistence(timeout: 8))
+        dreamTab.tap()
+        XCTAssertEqual(dreamTab.value as? String, "Selected")
+
+        app.terminate()
+        app.launch()
+
+        let relaunchedDreamTab = app.buttons["tab.dream"]
+        XCTAssertTrue(relaunchedDreamTab.waitForExistence(timeout: 8))
+        XCTAssertEqual(relaunchedDreamTab.value as? String, "Selected")
+    }
+
+    @MainActor
+    func testChatComposerKeyboardAdaptiveChrome() throws {
+        let app = launchAuthenticatedApp()
+
+        let chatTab = app.buttons["tab.chat"]
+        XCTAssertTrue(chatTab.waitForExistence(timeout: 8))
+        chatTab.tap()
+
+        let composer = app.otherElements["chat.composer"]
+        XCTAssertTrue(composer.waitForExistence(timeout: 5))
+
+        let tabBar = app.otherElements["main.tab_bar"]
+        XCTAssertTrue(tabBar.waitForExistence(timeout: 5))
+
+        let inputField = app.textFields["chat.input.field"]
+        XCTAssertTrue(inputField.waitForExistence(timeout: 5))
+        inputField.tap()
+
+        if app.keyboards.element.waitForExistence(timeout: 2) {
+            XCTAssertTrue(waitForNonExistence(tabBar, timeout: 2))
+            XCTAssertTrue(composer.exists)
+        } else {
+            XCTAssertTrue(tabBar.exists)
+        }
+    }
+
+    @MainActor
+    func testDreamPrimaryCtaIsReachable() throws {
+        let app = launchAuthenticatedApp()
+
+        let dreamTab = app.buttons["tab.dream"]
+        XCTAssertTrue(dreamTab.waitForExistence(timeout: 8))
+        dreamTab.tap()
+
+        let topBarCta = app.buttons["dream.new_topbar"]
+        XCTAssertTrue(topBarCta.waitForExistence(timeout: 5))
+    }
+
+    @MainActor
+    func testSettingsCoreSectionsVisible() throws {
+        let app = launchAuthenticatedApp()
+
+        let profileTab = app.buttons["tab.profile"]
+        XCTAssertTrue(profileTab.waitForExistence(timeout: 8))
+        profileTab.tap()
+
+        XCTAssertTrue(app.staticTexts["Quick Settings"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Account"].exists)
+        XCTAssertTrue(app.staticTexts["Support & Privacy"].exists)
     }
 
     @MainActor

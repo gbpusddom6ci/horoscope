@@ -317,3 +317,172 @@
 "settings.privacy.item2" = "2. User inputs for AI interpretations are processed via OpenRouter.";
 "settings.privacy.item3" = "3. API keys are not stored in app source code; they are provided through secure configuration only.";
 "settings.privacy.item4" = "4. Notification preferences are stored on your device.";
+
+"auth.title" = "Welcome";
+"auth.apple_signin" = "Sign in with Apple";
+
+"onboarding.title" = "Onboarding";
+
+"natal.title" = "Natal Chart";
+"natal.loading" = "Calculating your chart...";
+"natal.tab.planets" = "Planets";
+"natal.tab.aspects" = "Aspects";
+"natal.tab.houses" = "Houses";
+"natal.big3.sun" = "Sun";
+"natal.big3.moon" = "Moon";
+"natal.big3.ascendant" = "Ascendant";
+"natal.interpretation.title" = "AI Interpretation";
+"natal.interpretation.button" = "Interpret";
+"natal.interpretation.error" = "An error occurred while loading interpretation.";
+"natal.empty" = "Enter your birth details to view your natal chart.";
+"natal.house_format" = "House %d";
+
+"tarot.subtitle" = "Draw a card to see the energy of today.";
+"tarot.title" = "Tarot";
+"tarot.draw" = "Draw Card";
+
+"palm.title" = "Palm Reading";
+"palm.subtitle" = "The lines on your palm tell your life story. Add a clear photo and get an AI analysis.";
+"palm.camera" = "Camera";
+"palm.gallery" = "Gallery";
+"palm.analyze" = "Analyze";
+"palm.ai_title" = "AI Analysis";
+"palm.line_guide" = "Line Guide";
+"palm.line.life.title" = "Life Line";
+"palm.line.life.desc" = "Physical health and life energy";
+"palm.line.heart.title" = "Heart Line";
+"palm.line.heart.desc" = "Emotional life and relationships";
+"palm.line.head.title" = "Head Line";
+"palm.line.head.desc" = "Mindset and intelligence";
+"palm.line.fate.title" = "Fate Line";
+"palm.line.fate.desc" = "Career and life path";
+"palm.image_placeholder" = "Add a clear photo of your palm";
+"palm.error.camera_unavailable" = "Camera is unavailable on this device. You can select a photo from gallery.";
+"palm.error.select_image" = "Please select a photo first.";
+"puan" = "score";
+
+"common.accessibility.selected" = "Selected";
+"common.accessibility.unselected" = "Not selected";
+"common.unknown" = "Unknown";
+
+"settings.app_version" = "Mystic v%@";
+
+"config.error.missing_secret" = "Missing configuration: %@ is not set. Add it in Config/Secrets.xcconfig or Scheme > Run > Environment Variables.";
+
+"ai.error.missing_palm_image" = "Please add a palm photo first.";
+"ai.error.unauthorized" = "AI provider authorization failed. Check your API key.";
+"ai.error.rate_limited" = "Request limit reached. Please try again in a moment.";
+"ai.error.upstream_unavailable" = "AI service is temporarily unavailable.";
+"ai.error.request_failed" = "AI request failed (HTTP %d). Please try again.";
+"ai.error.invalid_response" = "Invalid AI response received.";
+"ai.error.empty_response" = "No response was generated.";
+
+"auth.error.email_password_required" = "Email and password are required.";
+"auth.error.fill_all_fields" = "Please fill in all required fields.";
+"auth.error.password_min" = "Password must be at least 6 characters.";
+"auth.error.signout_failed" = "An error occurred while signing out.";
+"auth.error.session_missing" = "Session not found. Please sign in again.";
+"auth.apple.error.invalid_credential" = "Invalid Apple credential.";
+"auth.apple.error.missing_token" = "Apple identity token is missing.";
+"auth.apple.error.token_serialization" = "Token serialization failed.";
+
+"chat.service.error.load" = "Chats could not be loaded. Check your connection.";
+"chat.service.error.delete" = "Chat could not be deleted.";
+"chat.service.error.clear" = "Chats could not be cleared.";
+"chat.service.error.persist" = "Message could not be saved. Check your connection.";
+"chat.session.new_title" = "New Chat";
+"chat.session.empty_preview" = "No messages yet";
+
+"dream.service.error.load" = "Dreams could not be loaded. Check your connection.";
+"dream.service.error.delete" = "Dream could not be deleted.";
+"dream.service.error.clear" = "Dreams could not be cleared.";
+"dream.service.error.persist" = "Dream could not be saved. Check your connection.";
+
+"dream.mood.peaceful" = "Peaceful";
+"dream.mood.scary" = "Scary";
+"dream.mood.exciting" = "Exciting";
+"dream.mood.confusing" = "Confusing";
+"dream.mood.sad" = "Sad";
+"dream.mood.happy" = "Happy";
+"dream.mood.neutral" = "Neutral";
+
+"notifications.daily.title" = "Mystic Daily Insight";
+"notifications.daily.body" = "Your message from the stars is ready.";
+"notifications.error.permission_denied" = "Notification permission was denied. You can enable it from iOS Settings.";
+"notifications.error.permission_disabled" = "Notifications are disabled. Enable permission in Settings > Notifications.";
+"notifications.error.schedule_failed" = "Notification schedule failed. Please try again.";
+
+"astro.zodiac.aries" = "Aries";
+"astro.zodiac.taurus" = "Taurus";
+"astro.zodiac.gemini" = "Gemini";
+"astro.zodiac.cancer" = "Cancer";
+"astro.zodiac.leo" = "Leo";
+"astro.zodiac.virgo" = "Virgo";
+"astro.zodiac.libra" = "Libra";
+"astro.zodiac.scorpio" = "Scorpio";
+"astro.zodiac.sagittarius" = "Sagittarius";
+"astro.zodiac.capricorn" = "Capricorn";
+"astro.zodiac.aquarius" = "Aquarius";
+"astro.zodiac.pisces" = "Pisces";
+
+"astro.element.fire" = "Fire";
+"astro.element.earth" = "Earth";
+"astro.element.air" = "Air";
+"astro.element.water" = "Water";
+
+"astro.modality.cardinal" = "Cardinal";
+"astro.modality.fixed" = "Fixed";
+"astro.modality.mutable" = "Mutable";
+
+"astro.planet.sun" = "Sun";
+"astro.planet.moon" = "Moon";
+"astro.planet.mercury" = "Mercury";
+"astro.planet.venus" = "Venus";
+"astro.planet.mars" = "Mars";
+"astro.planet.jupiter" = "Jupiter";
+"astro.planet.saturn" = "Saturn";
+"astro.planet.uranus" = "Uranus";
+"astro.planet.neptune" = "Neptune";
+"astro.planet.pluto" = "Pluto";
+"astro.planet.north_node" = "North Node";
+"astro.planet.chiron" = "Chiron";
+
+"astro.aspect.conjunction" = "Conjunction";
+"astro.aspect.opposition" = "Opposition";
+"astro.aspect.trine" = "Trine";
+"astro.aspect.square" = "Square";
+"astro.aspect.sextile" = "Sextile";
+"astro.aspect.quincunx" = "Quincunx";
+
+"astro.transit_severity.low" = "Low";
+"astro.transit_severity.medium" = "Medium";
+"astro.transit_severity.high" = "High";
+"astro.transit_severity.critical" = "Critical";
+
+"astro.house.1" = "1st House (Self)";
+"astro.house.2" = "2nd House (Values)";
+"astro.house.3" = "3rd House (Communication)";
+"astro.house.4" = "4th House (Family)";
+"astro.house.5" = "5th House (Creativity)";
+"astro.house.6" = "6th House (Health)";
+"astro.house.7" = "7th House (Relationships)";
+"astro.house.8" = "8th House (Transformation)";
+"astro.house.9" = "9th House (Philosophy)";
+"astro.house.10" = "10th House (Career)";
+"astro.house.11" = "11th House (Community)";
+"astro.house.12" = "12th House (Subconscious)";
+
+"transit.description.format" = "%@ is making a %@ aspect with natal %@.";
+
+"natal.meta.element" = "Element";
+"natal.meta.modality" = "Modality";
+"natal.meta.degree" = "Degree";
+"natal.meta.dignity" = "Dignity";
+"natal.retrograde.note" = "This planet is retrograde — its influence is more inward and delayed.";
+"natal.breakdown.elements" = "Element Distribution";
+"natal.breakdown.modalities" = "Modality Distribution";
+"natal.patterns.title" = "Chart Patterns";
+"natal.patterns.stellium.subtitle" = "intense focus of energy";
+
+"natal.dominant.title" = "Dominant Planet";
+"premium.error.verification_failed" = "Purchase verification failed.";

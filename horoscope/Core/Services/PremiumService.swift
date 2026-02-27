@@ -141,7 +141,7 @@ enum PremiumError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .failedVerification:
-            return "Satın alma doğrulanamadı."
+            return String(localized: "premium.error.verification_failed")
         }
     }
 }

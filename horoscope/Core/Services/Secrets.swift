@@ -37,7 +37,10 @@ enum ConfigurationError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .missingSecret(let key):
-            return "Eksik konfigürasyon: \(key) ayarlanmadı."
+            return String(
+                format: String(localized: "config.error.missing_secret"),
+                key
+            )
         }
     }
 }

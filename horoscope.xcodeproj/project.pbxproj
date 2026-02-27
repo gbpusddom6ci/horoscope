@@ -35,6 +35,8 @@
 		08C778272F4E668F00A199E7 /* horoscope.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = horoscope.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		08C778342F4E669100A199E7 /* horoscopeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = horoscopeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		08C7783E2F4E669100A199E7 /* horoscopeUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = horoscopeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		0A7E4F6E2F9A000100C001A1 /* Config/Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config/Debug.xcconfig; sourceTree = "<group>"; };
+		0A7E4F6F2F9A000100C001A1 /* Config/Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config/Release.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -100,6 +102,8 @@
 				08C778412F4E669100A199E7 /* horoscopeUITests */,
 				085396BE2F4E8D130044992D /* Frameworks */,
 				08C778282F4E668F00A199E7 /* Products */,
+				0A7E4F6E2F9A000100C001A1 /* Config/Debug.xcconfig */,
+				0A7E4F6F2F9A000100C001A1 /* Config/Release.xcconfig */,
 			);
 			sourceTree = "<group>";
 		};
@@ -420,33 +424,26 @@
 		};
 		08C778492F4E669100A199E7 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 0A7E4F6E2F9A000100C001A1 /* Config/Debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = horoscope/horoscope.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 832RB57WS8;
 				ENABLE_PREVIEWS = YES;
-				FREE_ASTRO_API_KEY = "";
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_FREE_ASTRO_API_KEY = "$(FREE_ASTRO_API_KEY)";
-				INFOPLIST_KEY_NSCameraUsageDescription = "El falı analizi için kamera erişimi gerekiyor.";
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "El falı analizi için fotoğraf seçimi gerekiyor.";
-				INFOPLIST_KEY_OPENROUTER_API_KEY = "$(OPENROUTER_API_KEY)";
-				INFOPLIST_KEY_PREMIUM_PRODUCT_IDS = "$(PREMIUM_PRODUCT_IDS)";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				FREE_ASTRO_API_KEY = "$(inherited)";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Config/AppInfo.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				OPENROUTER_API_KEY = "";
+				OPENROUTER_API_KEY = "$(inherited)";
 				PREMIUM_PRODUCT_IDS = "rk.horoscope.premium.monthly,rk.horoscope.premium.yearly";
-				PRODUCT_BUNDLE_IDENTIFIER = rk.horoscope;
+				PRODUCT_BUNDLE_IDENTIFIER = malw.horoscope;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -460,33 +457,26 @@
 		};
 		08C7784A2F4E669100A199E7 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 0A7E4F6F2F9A000100C001A1 /* Config/Release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = horoscope/horoscope.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 832RB57WS8;
 				ENABLE_PREVIEWS = YES;
-				FREE_ASTRO_API_KEY = "";
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_FREE_ASTRO_API_KEY = "$(FREE_ASTRO_API_KEY)";
-				INFOPLIST_KEY_NSCameraUsageDescription = "El falı analizi için kamera erişimi gerekiyor.";
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "El falı analizi için fotoğraf seçimi gerekiyor.";
-				INFOPLIST_KEY_OPENROUTER_API_KEY = "$(OPENROUTER_API_KEY)";
-				INFOPLIST_KEY_PREMIUM_PRODUCT_IDS = "$(PREMIUM_PRODUCT_IDS)";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				FREE_ASTRO_API_KEY = "$(inherited)";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Config/AppInfo.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				OPENROUTER_API_KEY = "";
+				OPENROUTER_API_KEY = "$(inherited)";
 				PREMIUM_PRODUCT_IDS = "rk.horoscope.premium.monthly,rk.horoscope.premium.yearly";
-				PRODUCT_BUNDLE_IDENTIFIER = rk.horoscope;
+				PRODUCT_BUNDLE_IDENTIFIER = malw.horoscope;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;

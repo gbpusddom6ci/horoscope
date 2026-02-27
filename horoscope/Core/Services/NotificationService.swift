@@ -51,7 +51,7 @@ final class NotificationService {
             let granted = await requestAuthorizationIfNeeded()
             guard granted else {
                 dailyNotificationsEnabled = false
-                lastErrorMessage = "Bildirim izni verilmedi. iOS Ayarlar'dan izin açabilirsiniz."
+                lastErrorMessage = String(localized: "notifications.error.permission_denied")
                 persistPreferences()
                 return
             }
@@ -85,7 +85,7 @@ final class NotificationService {
 
         await refreshAuthorizationStatus()
         if !(granted && isAuthorized) {
-            lastErrorMessage = "Bildirim izni kapalı. Ayarlar > Bildirimler üzerinden izin verebilirsiniz."
+            lastErrorMessage = String(localized: "notifications.error.permission_disabled")
         } else {
             await MainActor.run {
                 UIApplication.shared.registerForRemoteNotifications()
@@ -106,8 +106,8 @@ final class NotificationService {
         let components = calendar.dateComponents([.hour, .minute], from: notificationTime)
 
         let content = UNMutableNotificationContent()
-        content.title = "Mystic Günlük Yorumu"
-        content.body = "Yıldızlardan bugünkü mesajınız hazır. Açıp göz atabilirsiniz."
+        content.title = String(localized: "notifications.daily.title")
+        content.body = String(localized: "notifications.daily.body")
         content.sound = .default
 
         let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
@@ -117,7 +117,7 @@ final class NotificationService {
             try await center.add(request)
             lastErrorMessage = nil
         } catch {
-            lastErrorMessage = "Bildirim planlanamadı. Lütfen tekrar deneyin."
+            lastErrorMessage = String(localized: "notifications.error.schedule_failed")
         }
     }
 

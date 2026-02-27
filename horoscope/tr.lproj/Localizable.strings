@@ -245,3 +245,172 @@
 "settings.privacy.item2" = "2. AI yorumlari icin kullanici girdileri OpenRouter uzerinden islenir.";
 "settings.privacy.item3" = "3. API anahtarlari uygulama kodunda tutulmaz; yalnizca guvenli yapilandirma ile saglanir.";
 "settings.privacy.item4" = "4. Bildirim tercihleriniz cihazinizda saklanir.";
+
+"auth.title" = "Hos Geldin";
+"auth.apple_signin" = "Apple ile Giris Yap";
+
+"onboarding.title" = "Onboarding";
+
+"natal.title" = "Natal Harita";
+"natal.loading" = "Haritan hesaplanıyor...";
+"natal.tab.planets" = "Gezegenler";
+"natal.tab.aspects" = "Aspektler";
+"natal.tab.houses" = "Evler";
+"natal.big3.sun" = "Gunes";
+"natal.big3.moon" = "Ay";
+"natal.big3.ascendant" = "Yukselen";
+"natal.interpretation.title" = "AI Yorumu";
+"natal.interpretation.button" = "Yorumla";
+"natal.interpretation.error" = "Yorum yuklenirken bir hata olustu.";
+"natal.empty" = "Natal haritani gormek icin dogum bilgilerini gir.";
+"natal.house_format" = "%d. Ev";
+
+"tarot.subtitle" = "Bugunun enerjisini gormek icin bir kart cek.";
+"tarot.title" = "Tarot";
+"tarot.draw" = "Kart Cek";
+
+"palm.title" = "El Fali";
+"palm.subtitle" = "Avucundaki cizgiler yasam hikayeni anlatir. Net bir fotograf ekleyip AI analizi al.";
+"palm.camera" = "Kamera";
+"palm.gallery" = "Galeri";
+"palm.analyze" = "Analiz Et";
+"palm.ai_title" = "AI Analizi";
+"palm.line_guide" = "Cizgi Rehberi";
+"palm.line.life.title" = "Yasam Cizgisi";
+"palm.line.life.desc" = "Fiziksel saglik ve yasam enerjisi";
+"palm.line.heart.title" = "Kalp Cizgisi";
+"palm.line.heart.desc" = "Duygusal yasam ve iliskiler";
+"palm.line.head.title" = "Akil Cizgisi";
+"palm.line.head.desc" = "Dusunce yapisi ve zeka";
+"palm.line.fate.title" = "Kader Cizgisi";
+"palm.line.fate.desc" = "Kariyer ve yasam yolu";
+"palm.image_placeholder" = "Elinin net bir fotografini ekle";
+"palm.error.camera_unavailable" = "Bu cihazda kamera kullanilamiyor. Galeriden fotograf secebilirsin.";
+"palm.error.select_image" = "Lutfen once bir fotograf sec.";
+"puan" = "puan";
+
+"common.accessibility.selected" = "Secili";
+"common.accessibility.unselected" = "Secili degil";
+"common.unknown" = "Bilinmiyor";
+
+"settings.app_version" = "Mystic v%@";
+
+"config.error.missing_secret" = "Eksik konfigurasyon: %@ ayarlanmadi. Config/Secrets.xcconfig dosyasina ekleyin veya Scheme > Run > Environment Variables uzerinden tanimlayin.";
+
+"ai.error.missing_palm_image" = "Lutfen once elinizin fotografini ekleyin.";
+"ai.error.unauthorized" = "AI servis kimlik dogrulamasi basarisiz. API key'i kontrol edin.";
+"ai.error.rate_limited" = "Istek limiti asildi. Lutfen biraz sonra tekrar deneyin.";
+"ai.error.upstream_unavailable" = "AI servisi gecici olarak kullanilamiyor.";
+"ai.error.request_failed" = "AI istegi basarisiz oldu (HTTP %d). Lutfen tekrar deneyin.";
+"ai.error.invalid_response" = "Gecersiz AI yaniti alindi.";
+"ai.error.empty_response" = "Yanit uretilemedi.";
+
+"auth.error.email_password_required" = "E-posta ve sifre gerekli.";
+"auth.error.fill_all_fields" = "Lutfen tum gerekli alanlari doldurun.";
+"auth.error.password_min" = "Sifre en az 6 karakter olmali.";
+"auth.error.signout_failed" = "Cikis yapilirken bir hata olustu.";
+"auth.error.session_missing" = "Oturum bulunamadi. Lutfen tekrar giris yapin.";
+"auth.apple.error.invalid_credential" = "Apple kimlik bilgisi gecersiz.";
+"auth.apple.error.missing_token" = "Apple identity token alinamadi.";
+"auth.apple.error.token_serialization" = "Token serilestirme hatasi.";
+
+"chat.service.error.load" = "Sohbetler yuklenemedi. Baglantinizi kontrol edin.";
+"chat.service.error.delete" = "Sohbet silinemedi.";
+"chat.service.error.clear" = "Sohbetler temizlenemedi.";
+"chat.service.error.persist" = "Mesaj kaydedilemedi. Baglantinizi kontrol edin.";
+"chat.session.new_title" = "Yeni Sohbet";
+"chat.session.empty_preview" = "Henuz mesaj yok";
+
+"dream.service.error.load" = "Ruyalar yuklenemedi. Baglantinizi kontrol edin.";
+"dream.service.error.delete" = "Ruya silinemedi.";
+"dream.service.error.clear" = "Ruyalar temizlenemedi.";
+"dream.service.error.persist" = "Ruya kaydedilemedi. Baglantinizi kontrol edin.";
+
+"dream.mood.peaceful" = "Huzurlu";
+"dream.mood.scary" = "Korkutucu";
+"dream.mood.exciting" = "Heyecanli";
+"dream.mood.confusing" = "Kafa Karistirici";
+"dream.mood.sad" = "Huzunlu";
+"dream.mood.happy" = "Mutlu";
+"dream.mood.neutral" = "Notr";
+
+"notifications.daily.title" = "Mystic Gunluk Yorumu";
+"notifications.daily.body" = "Yildizlardan bugunku mesajiniz hazir.";
+"notifications.error.permission_denied" = "Bildirim izni verilmedi. iOS Ayarlar uzerinden acabilirsiniz.";
+"notifications.error.permission_disabled" = "Bildirimler kapali. Ayarlar > Bildirimler uzerinden izin verin.";
+"notifications.error.schedule_failed" = "Bildirim planlanamadi. Lutfen tekrar deneyin.";
+
+"astro.zodiac.aries" = "Koc";
+"astro.zodiac.taurus" = "Boga";
+"astro.zodiac.gemini" = "Ikizler";
+"astro.zodiac.cancer" = "Yengec";
+"astro.zodiac.leo" = "Aslan";
+"astro.zodiac.virgo" = "Basak";
+"astro.zodiac.libra" = "Terazi";
+"astro.zodiac.scorpio" = "Akrep";
+"astro.zodiac.sagittarius" = "Yay";
+"astro.zodiac.capricorn" = "Oglak";
+"astro.zodiac.aquarius" = "Kova";
+"astro.zodiac.pisces" = "Balik";
+
+"astro.element.fire" = "Ates";
+"astro.element.earth" = "Toprak";
+"astro.element.air" = "Hava";
+"astro.element.water" = "Su";
+
+"astro.modality.cardinal" = "Oncu";
+"astro.modality.fixed" = "Sabit";
+"astro.modality.mutable" = "Degisken";
+
+"astro.planet.sun" = "Gunes";
+"astro.planet.moon" = "Ay";
+"astro.planet.mercury" = "Merkur";
+"astro.planet.venus" = "Venus";
+"astro.planet.mars" = "Mars";
+"astro.planet.jupiter" = "Jupiter";
+"astro.planet.saturn" = "Saturn";
+"astro.planet.uranus" = "Uranus";
+"astro.planet.neptune" = "Neptun";
+"astro.planet.pluto" = "Pluton";
+"astro.planet.north_node" = "Kuzey Dugum";
+"astro.planet.chiron" = "Chiron";
+
+"astro.aspect.conjunction" = "Kavusum";
+"astro.aspect.opposition" = "Karsit";
+"astro.aspect.trine" = "Ucgen";
+"astro.aspect.square" = "Kare";
+"astro.aspect.sextile" = "Altigen";
+"astro.aspect.quincunx" = "Quincunx";
+
+"astro.transit_severity.low" = "Dusuk";
+"astro.transit_severity.medium" = "Orta";
+"astro.transit_severity.high" = "Yuksek";
+"astro.transit_severity.critical" = "Kritik";
+
+"astro.house.1" = "1. Ev (Benlik)";
+"astro.house.2" = "2. Ev (Degerler)";
+"astro.house.3" = "3. Ev (Iletisim)";
+"astro.house.4" = "4. Ev (Aile)";
+"astro.house.5" = "5. Ev (Yaraticilik)";
+"astro.house.6" = "6. Ev (Saglik)";
+"astro.house.7" = "7. Ev (Iliskiler)";
+"astro.house.8" = "8. Ev (Donusum)";
+"astro.house.9" = "9. Ev (Felsefe)";
+"astro.house.10" = "10. Ev (Kariyer)";
+"astro.house.11" = "11. Ev (Topluluk)";
+"astro.house.12" = "12. Ev (Bilincalti)";
+
+"transit.description.format" = "%@, natal %@ ile %@ acisi yapiyor.";
+
+"natal.meta.element" = "Element";
+"natal.meta.modality" = "Nitelik";
+"natal.meta.degree" = "Derece";
+"natal.meta.dignity" = "Onur";
+"natal.retrograde.note" = "Bu gezegen retrograd — etkisi ice donuk ve gecikmeli.";
+"natal.breakdown.elements" = "Element Dagilimi";
+"natal.breakdown.modalities" = "Nitelik Dagilimi";
+"natal.patterns.title" = "Harita Desenleri";
+"natal.patterns.stellium.subtitle" = "yogun enerji odagi";
+
+"natal.dominant.title" = "Dominant Gezegen";
+"premium.error.verification_failed" = "Satin alma dogrulanamadi.";

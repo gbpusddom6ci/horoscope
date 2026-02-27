@@ -13,77 +13,91 @@ struct MainTabView: View {
     }
 
     var body: some View {
-        // Content
-        TabView(selection: $selectedTab) {
-            HomeView()
-                .tag(AppTab.home)
-            NatalChartView()
-                .tag(AppTab.chart)
-            ChatView()
-                .tag(AppTab.chat)
-            DreamJournalView()
-                .tag(AppTab.dream)
-            SettingsView()
-                .tag(AppTab.profile)
-        }
-        // Use basic display mode (no page style) to prevent horizontal swiping
-        .safeAreaInset(edge: .bottom) {
-            // Custom Tab Bar
-            if !isKeyboardVisible {
-                customTabBar
-                    .transition(.move(edge: .bottom))
+        GeometryReader { proxy in
+            let bottomSafeArea = proxy.safeAreaInsets.bottom
+            let tabBarHeight = MysticLayout.tabBarHeight(bottomSafeArea: bottomSafeArea)
+            let chromeMetrics = MainChromeMetrics(
+                tabBarVisible: !isKeyboardVisible,
+                tabBarHeight: !isKeyboardVisible ? tabBarHeight : 0,
+                floatingQuickActionSize: !isKeyboardVisible ? MysticLayout.floatingQuickActionSize : 0,
+                bottomSafeAreaInset: bottomSafeArea
+            )
+
+            TabView(selection: $selectedTab) {
+                HomeView()
+                    .tag(AppTab.home)
+                NatalChartView()
+                    .tag(AppTab.chart)
+                ChatView()
+                    .tag(AppTab.chat)
+                DreamJournalView()
+                    .tag(AppTab.dream)
+                SettingsView()
+                    .tag(AppTab.profile)
             }
-        }
-        .ignoresSafeArea(.keyboard, edges: .bottom)
-        .onAppear {
-            if let restored = AppTab(rawValue: selectedTabRawValue) {
-                selectedTab = restored
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if !isKeyboardVisible {
+                    customTabBar(bottomSafeArea: bottomSafeArea)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
             }
-        }
-        .onChange(of: selectedTab) { _, newValue in
-            selectedTabRawValue = newValue.rawValue
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .switchToMainTab)) { notification in
-            guard let tab = notification.object as? AppTab else { return }
-            withAnimation(reduceMotion ? nil : .spring(response: 0.3)) {
-                selectedTab = tab
+            .overlay(alignment: .bottom) {
+                if !isKeyboardVisible {
+                    floatingQuickActionButton
+                        .padding(.bottom, tabBarHeight - MysticLayout.floatingQuickActionLift)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
             }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .openQuickActionsSheet)) { _ in
-            showQuickActions = true
-        }
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
-            withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) {
-                isKeyboardVisible = true
+            .environment(\.mainChromeMetrics, chromeMetrics)
+            .onAppear {
+                if let restored = AppTab(rawValue: selectedTabRawValue) {
+                    selectedTab = restored
+                }
             }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
-            withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) {
-                isKeyboardVisible = false
+            .onChange(of: selectedTab) { _, newValue in
+                selectedTabRawValue = newValue.rawValue
             }
-        }
-        .sheet(isPresented: $showQuickActions) {
-            QuickActionsSheet { action in
-                runQuickAction(action)
+            .onReceive(NotificationCenter.default.publisher(for: .switchToMainTab)) { notification in
+                guard let tab = notification.object as? AppTab else { return }
+                withAnimation(reduceMotion ? nil : .spring(response: 0.3)) {
+                    selectedTab = tab
+                }
             }
-            .presentationDetents([.medium])
-            .presentationDragIndicator(.visible)
+            .onReceive(NotificationCenter.default.publisher(for: .openQuickActionsSheet)) { _ in
+                showQuickActions = true
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
+                withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) {
+                    isKeyboardVisible = true
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+                withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) {
+                    isKeyboardVisible = false
+                }
+            }
+            .sheet(isPresented: $showQuickActions) {
+                QuickActionsSheet { action in
+                    runQuickAction(action)
+                }
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
+            }
         }
     }
 
     // MARK: - Custom Tab Bar
-    private var customTabBar: some View {
+    private func customTabBar(bottomSafeArea: CGFloat) -> some View {
         HStack(spacing: 0) {
             tabButton(.home)
             tabButton(.chart)
-            quickActionButton
             tabButton(.chat)
             tabButton(.dream)
             tabButton(.profile)
         }
-        .padding(.horizontal, MysticSpacing.sm)
-        .padding(.top, MysticSpacing.sm)
-        .padding(.bottom, MysticSpacing.lg)
+        .padding(.horizontal, MysticLayout.screenHorizontalPadding)
+        .padding(.top, MysticLayout.tabBarVisualTopPadding)
+        .padding(.bottom, MysticLayout.tabBarBottomPadding(bottomSafeArea: bottomSafeArea))
         .background(
             ZStack {
                 // Blur background
@@ -112,6 +126,7 @@ struct MainTabView: View {
                 }
             }
         )
+        .accessibilityIdentifier("main.tab_bar")
     }
 
     private func tabButton(_ tab: AppTab) -> some View {
@@ -127,11 +142,11 @@ struct MainTabView: View {
                     if selectedTab == tab {
                         Circle()
                             .fill(tab.color.opacity(0.15))
-                            .frame(width: 42, height: 42)
+                            .frame(width: MysticLayout.tabBarIconFrame, height: MysticLayout.tabBarIconFrame)
 
                         Circle()
                             .stroke(tab.color.opacity(0.3), lineWidth: 1)
-                            .frame(width: 42, height: 42)
+                            .frame(width: MysticLayout.tabBarIconFrame, height: MysticLayout.tabBarIconFrame)
                     }
 
                     if reduceMotion {
@@ -145,7 +160,7 @@ struct MainTabView: View {
                             .symbolEffect(.bounce, value: selectedTab == tab)
                     }
                 }
-                .frame(height: 42)
+                .frame(height: MysticLayout.tabBarIconFrame)
 
                 if selectedTab == tab {
                     Text(tab.title)
@@ -160,34 +175,34 @@ struct MainTabView: View {
         .buttonStyle(.plain)
         .accessibilityLabel(Text(tab.title))
         .accessibilityHint(Text(String(localized: "tab.switch.hint")))
+        .accessibilityValue(Text(selectedTab == tab ? String(localized: "common.accessibility.selected") : String(localized: "common.accessibility.unselected")))
         .accessibilityIdentifier("tab.\(tab.rawValue)")
     }
 
-    private var quickActionButton: some View {
+    private var floatingQuickActionButton: some View {
         Button {
             let impact = UIImpactFeedbackGenerator(style: .medium)
             impact.impactOccurred()
             showQuickActions = true
         } label: {
-            VStack(spacing: MysticSpacing.xs) {
-                ZStack {
-                    Circle()
-                        .fill(MysticGradients.goldShimmer)
-                        .frame(width: 44, height: 44)
-                    Circle()
-                        .stroke(MysticColors.mysticGold.opacity(0.5), lineWidth: 1)
-                        .frame(width: 44, height: 44)
-                    Image(systemName: "bolt.fill")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(MysticColors.voidBlack)
-                }
-                Text("quick_actions.title")
-                    .font(MysticFonts.caption(10))
-                    .foregroundColor(MysticColors.mysticGold)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
+            ZStack {
+                Circle()
+                    .fill(MysticGradients.goldShimmer)
+                    .frame(width: MysticLayout.floatingQuickActionSize, height: MysticLayout.floatingQuickActionSize)
+
+                Circle()
+                    .stroke(MysticColors.mysticGold.opacity(0.55), lineWidth: 1.2)
+                    .frame(width: MysticLayout.floatingQuickActionSize, height: MysticLayout.floatingQuickActionSize)
+
+                Image(systemName: "bolt.fill")
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundColor(MysticColors.voidBlack)
             }
-            .frame(maxWidth: .infinity, minHeight: MysticAccessibility.minimumTapTarget)
+            .shadow(color: MysticColors.mysticGold.opacity(0.28), radius: 12, x: 0, y: 4)
+            .frame(
+                minWidth: MysticLayout.floatingQuickActionSize,
+                minHeight: MysticLayout.floatingQuickActionSize
+            )
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text(String(localized: "quick_actions.title")))

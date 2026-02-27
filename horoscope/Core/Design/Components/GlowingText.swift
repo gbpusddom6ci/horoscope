@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct GlowingText: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let text: String
     let font: Font
     let color: Color
@@ -27,11 +28,15 @@ struct GlowingText: View {
             .shadow(color: color.opacity(glowAnimation ? 0.6 : 0.2), radius: glowRadius)
             .shadow(color: color.opacity(glowAnimation ? 0.3 : 0.1), radius: glowRadius * 2)
             .onAppear {
-                withAnimation(
-                    .easeInOut(duration: 2.5)
-                    .repeatForever(autoreverses: true)
-                ) {
+                if reduceMotion {
                     glowAnimation = true
+                } else {
+                    withAnimation(
+                        .easeInOut(duration: 2.5)
+                        .repeatForever(autoreverses: true)
+                    ) {
+                        glowAnimation = true
+                    }
                 }
             }
     }
@@ -72,6 +77,47 @@ enum ZodiacSign: String, CaseIterable, Codable {
     case aquarius = "Kova"
     case pisces = "Balık"
 
+    var localizedDisplayName: String {
+        switch self {
+        case .aries: return String(localized: "astro.zodiac.aries")
+        case .taurus: return String(localized: "astro.zodiac.taurus")
+        case .gemini: return String(localized: "astro.zodiac.gemini")
+        case .cancer: return String(localized: "astro.zodiac.cancer")
+        case .leo: return String(localized: "astro.zodiac.leo")
+        case .virgo: return String(localized: "astro.zodiac.virgo")
+        case .libra: return String(localized: "astro.zodiac.libra")
+        case .scorpio: return String(localized: "astro.zodiac.scorpio")
+        case .sagittarius: return String(localized: "astro.zodiac.sagittarius")
+        case .capricorn: return String(localized: "astro.zodiac.capricorn")
+        case .aquarius: return String(localized: "astro.zodiac.aquarius")
+        case .pisces: return String(localized: "astro.zodiac.pisces")
+        }
+    }
+
+    var localizedElement: String {
+        switch self {
+        case .aries, .leo, .sagittarius:
+            return String(localized: "astro.element.fire")
+        case .taurus, .virgo, .capricorn:
+            return String(localized: "astro.element.earth")
+        case .gemini, .libra, .aquarius:
+            return String(localized: "astro.element.air")
+        case .cancer, .scorpio, .pisces:
+            return String(localized: "astro.element.water")
+        }
+    }
+
+    var localizedModality: String {
+        switch self {
+        case .aries, .cancer, .libra, .capricorn:
+            return String(localized: "astro.modality.cardinal")
+        case .taurus, .leo, .scorpio, .aquarius:
+            return String(localized: "astro.modality.fixed")
+        case .gemini, .virgo, .sagittarius, .pisces:
+            return String(localized: "astro.modality.mutable")
+        }
+    }
+
     var symbol: String {
         switch self {
         case .aries: return "♈"
@@ -107,12 +153,15 @@ enum ZodiacSign: String, CaseIterable, Codable {
     }
 
     var elementColor: Color {
-        switch element {
-        case "Ateş": return Color(hex: "ff6b35")
-        case "Toprak": return MysticColors.auroraGreen
-        case "Hava": return MysticColors.neonLavender
-        case "Su": return Color(hex: "4fc3f7")
-        default: return MysticColors.textPrimary
+        switch self {
+        case .aries, .leo, .sagittarius:
+            return Color(hex: "ff6b35")
+        case .taurus, .virgo, .capricorn:
+            return MysticColors.auroraGreen
+        case .gemini, .libra, .aquarius:
+            return MysticColors.neonLavender
+        case .cancer, .scorpio, .pisces:
+            return Color(hex: "4fc3f7")
         }
     }
 

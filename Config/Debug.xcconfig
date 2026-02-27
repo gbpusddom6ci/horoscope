@@ -1,0 +1,7 @@
+// Shared Debug overrides for local development.
+// Local secrets are loaded from gitignored file if present.
+#include? "Secrets.xcconfig"
+
+OPENROUTER_API_KEY = $(inherited)
+FREE_ASTRO_API_KEY = $(inherited)
+PREMIUM_PRODUCT_IDS = $(inherited)

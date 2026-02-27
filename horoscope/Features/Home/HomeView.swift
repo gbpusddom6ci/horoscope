@@ -3,6 +3,7 @@ import SwiftUI
 struct HomeView: View {
     @Environment(AuthService.self) private var authService
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.mainChromeMetrics) private var chromeMetrics
 
     @State private var hasCompletedFirstValue = false
     @State private var firstValueChecked = false
@@ -44,36 +45,51 @@ struct HomeView: View {
         ZStack {
             StarField(starCount: 60)
 
-            ScrollView(.vertical, showsIndicators: false) {
-                VStack(spacing: MysticSpacing.lg) {
-                    greetingSection
-                        .fadeInOnAppear(delay: 0)
-
-                    if shouldShowFirstValueActions {
-                        firstValueActionCard
-                            .fadeInOnAppear(delay: 0.05)
+            VStack(spacing: 0) {
+                MysticTopBar("tab.home") {
+                    Button {
+                        AppNavigation.openQuickActionsSheet()
+                    } label: {
+                        Image(systemName: "bolt.fill")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundColor(MysticColors.mysticGold)
                     }
-
-                    dailyEnergyCard
-                        .fadeInOnAppear(delay: 0.1)
-
-                    if let birthData, let chart = natalChart {
-                        quickStatsSection(birthData: birthData, chart: chart)
-                            .fadeInOnAppear(delay: 0.15)
-                    }
-
-                    if !currentTransits.isEmpty {
-                        transitSection
-                            .fadeInOnAppear(delay: 0.2)
-                    }
-
-                    featureGridSection
-                        .fadeInOnAppear(delay: 0.25)
-
-                    Color.clear.frame(height: 100)
+                    .accessibilityLabel(Text(String(localized: "quick_actions.title")))
+                    .accessibilityHint(Text(String(localized: "quick_actions.hint")))
+                    .accessibilityIdentifier("home.quick_actions")
                 }
-                .padding(.horizontal, MysticSpacing.md)
-                .padding(.top, MysticSpacing.md)
+
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(spacing: MysticSpacing.lg) {
+                        greetingSection
+                            .fadeInOnAppear(delay: 0)
+
+                        if shouldShowFirstValueActions {
+                            firstValueActionCard
+                                .fadeInOnAppear(delay: 0.05)
+                        }
+
+                        dailyEnergyCard
+                            .fadeInOnAppear(delay: 0.1)
+
+                        if let birthData, let chart = natalChart {
+                            quickStatsSection(birthData: birthData, chart: chart)
+                                .fadeInOnAppear(delay: 0.15)
+                        }
+
+                        if !currentTransits.isEmpty {
+                            transitSection
+                                .fadeInOnAppear(delay: 0.2)
+                        }
+
+                        featureGridSection
+                            .fadeInOnAppear(delay: 0.25)
+
+                        Color.clear.frame(height: max(90, chromeMetrics.contentBottomReservedSpace))
+                    }
+                    .padding(.horizontal, MysticLayout.screenHorizontalPadding)
+                    .padding(.top, MysticSpacing.sm)
+                }
             }
         }
         .task(id: authService.currentUser?.id) {
@@ -198,7 +214,7 @@ struct HomeView: View {
 
                 if isDailyEnergyExpanded {
                     if let sign = sunSign {
-                        Text(String(format: String(localized: "home.energy.personalized_format"), sign.symbol, sign.rawValue))
+                        Text(String(format: String(localized: "home.energy.personalized_format"), sign.symbol, sign.localizedDisplayName))
                             .font(MysticFonts.mystic(15))
                             .foregroundColor(MysticColors.textSecondary)
                             .lineSpacing(4)
@@ -238,7 +254,7 @@ struct HomeView: View {
                     HStack(spacing: MysticSpacing.sm) {
                         StatCard(
                             label: String(localized: "home.natal.sun"),
-                            value: birthData.sunSign.rawValue,
+                            value: birthData.sunSign.localizedDisplayName,
                             icon: "sun.max.fill",
                             color: MysticColors.mysticGold
                         )
@@ -247,7 +263,7 @@ struct HomeView: View {
                         if let moonPos = chart.planetPositions.first(where: { $0.planet == .moon }) {
                             StatCard(
                                 label: String(localized: "home.natal.moon"),
-                                value: moonPos.sign.rawValue,
+                                value: moonPos.sign.localizedDisplayName,
                                 icon: "moon.fill",
                                 color: MysticColors.neonLavender
                             )
@@ -257,7 +273,7 @@ struct HomeView: View {
                         if let firstHouse = chart.houseCusps.first {
                             StatCard(
                                 label: String(localized: "home.natal.ascendant"),
-                                value: firstHouse.sign.rawValue,
+                                value: firstHouse.sign.localizedDisplayName,
                                 icon: "arrow.up.circle.fill",
                                 color: MysticColors.auroraGreen
                             )
@@ -267,7 +283,7 @@ struct HomeView: View {
                         if let mercuryPos = chart.planetPositions.first(where: { $0.planet == .mercury }) {
                             StatCard(
                                 label: String(localized: "home.natal.mercury"),
-                                value: mercuryPos.sign.rawValue,
+                                value: mercuryPos.sign.localizedDisplayName,
                                 icon: "circle.fill",
                                 color: MysticColors.celestialPink
                             )
@@ -567,7 +583,7 @@ struct TransitCard: View {
                         .font(MysticFonts.caption(12))
                         .foregroundColor(MysticColors.textMuted)
                     Spacer()
-                    Text(transit.severity.rawValue)
+                    Text(transit.severity.localizedDisplayName)
                         .font(MysticFonts.caption(11))
                         .foregroundColor(transitColor)
                         .padding(.horizontal, 8)

@@ -8,6 +8,8 @@ struct ChatView: View {
     }
 
     @Environment(AuthService.self) private var authService
+    @Environment(\.mainChromeMetrics) private var chromeMetrics
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var inputText: String = ""
     @State private var isLoading: Bool = false
     @State private var scrollProxy: ScrollViewProxy?
@@ -18,6 +20,7 @@ struct ChatView: View {
     @State private var inlineStatusMessage: String?
     @State private var transientErrorMessage: String?
     @State private var showMoreContexts = false
+    @State private var composerHeight: CGFloat = 0
 
     private let aiService = AIService.shared
     private let chatService = ChatService.shared
@@ -52,13 +55,7 @@ struct ChatView: View {
             StarField(starCount: 40)
 
             VStack(spacing: 0) {
-                HStack {
-                    Text("chat.title")
-                        .font(MysticFonts.heading(18))
-                        .foregroundColor(MysticColors.textPrimary)
-
-                    Spacer()
-
+                MysticTopBar("chat.title") {
                     Button {
                         startNewChat()
                     } label: {
@@ -66,16 +63,9 @@ struct ChatView: View {
                             .font(.system(size: 18))
                             .foregroundColor(MysticColors.neonLavender)
                     }
-                    .frame(
-                        minWidth: MysticAccessibility.minimumTapTarget,
-                        minHeight: MysticAccessibility.minimumTapTarget
-                    )
                     .accessibilityLabel(Text(String(localized: "chat.new_chat")))
                     .accessibilityHint(Text(String(localized: "chat.new_chat.hint")))
                 }
-                .padding(.horizontal, MysticSpacing.md)
-                .padding(.top, 10)
-                .padding(.bottom, 10)
 
                 contextPickerBar
 
@@ -113,17 +103,38 @@ struct ChatView: View {
                                 typingIndicator
                             }
 
-                            Color.clear.frame(height: MysticSpacing.md)
+                            Color.clear.frame(height: MysticSpacing.sm)
                                 .id("bottom")
                         }
                         .padding(.horizontal, MysticSpacing.md)
                         .padding(.top, MysticSpacing.md)
                     }
+                    .scrollDismissesKeyboard(.interactively)
                     .onAppear { scrollProxy = proxy }
                 }
             }
-
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
             inputBar
+                .background(
+                    GeometryReader { geometry in
+                        Color.clear.preference(key: ChatComposerHeightKey.self, value: geometry.size.height)
+                    }
+                )
+                .padding(.bottom, chromeMetrics.tabBarVisible ? MysticSpacing.xs : MysticSpacing.sm)
+        }
+        .onPreferenceChange(ChatComposerHeightKey.self) { newValue in
+            composerHeight = newValue
+        }
+        .onChange(of: composerHeight) { _, _ in
+            withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) {
+                scrollProxy?.scrollTo("bottom", anchor: .bottom)
+            }
+        }
+        .onChange(of: messages.count) { _, _ in
+            withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) {
+                scrollProxy?.scrollTo("bottom", anchor: .bottom)
+            }
         }
         .task(id: authService.currentUser?.id) {
             loadDraftsForCurrentUser()
@@ -244,6 +255,7 @@ struct ChatView: View {
             .padding(.horizontal, MysticSpacing.md)
             .padding(.vertical, MysticSpacing.sm)
         }
+        .frame(minHeight: 58)
     }
 
     private func contextChip(_ context: ChatContext) -> some View {
@@ -260,7 +272,7 @@ struct ChatView: View {
                     .font(MysticFonts.caption(12))
             }
             .padding(.horizontal, MysticSpacing.sm)
-            .padding(.vertical, 6)
+            .padding(.vertical, 8)
             .frame(minHeight: MysticAccessibility.minimumTapTarget)
             .foregroundColor(chatContext == context ? MysticColors.voidBlack : MysticColors.textSecondary)
             .background(
@@ -297,7 +309,7 @@ struct ChatView: View {
                     .font(MysticFonts.caption(12))
             }
             .padding(.horizontal, MysticSpacing.sm)
-            .padding(.vertical, 6)
+            .padding(.vertical, 8)
             .frame(minHeight: MysticAccessibility.minimumTapTarget)
             .foregroundColor(isAdditionalContextSelected ? MysticColors.voidBlack : MysticColors.textSecondary)
             .background(
@@ -409,7 +421,7 @@ struct ChatView: View {
 
     // MARK: - Empty State
     private var emptyStateView: some View {
-        VStack(spacing: MysticSpacing.lg) {
+        VStack(spacing: MysticSpacing.md) {
             Spacer().frame(height: 60)
 
             Image(systemName: "bubble.left.and.bubble.right.fill")
@@ -457,7 +469,7 @@ struct ChatView: View {
                     .foregroundColor(MysticColors.neonLavender.opacity(0.5))
             }
             .padding(.horizontal, MysticSpacing.sm)
-            .padding(.vertical, 10)
+            .padding(.vertical, 8)
             .background(MysticColors.cardBackground)
             .clipShape(RoundedRectangle(cornerRadius: MysticRadius.md))
             .overlay(
@@ -508,7 +520,14 @@ struct ChatView: View {
                         .font(MysticFonts.body(15))
                         .foregroundColor(MysticColors.textPrimary)
                         .lineLimit(1...5)
+                        .submitLabel(.send)
                         .textFieldStyle(.plain)
+                        .onSubmit {
+                            if canSend {
+                                sendMessage()
+                            }
+                        }
+                        .accessibilityIdentifier("chat.input.field")
                 }
                 .padding(.horizontal, MysticSpacing.md)
                 .padding(.vertical, MysticSpacing.sm)
@@ -516,20 +535,36 @@ struct ChatView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 20))
                 .overlay(
                     RoundedRectangle(cornerRadius: 20)
-                        .stroke(canSend ? MysticColors.mysticGold.opacity(0.6) : MysticColors.cardBorder, lineWidth: 1)
+                        .stroke(
+                            isLoading
+                                ? MysticColors.neonLavender.opacity(0.6)
+                                : (canSend ? MysticColors.mysticGold.opacity(0.65) : MysticColors.cardBorder),
+                            lineWidth: 1
+                        )
                 )
+                .animation(.easeInOut(duration: 0.15), value: canSend)
+                .animation(.easeInOut(duration: 0.15), value: isLoading)
 
                 Button {
                     sendMessage()
                 } label: {
                     ZStack {
-                        Circle()
-                            .fill(canSend ? MysticColors.mysticGold : MysticColors.textMuted.opacity(0.2))
-                            .frame(width: 44, height: 44)
+                        if isLoading {
+                            Circle()
+                                .fill(MysticColors.neonLavender.opacity(0.25))
+                                .frame(width: 44, height: 44)
 
-                        Image(systemName: "arrow.up")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(canSend ? MysticColors.voidBlack : MysticColors.textMuted)
+                            ProgressView()
+                                .tint(MysticColors.neonLavender)
+                        } else {
+                            Circle()
+                                .fill(canSend ? MysticColors.mysticGold : MysticColors.textMuted.opacity(0.2))
+                                .frame(width: 44, height: 44)
+
+                            Image(systemName: "arrow.up")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundColor(canSend ? MysticColors.voidBlack : MysticColors.textMuted)
+                        }
                     }
                 }
                 .disabled(!canSend)
@@ -539,6 +574,7 @@ struct ChatView: View {
                 )
                 .accessibilityLabel(Text(String(localized: "chat.send")))
                 .accessibilityHint(Text(String(localized: "chat.send.hint")))
+                .accessibilityIdentifier("chat.send.button")
             }
             .padding(.horizontal, MysticSpacing.md)
             .padding(.top, MysticSpacing.sm)
@@ -548,12 +584,13 @@ struct ChatView: View {
                     .font(MysticFonts.caption(12))
                     .foregroundColor(MysticColors.auroraGreen)
                     .padding(.top, 4)
-                    .padding(.bottom, MysticSpacing.sm)
+                    .padding(.bottom, MysticSpacing.xs)
             } else {
-                Color.clear.frame(height: MysticSpacing.sm)
+                Color.clear.frame(height: MysticSpacing.xs)
             }
         }
-        .background(MysticColors.voidBlack.opacity(0.9))
+        .background(MysticColors.voidBlack.opacity(0.92))
+        .accessibilityIdentifier("chat.composer")
     }
 
     // MARK: - Error / Retry UI
@@ -675,6 +712,10 @@ struct ChatView: View {
             return configError.localizedDescription
         }
 
+        if let aiError = error as? AIServiceError {
+            return aiError.localizedDescription
+        }
+
         if let urlError = error as? URLError {
             switch urlError.code {
             case .notConnectedToInternet:
@@ -749,4 +790,12 @@ struct ChatBubbleView: View {
 #Preview {
     ChatView()
         .environment(AuthService())
+}
+
+private struct ChatComposerHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
+    }
 }

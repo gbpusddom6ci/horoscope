@@ -108,14 +108,14 @@ class AuthService {
             if let data = doc?.data(), doc?.exists == true {
                 // Existing user — read stored data
                 displayName = data["displayName"] as? String
-                    ?? (appleDisplayName.isEmpty ? "Kullanıcı" : appleDisplayName)
+                    ?? (appleDisplayName.isEmpty ? String(localized: "common.user") : appleDisplayName)
                 hasCompletedOnboarding = data["hasCompletedOnboarding"] as? Bool ?? false
                 isPremium = data["isPremium"] as? Bool ?? false
                 createdAt = (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
                 birthData = extractBirthData(from: data)
             } else {
                 // New user — create Firestore document
-                displayName = appleDisplayName.isEmpty ? "Kullanıcı" : appleDisplayName
+                displayName = appleDisplayName.isEmpty ? String(localized: "common.user") : appleDisplayName
                 let userData: [String: Any] = [
                     "id": fbUser.uid,
                     "email": fbUser.email ?? appleCredential.email ?? "",
@@ -162,7 +162,7 @@ class AuthService {
         errorMessage = nil
 
         guard !email.isEmpty, !password.isEmpty else {
-            errorMessage = "Email ve şifre gerekli"
+            errorMessage = String(localized: "auth.error.email_password_required")
             isLoading = false
             return
         }
@@ -175,7 +175,7 @@ class AuthService {
             let doc = try? await firestoreService.fetchUserDocument(userId: fbUser.uid)
             let data = doc?.data()
 
-            let displayName = data?["displayName"] as? String ?? email.components(separatedBy: "@").first ?? "Kullanıcı"
+            let displayName = data?["displayName"] as? String ?? email.components(separatedBy: "@").first ?? String(localized: "common.user")
             let birthData = extractBirthData(from: data)
             let hasCompletedOnboarding = (data?["hasCompletedOnboarding"] as? Bool) ?? (birthData != nil)
             
@@ -209,13 +209,13 @@ class AuthService {
         errorMessage = nil
 
         guard !email.isEmpty, !password.isEmpty else {
-            errorMessage = "Tüm alanları doldurun"
+            errorMessage = String(localized: "auth.error.fill_all_fields")
             isLoading = false
             return
         }
 
         guard password.count >= 6 else {
-            errorMessage = "Şifre en az 6 karakter olmalı"
+            errorMessage = String(localized: "auth.error.password_min")
             isLoading = false
             return
         }
@@ -223,7 +223,7 @@ class AuthService {
         do {
             let result = try await Auth.auth().createUser(withEmail: email, password: password)
             let fbUser = result.user
-            let finalName = displayName.isEmpty ? "Kullanıcı" : displayName
+            let finalName = displayName.isEmpty ? String(localized: "common.user") : displayName
             
             // Create user document in Firestore
             let userData: [String: Any] = [
@@ -268,7 +268,7 @@ class AuthService {
             authState = .unauthenticated
             clearSession()
         } catch {
-            self.errorMessage = "Çıkış yapılırken bir hata oluştu"
+            self.errorMessage = String(localized: "auth.error.signout_failed")
         }
     }
 
@@ -416,7 +416,7 @@ class AuthService {
 
         let fallbackName = firebaseUser.displayName
             ?? firebaseUser.email?.components(separatedBy: "@").first
-            ?? "Kullanıcı"
+            ?? String(localized: "common.user")
 
         let appUser = AppUser(
             id: firebaseUser.uid,
@@ -523,7 +523,7 @@ enum AuthServiceError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .notAuthenticated:
-            return "Oturum bulunamadı. Lütfen tekrar giriş yapın."
+            return String(localized: "auth.error.session_missing")
         }
     }
 }

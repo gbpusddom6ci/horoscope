@@ -2,6 +2,7 @@ import SwiftUI
 
 struct NatalChartView: View {
     @Environment(AuthService.self) private var authService
+    @Environment(\.mainChromeMetrics) private var chromeMetrics
     @State private var chartData: ChartData?
     @State private var interpretation: String?
     @State private var isLoadingInterpretation = false
@@ -13,10 +14,21 @@ struct NatalChartView: View {
     private let engine = AstrologyEngine.shared
     private let aiService = AIService.shared
 
-    enum ChartTab: String, CaseIterable {
-        case planets = "Gezegenler"
-        case aspects = "Aspektler"
-        case houses = "Evler"
+    enum ChartTab: CaseIterable {
+        case planets
+        case aspects
+        case houses
+
+        var titleKey: LocalizedStringKey {
+            switch self {
+            case .planets:
+                return "natal.tab.planets"
+            case .aspects:
+                return "natal.tab.aspects"
+            case .houses:
+                return "natal.tab.houses"
+            }
+        }
     }
 
     var body: some View {
@@ -33,11 +45,7 @@ struct NatalChartView: View {
 
     // MARK: - Header
     private var header: some View {
-        Text("Natal Harita")
-            .font(MysticFonts.heading(18))
-            .foregroundColor(MysticColors.textPrimary)
-            .padding(.top, 10)
-            .padding(.bottom, 10)
+        MysticTopBar("natal.title")
     }
 
     // MARK: - Main Content
@@ -59,7 +67,7 @@ struct NatalChartView: View {
             ProgressView()
                 .tint(MysticColors.neonLavender)
                 .scaleEffect(1.5)
-            Text("Haritanız hesaplanıyor...")
+            Text("natal.loading")
                 .font(MysticFonts.caption(14))
                 .foregroundColor(MysticColors.textMuted)
             Spacer()
@@ -102,7 +110,7 @@ struct NatalChartView: View {
                 interpretationSection
                     .fadeInOnAppear(delay: 0.25)
 
-                Color.clear.frame(height: 100)
+                Color.clear.frame(height: max(72, chromeMetrics.contentBottomReservedSpace))
             }
         }
     }
@@ -116,17 +124,17 @@ struct NatalChartView: View {
 
         return HStack(spacing: MysticSpacing.sm) {
             Big3Card(
-                label: "Güneş", symbol: "☉",
+                label: String(localized: "natal.big3.sun"), symbol: "☉",
                 sign: sun?.sign, degree: sun?.formattedDegree,
                 color: .orange
             )
             Big3Card(
-                label: "Ay", symbol: "☽",
+                label: String(localized: "natal.big3.moon"), symbol: "☽",
                 sign: moon?.sign, degree: moon?.formattedDegree,
                 color: MysticColors.celestialPink
             )
             Big3Card(
-                label: "Yükselen", symbol: "AC",
+                label: String(localized: "natal.big3.ascendant"), symbol: "AC",
                 sign: ascSign,
                 degree: ascDeg.map { String(format: "%.1f°", $0.truncatingRemainder(dividingBy: 30)) },
                 color: MysticColors.neonLavender
@@ -151,7 +159,7 @@ struct NatalChartView: View {
         Button {
             withAnimation(.easeInOut(duration: 0.2)) { selectedTab = tab }
         } label: {
-            Text(tab.rawValue)
+            Text(tab.titleKey)
                 .font(MysticFonts.body(14))
                 .fontWeight(selectedTab == tab ? .semibold : .regular)
                 .foregroundColor(selectedTab == tab ? MysticColors.textPrimary : MysticColors.textMuted)
@@ -221,12 +229,12 @@ struct NatalChartView: View {
     private var interpretationSection: some View {
         VStack(alignment: .leading, spacing: MysticSpacing.sm) {
             HStack {
-                Text("AI Yorumu")
+                Text("natal.interpretation.title")
                     .font(MysticFonts.heading(18))
                     .foregroundColor(MysticColors.textPrimary)
                 Spacer()
                 if interpretation == nil {
-                    MysticButton("Yorumla", icon: "sparkles", style: .secondary, isLoading: isLoadingInterpretation) {
+                    MysticButton(String(localized: "natal.interpretation.button"), icon: "sparkles", style: .secondary, isLoading: isLoadingInterpretation) {
                         requestInterpretation()
                     }
                     .frame(width: 140)
@@ -253,7 +261,7 @@ struct NatalChartView: View {
                 .font(.system(size: 64))
                 .foregroundStyle(MysticGradients.lavenderGlow)
                 .opacity(0.5)
-            Text("Natal haritanızı görmek için doğum bilgilerinizi girin")
+            Text("natal.empty")
                 .font(MysticFonts.body(16))
                 .foregroundColor(MysticColors.textSecondary)
                 .multilineTextAlignment(.center)
@@ -284,7 +292,7 @@ struct NatalChartView: View {
                     birthData: birthData
                 )
             } catch {
-                interpretation = "Yorum yüklenirken hata oluştu."
+                interpretation = String(localized: "natal.interpretation.error")
             }
             isLoadingInterpretation = false
         }
@@ -648,7 +656,7 @@ struct ChartWheelView: View {
 
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 6) {
-                        Text(pos.planet.rawValue)
+                        Text(pos.planet.localizedDisplayName)
                             .font(MysticFonts.heading(16))
                             .foregroundColor(MysticColors.textPrimary)
                         if pos.isRetrograde {
@@ -672,7 +680,7 @@ struct ChartWheelView: View {
                 Spacer()
 
                 VStack(alignment: .trailing, spacing: 3) {
-                    Text("\(pos.house). Ev")
+                    Text(String(format: String(localized: "natal.house_format"), pos.house))
                         .font(MysticFonts.body(14))
                         .foregroundColor(MysticColors.textSecondary)
                     if dignity != .peregrine {
@@ -684,7 +692,7 @@ struct ChartWheelView: View {
                         }
                         .foregroundColor(dignity.color)
                     }
-                    Text(pos.sign.element)
+                    Text(pos.sign.localizedElement)
                         .font(MysticFonts.caption(10))
                         .foregroundColor(MysticColors.textMuted)
                 }

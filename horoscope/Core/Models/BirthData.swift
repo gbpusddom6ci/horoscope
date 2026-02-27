@@ -38,6 +38,23 @@ enum Planet: String, CaseIterable, Codable {
     case northNode = "Kuzey Düğüm"
     case chiron = "Chiron"
 
+    var localizedDisplayName: String {
+        switch self {
+        case .sun: return String(localized: "astro.planet.sun")
+        case .moon: return String(localized: "astro.planet.moon")
+        case .mercury: return String(localized: "astro.planet.mercury")
+        case .venus: return String(localized: "astro.planet.venus")
+        case .mars: return String(localized: "astro.planet.mars")
+        case .jupiter: return String(localized: "astro.planet.jupiter")
+        case .saturn: return String(localized: "astro.planet.saturn")
+        case .uranus: return String(localized: "astro.planet.uranus")
+        case .neptune: return String(localized: "astro.planet.neptune")
+        case .pluto: return String(localized: "astro.planet.pluto")
+        case .northNode: return String(localized: "astro.planet.north_node")
+        case .chiron: return String(localized: "astro.planet.chiron")
+        }
+    }
+
     var symbol: String {
         switch self {
         case .sun: return "☉"
@@ -80,18 +97,18 @@ enum House: Int, CaseIterable, Codable {
 
     var name: String {
         switch self {
-        case .first: return "1. Ev (Benlik)"
-        case .second: return "2. Ev (Değerler)"
-        case .third: return "3. Ev (İletişim)"
-        case .fourth: return "4. Ev (Aile)"
-        case .fifth: return "5. Ev (Yaratıcılık)"
-        case .sixth: return "6. Ev (Sağlık)"
-        case .seventh: return "7. Ev (İlişkiler)"
-        case .eighth: return "8. Ev (Dönüşüm)"
-        case .ninth: return "9. Ev (Felsefe)"
-        case .tenth: return "10. Ev (Kariyer)"
-        case .eleventh: return "11. Ev (Topluluk)"
-        case .twelfth: return "12. Ev (Bilinçaltı)"
+        case .first: return String(localized: "astro.house.1")
+        case .second: return String(localized: "astro.house.2")
+        case .third: return String(localized: "astro.house.3")
+        case .fourth: return String(localized: "astro.house.4")
+        case .fifth: return String(localized: "astro.house.5")
+        case .sixth: return String(localized: "astro.house.6")
+        case .seventh: return String(localized: "astro.house.7")
+        case .eighth: return String(localized: "astro.house.8")
+        case .ninth: return String(localized: "astro.house.9")
+        case .tenth: return String(localized: "astro.house.10")
+        case .eleventh: return String(localized: "astro.house.11")
+        case .twelfth: return String(localized: "astro.house.12")
         }
     }
 }
@@ -104,6 +121,17 @@ enum AspectType: String, Codable {
     case square = "Kare"                // 90°
     case sextile = "Altıgen"            // 60°
     case quincunx = "Quincunx"          // 150°
+
+    var localizedDisplayName: String {
+        switch self {
+        case .conjunction: return String(localized: "astro.aspect.conjunction")
+        case .opposition: return String(localized: "astro.aspect.opposition")
+        case .trine: return String(localized: "astro.aspect.trine")
+        case .square: return String(localized: "astro.aspect.square")
+        case .sextile: return String(localized: "astro.aspect.sextile")
+        case .quincunx: return String(localized: "astro.aspect.quincunx")
+        }
+    }
 
     var angleDegrees: Double {
         switch self {

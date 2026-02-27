@@ -21,8 +21,21 @@ jobs:
 
       - name: Secret scan
         run: |
-          if grep -R -n -E --exclude-dir=.git --exclude=ios-ci.yml 'sk-or-|Authorization:[[:space:]]*Bearer[[:space:]]+sk-' .; then
+          if grep -R -n -E --exclude-dir=.git --exclude-dir=DerivedData --exclude=ios-ci.yml --exclude=Secrets.template.xcconfig --exclude=Secrets.xcconfig --exclude=README.md \
+            'sk-or-[A-Za-z0-9._-]{20,}|Authorization:[[:space:]]*Bearer[[:space:]]+sk-or-[A-Za-z0-9._-]{20,}|OPENROUTER_API_KEY[[:space:]]*=[[:space:]]*sk-or-[A-Za-z0-9._-]{20,}|FREE_ASTRO_API_KEY[[:space:]]*=[[:space:]]*[A-Za-z0-9._-]{12,}' .; then
             echo "Potential hardcoded secret found."
+            exit 1
+          fi
+
+      - name: Localization parity (core keys)
+        run: |
+          EN_KEYS="$(mktemp)"
+          TR_KEYS="$(mktemp)"
+          CORE_PREFIXES='^(tab\\.|common\\.|auth\\.|onboarding\\.|home\\.|chat\\.|dream\\.|settings\\.|quick_actions\\.|config\\.|ai\\.|notifications\\.|astro\\.|transit\\.)'
+          awk -F '=' '/\".*\"[[:space:]]*=/{gsub(/[[:space:]]|\"/, "", $1); print $1}' horoscope/en.lproj/Localizable.strings | grep -E "$CORE_PREFIXES" | sort -u > "$EN_KEYS"
+          awk -F '=' '/\".*\"[[:space:]]*=/{gsub(/[[:space:]]|\"/, "", $1); print $1}' horoscope/tr.lproj/Localizable.strings | grep -E "$CORE_PREFIXES" | sort -u > "$TR_KEYS"
+          if ! diff -u "$EN_KEYS" "$TR_KEYS"; then
+            echo "Core localization key mismatch between en/tr Localizable.strings."
             exit 1
           fi
 
@@ -51,4 +64,14 @@ jobs:
             -scheme horoscope \
             -destination "platform=iOS Simulator,name=${SIMULATOR_NAME}" \
             -only-testing:horoscopeTests \
+            test
+
+      - name: UI smoke tests
+        run: |
+          xcodebuild \
+            -project horoscope.xcodeproj \
+            -scheme horoscope \
+            -destination "platform=iOS Simulator,name=${SIMULATOR_NAME}" \
+            -only-testing:horoscopeUITests/testQuickActionsSheetShowsItems \
+            -only-testing:horoscopeUITests/testChatComposerKeyboardAdaptiveChrome \
             test

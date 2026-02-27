@@ -171,7 +171,7 @@ struct AppleSignInButton: View {
             HStack(spacing: MysticSpacing.md) {
                 Image(systemName: "apple.logo")
                     .font(.system(size: 20, weight: .semibold))
-                Text("Apple ile Giriş Yap")
+                Text("auth.apple_signin")
                     .font(MysticFonts.body(16))
                     .fontWeight(.semibold)
             }

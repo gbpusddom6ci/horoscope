@@ -44,7 +44,7 @@ struct PlanetPosition: Codable, Identifiable {
     var formattedDegree: String {
         let deg = Int(signDegree)
         let min = Int((signDegree - Double(deg)) * 60)
-        return "\(deg)°\(min)' \(sign.rawValue)"
+        return "\(deg)°\(min)' \(sign.localizedDisplayName)"
     }
 }
 
@@ -66,7 +66,7 @@ struct Aspect: Codable, Identifiable {
     var isApplying: Bool        // getting closer or separating
 
     var description: String {
-        "\(planet1.rawValue) \(type.symbol) \(planet2.rawValue) (\(type.rawValue))"
+        "\(planet1.localizedDisplayName) \(type.symbol) \(planet2.localizedDisplayName) (\(type.localizedDisplayName))"
     }
 }
 
@@ -118,6 +118,19 @@ enum TransitSeverity: String, Codable {
     case medium = "Orta"
     case high = "Yüksek"
     case critical = "Kritik"
+
+    var localizedDisplayName: String {
+        switch self {
+        case .low:
+            return String(localized: "astro.transit_severity.low")
+        case .medium:
+            return String(localized: "astro.transit_severity.medium")
+        case .high:
+            return String(localized: "astro.transit_severity.high")
+        case .critical:
+            return String(localized: "astro.transit_severity.critical")
+        }
+    }
 
     var emoji: String {
         switch self {

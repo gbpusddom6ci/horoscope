@@ -5,6 +5,7 @@ import os
 struct SettingsView: View {
     @Environment(AuthService.self) private var authService
     @Environment(PremiumService.self) private var premiumService
+    @Environment(\.mainChromeMetrics) private var chromeMetrics
     @State private var showEditBirthData = false
     @State private var showPaywall = false
     @State private var showNotificationPreferences = false
@@ -15,6 +16,11 @@ struct SettingsView: View {
     private var user: AppUser? { authService.currentUser }
     private var birthData: BirthData? { user?.birthData }
     private var hasPremiumAccess: Bool { (user?.isPremium ?? false) || premiumService.hasPremiumAccess }
+
+    private var appVersionLabel: String {
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0.0"
+        return String(format: String(localized: "settings.app_version"), version)
+    }
 
     private struct SettingsItem: Identifiable {
         let id: String
@@ -94,11 +100,7 @@ struct SettingsView: View {
             StarField(starCount: 30)
 
             VStack(spacing: 0) {
-                Text("settings.title")
-                    .font(MysticFonts.heading(18))
-                    .foregroundColor(MysticColors.textPrimary)
-                    .padding(.top, 10)
-                    .padding(.bottom, 10)
+                MysticTopBar("settings.title")
 
                 ScrollView(.vertical, showsIndicators: false) {
                     VStack(spacing: MysticSpacing.lg) {
@@ -107,10 +109,10 @@ struct SettingsView: View {
                         accountSection.fadeInOnAppear(delay: 0.2)
                         settingsSectionCard(supportSection).fadeInOnAppear(delay: 0.3)
                         dangerZone.fadeInOnAppear(delay: 0.35)
-                        Color.clear.frame(height: 100)
+                        Color.clear.frame(height: max(72, chromeMetrics.contentBottomReservedSpace))
                     }
-                    .padding(.horizontal, MysticSpacing.md)
-                    .padding(.top, MysticSpacing.md)
+                    .padding(.horizontal, MysticLayout.screenHorizontalPadding)
+                    .padding(.top, MysticSpacing.sm)
                 }
             }
             .sheet(isPresented: $showEditBirthData) {
@@ -238,7 +240,7 @@ struct SettingsView: View {
                             infoRow(icon: "clock", label: String(localized: "settings.birth.time"), value: bd.birthTime?.formatted(as: "HH:mm") ?? "-")
                         }
                         infoRow(icon: "mappin", label: String(localized: "settings.birth.place"), value: bd.birthPlace)
-                        infoRow(icon: "sun.max", label: String(localized: "settings.birth.sun"), value: "\(bd.sunSign.symbol) \(bd.sunSign.rawValue)")
+                        infoRow(icon: "sun.max", label: String(localized: "settings.birth.sun"), value: "\(bd.sunSign.symbol) \(bd.sunSign.localizedDisplayName)")
                     }
                 }
             } else {
@@ -297,6 +299,7 @@ struct SettingsView: View {
                         .foregroundColor(MysticColors.textMuted)
                 }
                 .frame(minHeight: MysticAccessibility.minimumTapTarget)
+                .contentShape(Rectangle())
             }
         }
         .buttonStyle(.plain)
@@ -311,7 +314,7 @@ struct SettingsView: View {
                 authService.signOut()
             }
 
-            Text("Mystic v1.0.0")
+            Text(appVersionLabel)
                 .font(MysticFonts.caption(12))
                 .foregroundColor(MysticColors.textMuted)
                 .padding(.top, MysticSpacing.sm)

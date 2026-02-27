@@ -88,7 +88,7 @@ struct Big3Card: View {
                 if let sign = sign {
                     Text(sign.symbol)
                         .font(.system(size: 22))
-                    Text(sign.rawValue)
+                    Text(sign.localizedDisplayName)
                         .font(MysticFonts.caption(11))
                         .fontWeight(.medium)
                         .foregroundColor(sign.elementColor)
@@ -154,7 +154,7 @@ struct PlanetDetailCard: View {
 
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 6) {
-                    Text(position.planet.rawValue)
+                    Text(position.planet.localizedDisplayName)
                         .font(MysticFonts.body(15))
                         .fontWeight(.semibold)
                         .foregroundColor(MysticColors.textPrimary)
@@ -182,7 +182,7 @@ struct PlanetDetailCard: View {
             Spacer()
 
             VStack(alignment: .trailing, spacing: 3) {
-                Text("\(position.house). Ev")
+                Text(String(format: String(localized: "natal.house_format"), position.house))
                     .font(MysticFonts.body(13))
                     .foregroundColor(MysticColors.textSecondary)
 
@@ -206,10 +206,10 @@ struct PlanetDetailCard: View {
                 .padding(.vertical, MysticSpacing.sm)
 
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
-                dignityCell("Element", value: position.sign.element, color: position.sign.elementColor)
-                dignityCell("Nitelik", value: position.sign.modality, color: MysticColors.textSecondary)
-                dignityCell("Derece", value: String(format: "%.2f°", position.signDegree), color: MysticColors.mysticGold)
-                dignityCell("Onur", value: dignity.rawValue, color: dignity.color)
+                dignityCell(String(localized: "natal.meta.element"), value: position.sign.localizedElement, color: position.sign.elementColor)
+                dignityCell(String(localized: "natal.meta.modality"), value: position.sign.localizedModality, color: MysticColors.textSecondary)
+                dignityCell(String(localized: "natal.meta.degree"), value: String(format: "%.2f°", position.signDegree), color: MysticColors.mysticGold)
+                dignityCell(String(localized: "natal.meta.dignity"), value: dignity.rawValue, color: dignity.color)
             }
 
             if position.isRetrograde {
@@ -217,7 +217,7 @@ struct PlanetDetailCard: View {
                     Image(systemName: "arrow.uturn.backward.circle.fill")
                         .foregroundColor(MysticColors.celestialPink)
                         .font(.system(size: 14))
-                    Text("Bu gezegen retrograd — etkisi içe dönük ve gecikmeli")
+                    Text("natal.retrograde.note")
                         .font(MysticFonts.caption(11))
                         .foregroundColor(MysticColors.celestialPink.opacity(0.8))
                 }
@@ -255,7 +255,7 @@ struct AspectCard: View {
                 VStack(spacing: 2) {
                     Text(aspect.planet1.symbol)
                         .font(.system(size: 20))
-                    Text(aspect.planet1.rawValue)
+                    Text(aspect.planet1.localizedDisplayName)
                         .font(MysticFonts.caption(9))
                         .foregroundColor(MysticColors.textMuted)
                 }
@@ -282,7 +282,7 @@ struct AspectCard: View {
                 VStack(spacing: 2) {
                     Text(aspect.planet2.symbol)
                         .font(.system(size: 20))
-                    Text(aspect.planet2.rawValue)
+                    Text(aspect.planet2.localizedDisplayName)
                         .font(MysticFonts.caption(9))
                         .foregroundColor(MysticColors.textMuted)
                 }
@@ -292,7 +292,7 @@ struct AspectCard: View {
 
                 // Info
                 VStack(alignment: .trailing, spacing: 3) {
-                    Text(aspect.type.rawValue)
+                    Text(aspect.type.localizedDisplayName)
                         .font(MysticFonts.body(12))
                         .foregroundColor(accentColor)
                     Text(String(format: "%.1f° orb", aspect.orb))
@@ -309,21 +309,21 @@ struct ElementModalityBreakdown: View {
     let positions: [PlanetPosition]
 
     private var elements: [(String, String, Int, Color)] {
-        let grouped = Dictionary(grouping: positions) { $0.sign.element }
+        let grouped = Dictionary(grouping: positions) { $0.sign.localizedElement }
         return [
-            ("🔥", "Ateş", grouped["Ateş"]?.count ?? 0, .red),
-            ("🌍", "Toprak", grouped["Toprak"]?.count ?? 0, .green),
-            ("💨", "Hava", grouped["Hava"]?.count ?? 0, .cyan),
-            ("💧", "Su", grouped["Su"]?.count ?? 0, .blue)
+            ("🔥", String(localized: "astro.element.fire"), grouped[String(localized: "astro.element.fire")]?.count ?? 0, .red),
+            ("🌍", String(localized: "astro.element.earth"), grouped[String(localized: "astro.element.earth")]?.count ?? 0, .green),
+            ("💨", String(localized: "astro.element.air"), grouped[String(localized: "astro.element.air")]?.count ?? 0, .cyan),
+            ("💧", String(localized: "astro.element.water"), grouped[String(localized: "astro.element.water")]?.count ?? 0, .blue)
         ]
     }
 
     private var modalities: [(String, Int, Color)] {
-        let grouped = Dictionary(grouping: positions) { $0.sign.modality }
+        let grouped = Dictionary(grouping: positions) { $0.sign.localizedModality }
         return [
-            ("Öncü", grouped["Öncü"]?.count ?? 0, .orange),
-            ("Sabit", grouped["Sabit"]?.count ?? 0, MysticColors.neonLavender),
-            ("Değişken", grouped["Değişken"]?.count ?? 0, MysticColors.auroraGreen)
+            (String(localized: "astro.modality.cardinal"), grouped[String(localized: "astro.modality.cardinal")]?.count ?? 0, .orange),
+            (String(localized: "astro.modality.fixed"), grouped[String(localized: "astro.modality.fixed")]?.count ?? 0, MysticColors.neonLavender),
+            (String(localized: "astro.modality.mutable"), grouped[String(localized: "astro.modality.mutable")]?.count ?? 0, MysticColors.auroraGreen)
         ]
     }
 
@@ -331,7 +331,7 @@ struct ElementModalityBreakdown: View {
         MysticCard {
             VStack(alignment: .leading, spacing: MysticSpacing.md) {
                 // Elements
-                Text("Element Dağılımı")
+                Text("natal.breakdown.elements")
                     .font(MysticFonts.heading(14))
                     .foregroundColor(MysticColors.textPrimary)
 
@@ -344,7 +344,7 @@ struct ElementModalityBreakdown: View {
                 Divider().background(MysticColors.cardBorder)
 
                 // Modalities
-                Text("Nitelik Dağılımı")
+                Text("natal.breakdown.modalities")
                     .font(MysticFonts.heading(14))
                     .foregroundColor(MysticColors.textPrimary)
 
@@ -435,7 +435,7 @@ struct HouseCard: View {
 
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 4) {
-                        Text("\(cusp.houseNumber). Ev")
+                        Text(String(format: String(localized: "natal.house_format"), cusp.houseNumber))
                             .font(MysticFonts.body(14))
                             .fontWeight(.semibold)
                             .foregroundColor(MysticColors.textPrimary)
@@ -443,7 +443,7 @@ struct HouseCard: View {
                             .foregroundColor(MysticColors.textMuted)
                         Text(cusp.sign.symbol)
                             .font(.system(size: 14))
-                        Text(cusp.sign.rawValue)
+                        Text(cusp.sign.localizedDisplayName)
                             .font(MysticFonts.caption(12))
                             .foregroundColor(cusp.sign.elementColor)
                     }
@@ -484,7 +484,7 @@ struct ChartPatternCard: View {
                     HStack {
                         Image(systemName: "sparkles")
                             .foregroundColor(MysticColors.mysticGold)
-                        Text("Harita Desenleri")
+                        Text("natal.patterns.title")
                             .font(MysticFonts.heading(16))
                             .foregroundColor(MysticColors.textPrimary)
                     }
@@ -523,8 +523,8 @@ struct ChartPatternCard: View {
         // Stellium (3+ planets in same sign)
         let signGroups = Dictionary(grouping: chart.planetPositions) { $0.sign }
         for (sign, planets) in signGroups where planets.count >= 3 {
-            let names = planets.map { $0.planet.rawValue }.joined(separator: ", ")
-            patterns.append(("Stellium — \(sign.rawValue)", "\(names): yoğun enerji odağı", "⭐"))
+            let names = planets.map { $0.planet.localizedDisplayName }.joined(separator: ", ")
+            patterns.append(("Stellium — \(sign.localizedDisplayName)", "\(names): \(String(localized: "natal.patterns.stellium.subtitle"))", "⭐"))
         }
         // Many conjunctions
         if conjunctions.count >= 4 { patterns.append(("Yoğun Kavuşum", "\(conjunctions.count) kavuşum — güçlü birleşik enerji", "◉")) }
@@ -554,10 +554,10 @@ struct DominantPlanetCard: View {
                     }
 
                     VStack(alignment: .leading, spacing: 3) {
-                        Text("Dominant Gezegen")
+                        Text("natal.dominant.title")
                             .font(MysticFonts.caption(11))
                             .foregroundColor(MysticColors.textMuted)
-                        Text(planet.rawValue)
+                        Text(planet.localizedDisplayName)
                             .font(MysticFonts.heading(18))
                             .foregroundColor(MysticColors.textPrimary)
                         Text(reason)
@@ -604,7 +604,7 @@ struct DominantPlanetCard: View {
 
         guard let best = scores.max(by: { $0.value < $1.value }) else { return nil }
         let pos = chart.planetPositions.first(where: { $0.planet == best.key })
-        let reason = "\(pos?.sign.rawValue ?? "") \(pos?.house ?? 0). Evde"
+        let reason = "\(pos?.sign.localizedDisplayName ?? "") \(String(format: String(localized: "natal.house_format"), pos?.house ?? 0))"
         return (best.key, best.value, reason)
     }
 }

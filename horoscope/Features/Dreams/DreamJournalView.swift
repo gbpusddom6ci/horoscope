@@ -2,6 +2,7 @@ import SwiftUI
 
 struct DreamJournalView: View {
     @Environment(AuthService.self) private var authService
+    @Environment(\.mainChromeMetrics) private var chromeMetrics
     @State private var showNewDreamSheet = false
     @State private var showSavedToast = false
 
@@ -17,13 +18,23 @@ struct DreamJournalView: View {
             StarField(starCount: 40)
 
             VStack(spacing: 0) {
-                topBar
+                MysticTopBar("dream.title") {
+                    Button {
+                        showNewDreamSheet = true
+                    } label: {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.system(size: 19))
+                            .foregroundColor(MysticColors.celestialPink)
+                    }
+                    .accessibilityLabel(Text(String(localized: "dream.new")))
+                    .accessibilityHint(Text(String(localized: "dream.quick_add.hint")))
+                    .accessibilityIdentifier("dream.new_topbar")
+                }
 
                 ScrollView(.vertical, showsIndicators: false) {
                     VStack(spacing: MysticSpacing.lg) {
                         if let syncError = dreamService.lastErrorMessage {
                             syncErrorBanner(syncError)
-                                .padding(.horizontal, MysticSpacing.md)
                                 .padding(.top, MysticSpacing.xs)
                         }
 
@@ -36,9 +47,14 @@ struct DreamJournalView: View {
                                 dreamCard(dream: dream)
                             }
                         }
-                        Color.clear.frame(height: dreams.isEmpty ? 100 : 140)
+                        Color.clear.frame(
+                            height: dreams.isEmpty
+                                ? max(72, chromeMetrics.contentBottomReservedSpace)
+                                : max(128, chromeMetrics.contentBottomReservedSpace + 44)
+                        )
                     }
-                    .padding(.top, MysticSpacing.md)
+                    .padding(.horizontal, MysticLayout.screenHorizontalPadding)
+                    .padding(.top, MysticSpacing.sm)
                 }
             }
             .sheet(isPresented: $showNewDreamSheet, onDismiss: {
@@ -70,37 +86,25 @@ struct DreamJournalView: View {
         .onReceive(NotificationCenter.default.publisher(for: .openDreamComposer)) { _ in
             showNewDreamSheet = true
         }
-        .safeAreaInset(edge: .bottom) {
+        .safeAreaInset(edge: .bottom, spacing: 0) {
             if !dreams.isEmpty {
                 VStack {
                     MysticButton(String(localized: "dream.new"), icon: "plus.circle.fill", style: .primary) {
                         showNewDreamSheet = true
                     }
                     .accessibilityHint(Text(String(localized: "dream.quick_add.hint")))
+                    .accessibilityIdentifier("dream.new_dock_cta")
                 }
-                .padding(.horizontal, MysticSpacing.md)
+                .padding(.horizontal, MysticLayout.screenHorizontalPadding)
                 .padding(.top, MysticSpacing.sm)
-                .padding(.bottom, MysticSpacing.lg)
+                .padding(.bottom, chromeMetrics.tabBarVisible ? MysticSpacing.xs : MysticSpacing.md)
                 .background(
                     Rectangle()
-                        .fill(MysticColors.voidBlack.opacity(0.85))
+                        .fill(MysticColors.voidBlack.opacity(0.9))
                         .overlay(Rectangle().fill(MysticGradients.cardGlass))
                 )
             }
         }
-    }
-
-    private var topBar: some View {
-        HStack {
-            Text("dream.title")
-                .font(MysticFonts.heading(18))
-                .foregroundColor(MysticColors.textPrimary)
-
-            Spacer()
-        }
-        .padding(.horizontal, MysticSpacing.md)
-        .padding(.top, 10)
-        .padding(.bottom, 10)
     }
 
     private var headerCard: some View {
@@ -154,7 +158,6 @@ struct DreamJournalView: View {
                     .clipShape(Capsule())
             }
         }
-        .padding(.horizontal, MysticSpacing.md)
     }
 
     private var emptyState: some View {
@@ -309,7 +312,7 @@ struct NewDreamSheet: View {
                         Button { selectedMood = mood } label: {
                             VStack(spacing: 4) {
                                 Text(mood.emoji).font(.system(size: 28))
-                                Text(mood.rawValue)
+                                Text(mood.localizedDisplayName)
                                     .font(MysticFonts.caption(10))
                                     .foregroundColor(MysticColors.textSecondary)
                             }

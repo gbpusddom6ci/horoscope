@@ -49,59 +49,64 @@ final class TarotService {
 }
 
 struct TarotView: View {
+    @Environment(\.mainChromeMetrics) private var chromeMetrics
     @State private var tarotService = TarotService.shared
 
     var body: some View {
         ZStack {
             StarField(starCount: 45)
 
-            ScrollView(.vertical, showsIndicators: false) {
-                VStack(spacing: MysticSpacing.lg) {
-                    Spacer().frame(height: 50)
+            VStack(spacing: 0) {
+                MysticTopBar("tarot.title")
 
-                    Image(systemName: "sparkles.rectangle.stack.fill")
-                        .font(.system(size: 58))
-                        .foregroundStyle(MysticGradients.goldShimmer)
-                        .shadow(color: MysticColors.mysticGold.opacity(0.35), radius: 10)
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(spacing: MysticSpacing.lg) {
+                        Spacer().frame(height: 24)
 
-                    GlowingText("Tarot", font: MysticFonts.title(30), color: MysticColors.mysticGold)
+                        Image(systemName: "sparkles.rectangle.stack.fill")
+                            .font(.system(size: 58))
+                            .foregroundStyle(MysticGradients.goldShimmer)
+                            .shadow(color: MysticColors.mysticGold.opacity(0.35), radius: 10)
 
-                    Text("Bugünün enerjisini görmek için bir kart çek.")
-                        .font(MysticFonts.body(15))
-                        .foregroundColor(MysticColors.textSecondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, MysticSpacing.xl)
+                        GlowingText(String(localized: "tarot.title"), font: MysticFonts.title(30), color: MysticColors.mysticGold)
 
-                    MysticButton("Kart Çek", icon: "suit.spade.fill", style: .primary) {
-                        tarotService.drawCard()
-                    }
-                    .padding(.horizontal, MysticSpacing.md)
+                        Text("tarot.subtitle")
+                            .font(MysticFonts.body(15))
+                            .foregroundColor(MysticColors.textSecondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, MysticSpacing.xl)
 
-                    if let reading = tarotService.lastReading {
-                        MysticCard(glowColor: MysticColors.neonLavender) {
-                            VStack(spacing: MysticSpacing.md) {
-                                Text(reading.card.symbol)
-                                    .font(.system(size: 60))
-
-                                Text(reading.title)
-                                    .font(MysticFonts.heading(22))
-                                    .foregroundColor(MysticColors.textPrimary)
-
-                                Text(reading.interpretation)
-                                    .font(MysticFonts.body(15))
-                                    .foregroundColor(MysticColors.textSecondary)
-                                    .multilineTextAlignment(.center)
-                                    .lineSpacing(3)
-
-                                Text(reading.createdAt.formatted(as: "d MMMM HH:mm"))
-                                    .font(MysticFonts.caption(12))
-                                    .foregroundColor(MysticColors.textMuted)
-                            }
+                        MysticButton(String(localized: "tarot.draw"), icon: "suit.spade.fill", style: .primary) {
+                            tarotService.drawCard()
                         }
                         .padding(.horizontal, MysticSpacing.md)
-                    }
 
-                    Color.clear.frame(height: 80)
+                        if let reading = tarotService.lastReading {
+                            MysticCard(glowColor: MysticColors.neonLavender) {
+                                VStack(spacing: MysticSpacing.md) {
+                                    Text(reading.card.symbol)
+                                        .font(.system(size: 60))
+
+                                    Text(reading.title)
+                                        .font(MysticFonts.heading(22))
+                                        .foregroundColor(MysticColors.textPrimary)
+
+                                    Text(reading.interpretation)
+                                        .font(MysticFonts.body(15))
+                                        .foregroundColor(MysticColors.textSecondary)
+                                        .multilineTextAlignment(.center)
+                                        .lineSpacing(3)
+
+                                    Text(reading.createdAt.formatted(as: "d MMMM HH:mm"))
+                                        .font(MysticFonts.caption(12))
+                                        .foregroundColor(MysticColors.textMuted)
+                                }
+                            }
+                            .padding(.horizontal, MysticSpacing.md)
+                        }
+
+                        Color.clear.frame(height: max(72, chromeMetrics.contentBottomReservedSpace))
+                    }
                 }
             }
         }

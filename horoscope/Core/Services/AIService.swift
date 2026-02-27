@@ -26,11 +26,41 @@ struct OpenRouterChoice: Codable {
 @Observable
 class AIService {
     static let shared = AIService()
+    private let openRouterModel = "google/gemini-3-flash-preview"
 
     var isGenerating: Bool = false
     private let logger = Logger(subsystem: "rk.horoscope", category: "AIService")
 
     private init() {}
+
+    private func validateOpenRouterResponse(
+        data: Data,
+        response: URLResponse,
+        requestLabel: String
+    ) throws {
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw AIServiceError.invalidResponse
+        }
+
+        guard (200..<300).contains(httpResponse.statusCode) else {
+            let errorBody = String(data: data, encoding: .utf8) ?? "Unknown"
+            logger.error("\(requestLabel, privacy: .public) failed (\(httpResponse.statusCode)): \(errorBody, privacy: .private(mask: .hash))")
+            throw mapHTTPError(statusCode: httpResponse.statusCode)
+        }
+    }
+
+    private func mapHTTPError(statusCode: Int) -> AIServiceError {
+        switch statusCode {
+        case 401, 403:
+            return .unauthorized
+        case 429:
+            return .rateLimited
+        case 500..<600:
+            return .upstreamUnavailable
+        default:
+            return .requestFailed(statusCode: statusCode)
+        }
+    }
 
     // MARK: - Core API Call
     private func generateContent(prompt: String, systemInstruction: String? = nil) async throws -> String {
@@ -57,7 +87,7 @@ class AIService {
         messages.append(OpenRouterMessage(role: "user", content: prompt))
         
         let reqBody = OpenRouterRequest(
-            model: "google/gemini-3-flash-preview",
+            model: openRouterModel,
             messages: messages
         )
         
@@ -65,15 +95,11 @@ class AIService {
         
         let (data, response) = try await URLSession.shared.data(for: request)
         
-        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-            let errorBody = String(data: data, encoding: .utf8) ?? "Unknown"
-            logger.error("OpenRouter text request failed: \(errorBody, privacy: .private(mask: .hash))")
-            throw URLError(.badServerResponse)
-        }
+        try validateOpenRouterResponse(data: data, response: response, requestLabel: "OpenRouter text request")
         
         let orResponse = try JSONDecoder().decode(OpenRouterResponse.self, from: data)
         guard let text = orResponse.choices?.first?.message?.content else {
-            return "Yorum alınamadı."
+            throw AIServiceError.emptyResponse
         }
         
         return text
@@ -127,23 +153,19 @@ class AIService {
         ])
 
         let requestBody: [String: Any] = [
-            "model": "google/gemini-2.0-flash-001",
+            "model": openRouterModel,
             "messages": messages
         ]
         request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
 
         let (data, response) = try await URLSession.shared.data(for: request)
-        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-            let errorBody = String(data: data, encoding: .utf8) ?? "Unknown"
-            logger.error("OpenRouter multimodal request failed: \(errorBody, privacy: .private(mask: .hash))")
-            throw URLError(.badServerResponse)
-        }
+        try validateOpenRouterResponse(data: data, response: response, requestLabel: "OpenRouter multimodal request")
 
         if let content = parseAssistantContent(from: data) {
             return content
         }
 
-        return "Yorum alınamadı."
+        throw AIServiceError.emptyResponse
     }
 
     private func parseAssistantContent(from data: Data) -> String? {
@@ -177,9 +199,9 @@ class AIService {
         defer { isGenerating = false }
 
         // Find Big 3
-        let sun = chartData.planetPositions.first(where: { $0.planet == .sun })?.sign.rawValue ?? birthData.sunSign.rawValue
-        let moon = chartData.planetPositions.first(where: { $0.planet == .moon })?.sign.rawValue ?? "Bilinmiyor"
-        let ascendant = chartData.houseCusps.first?.sign.rawValue ?? "Bilinmiyor"
+        let sun = chartData.planetPositions.first(where: { $0.planet == .sun })?.sign.localizedDisplayName ?? birthData.sunSign.localizedDisplayName
+        let moon = chartData.planetPositions.first(where: { $0.planet == .moon })?.sign.localizedDisplayName ?? String(localized: "common.unknown")
+        let ascendant = chartData.houseCusps.first?.sign.localizedDisplayName ?? String(localized: "common.unknown")
         
         let systemPrompt = "Sen 'Mystik' adında, uzman bir astroloji asistanısın. Kısa, samimi, modern ve ilham verici bir dille astroloji yorumu yaparsın. Markdown formatı kullanırsın."
         
@@ -203,8 +225,8 @@ class AIService {
 
         let systemPrompt = "Sen uzman bir astroloğsun. Transitlerin etkilerini anlaşılır şekilde açıklarsın."
         let prompt = """
-        Kullanıcının \(event.natalPlanet.rawValue) gezegeni üzerinden şu anda \(event.transitPlanet.rawValue) geçiyor ve \(event.aspectType.rawValue) açısı yapıyor. 
-        Bu \(event.durationDays) günlük bir transit. Etkisi: \(event.severity.rawValue).
+        Kullanıcının \(event.natalPlanet.localizedDisplayName) gezegeni üzerinden şu anda \(event.transitPlanet.localizedDisplayName) geçiyor ve \(event.aspectType.localizedDisplayName) açısı yapıyor. 
+        Bu \(event.durationDays) günlük bir transit. Etkisi: \(event.severity.localizedDisplayName).
         Lütfen bu transetin kullanıcının hayatına kısa vadeli etkilerini yorumla.
         """
 
@@ -264,10 +286,10 @@ class AIService {
         var systemPrompt = "Sen 'Mystik' adında astroloji, rüya yorumu, tarot ve spiritüel danışmanlık yapan bir yapay zekasın. Kısa, samimi ve mistik bir dille yanıt ver."
         
         if let bd = birthData {
-            systemPrompt += " Kullanıcının Güneş burcu \(bd.sunSign.rawValue). Yorumlarına bunu dahil edebilirsin."
+            systemPrompt += " Kullanıcının Güneş burcu \(bd.sunSign.localizedDisplayName). Yorumlarına bunu dahil edebilirsin."
         }
         
-        systemPrompt += " Şu anda konuştuğunuz bağlam: \(context.rawValue)."
+        systemPrompt += " Şu anda konuştuğunuz bağlam: \(context.localizedDisplayName)."
 
         // Send full conversation history for multi-turn context
         guard let url = URL(string: "https://openrouter.ai/api/v1/chat/completions") else {
@@ -297,7 +319,7 @@ class AIService {
         }
         
         let reqBody = OpenRouterRequest(
-            model: "google/gemini-3-flash-preview",
+            model: openRouterModel,
             messages: orMessages
         )
         
@@ -305,15 +327,11 @@ class AIService {
         
         let (data, response) = try await URLSession.shared.data(for: request)
         
-        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-            let errorBody = String(data: data, encoding: .utf8) ?? "Unknown"
-            logger.error("OpenRouter chat request failed (\((response as? HTTPURLResponse)?.statusCode ?? 0)): \(errorBody, privacy: .private(mask: .hash))")
-            throw URLError(.badServerResponse)
-        }
+        try validateOpenRouterResponse(data: data, response: response, requestLabel: "OpenRouter chat request")
         
         let orResponse = try JSONDecoder().decode(OpenRouterResponse.self, from: data)
         guard let text = orResponse.choices?.first?.message?.content else {
-            return "Yorum alınamadı."
+            throw AIServiceError.emptyResponse
         }
         
         return text
@@ -322,11 +340,29 @@ class AIService {
 
 enum AIServiceError: LocalizedError {
     case missingPalmImage
+    case unauthorized
+    case rateLimited
+    case upstreamUnavailable
+    case requestFailed(statusCode: Int)
+    case invalidResponse
+    case emptyResponse
 
     var errorDescription: String? {
         switch self {
         case .missingPalmImage:
-            return "Lütfen önce elinizin fotoğrafını ekleyin."
+            return String(localized: "ai.error.missing_palm_image")
+        case .unauthorized:
+            return String(localized: "ai.error.unauthorized")
+        case .rateLimited:
+            return String(localized: "ai.error.rate_limited")
+        case .upstreamUnavailable:
+            return String(localized: "ai.error.upstream_unavailable")
+        case .requestFailed(let statusCode):
+            return String(format: String(localized: "ai.error.request_failed"), statusCode)
+        case .invalidResponse:
+            return String(localized: "ai.error.invalid_response")
+        case .emptyResponse:
+            return String(localized: "ai.error.empty_response")
         }
     }
 }

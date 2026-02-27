@@ -15,7 +15,19 @@ cp Config/Secrets.template.xcconfig Config/Secrets.xcconfig
 2. `Config/Secrets.xcconfig` içine değerleri gir:
 - `OPENROUTER_API_KEY`
 - `FREE_ASTRO_API_KEY`
+- (Opsiyonel) `PREMIUM_PRODUCT_IDS`
+- Değerleri tırnaksız gir (`OPENROUTER_API_KEY = sk-or-...` gibi).
 3. Xcode’da proje açıp `horoscope` scheme ile çalıştır.
+4. (Opsiyonel) Key'lerin app bundle'a geçtiğini doğrula:
+```bash
+xcodebuild -scheme horoscope -configuration Debug -destination 'generic/platform=iOS Simulator' build
+APP_PATH="$(find ~/Library/Developer/Xcode/DerivedData -path '*/Build/Products/Debug-iphonesimulator/horoscope.app' -not -path '*/Index.noindex/*' -type d | head -n 1)"
+/usr/libexec/PlistBuddy -c "Print :OPENROUTER_API_KEY" "$APP_PATH/Info.plist"
+/usr/libexec/PlistBuddy -c "Print :FREE_ASTRO_API_KEY" "$APP_PATH/Info.plist"
+```
+
+Not: `Config/Debug.xcconfig` ve `Config/Release.xcconfig`, gitignored olan `Config/Secrets.xcconfig` dosyasını otomatik include eder.
+Not: `Config/AppInfo.plist`, bu build setting değerlerini uygulama içine enjekte eder.
 
 ## Secret Güvenliği
 - `Config/Secrets.xcconfig` git'e dahil edilmez (`.gitignore` içinde).

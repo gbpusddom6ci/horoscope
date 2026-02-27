@@ -38,6 +38,25 @@ enum ChatContext: String, Codable {
     case palmReading = "palmReading"
     case tarot = "tarot"
     case coffee = "coffee"
+
+    var localizedDisplayName: String {
+        switch self {
+        case .general:
+            return String(localized: "chat.context.general")
+        case .natal:
+            return String(localized: "chat.context.natal")
+        case .transit:
+            return String(localized: "chat.context.transit")
+        case .dream:
+            return String(localized: "chat.context.dream")
+        case .palmReading:
+            return String(localized: "chat.context.palm")
+        case .tarot:
+            return String(localized: "chat.context.tarot")
+        case .coffee:
+            return String(localized: "chat.context.coffee")
+        }
+    }
 }
 
 // MARK: - Chat Session
@@ -54,7 +73,7 @@ struct ChatSession: Codable, Identifiable {
         id: String = UUID().uuidString,
         userId: String,
         context: ChatContext = .general,
-        title: String = "Yeni Sohbet",
+        title: String = "",
         messages: [ChatMessage] = [],
         createdAt: Date = Date(),
         updatedAt: Date = Date()
@@ -62,7 +81,7 @@ struct ChatSession: Codable, Identifiable {
         self.id = id
         self.userId = userId
         self.context = context
-        self.title = title
+        self.title = title.isEmpty ? String(localized: "chat.session.new_title") : title
         self.messages = messages
         self.createdAt = createdAt
         self.updatedAt = updatedAt
@@ -70,7 +89,7 @@ struct ChatSession: Codable, Identifiable {
 
     /// Last message preview for list display
     var lastMessagePreview: String {
-        messages.last?.content ?? "Henüz mesaj yok"
+        messages.last?.content ?? String(localized: "chat.session.empty_preview")
     }
 }
 
@@ -114,6 +133,18 @@ enum DreamMood: String, Codable, CaseIterable {
     case sad = "Hüzünlü"
     case happy = "Mutlu"
     case neutral = "Nötr"
+
+    var localizedDisplayName: String {
+        switch self {
+        case .peaceful: return String(localized: "dream.mood.peaceful")
+        case .scary: return String(localized: "dream.mood.scary")
+        case .exciting: return String(localized: "dream.mood.exciting")
+        case .confusing: return String(localized: "dream.mood.confusing")
+        case .sad: return String(localized: "dream.mood.sad")
+        case .happy: return String(localized: "dream.mood.happy")
+        case .neutral: return String(localized: "dream.mood.neutral")
+        }
+    }
 
     var emoji: String {
         switch self {

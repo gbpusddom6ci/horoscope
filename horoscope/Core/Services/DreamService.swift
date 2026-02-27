@@ -26,7 +26,7 @@ class DreamService {
             lastErrorMessage = nil
         } catch {
             logger.error("Failed to load dream entries: \(error.localizedDescription, privacy: .public)")
-            lastErrorMessage = "Rüyalar yüklenemedi. Lütfen bağlantınızı kontrol edin."
+            lastErrorMessage = String(localized: "dream.service.error.load")
         }
     }
 
@@ -76,7 +76,7 @@ class DreamService {
             } catch {
                 logger.error("Failed to delete dream entry: \(error.localizedDescription, privacy: .public)")
                 await MainActor.run {
-                    self.lastErrorMessage = "Rüya silinirken bir sorun oluştu."
+                    self.lastErrorMessage = String(localized: "dream.service.error.delete")
                 }
             }
         }
@@ -95,7 +95,7 @@ class DreamService {
             } catch {
                 logger.error("Failed to clear dream entries: \(error.localizedDescription, privacy: .public)")
                 await MainActor.run {
-                    self.lastErrorMessage = "Rüyalar temizlenemedi."
+                    self.lastErrorMessage = String(localized: "dream.service.error.clear")
                 }
             }
         }
@@ -111,7 +111,7 @@ class DreamService {
             } catch {
                 logger.error("Failed to persist dream entry: \(error.localizedDescription, privacy: .public)")
                 await MainActor.run {
-                    self.lastErrorMessage = "Rüya kaydedilemedi. İnternetinizi kontrol edin."
+                    self.lastErrorMessage = String(localized: "dream.service.error.persist")
                 }
             }
         }

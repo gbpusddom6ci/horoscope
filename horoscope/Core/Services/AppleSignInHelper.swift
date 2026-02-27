@@ -92,11 +92,11 @@ enum AppleSignInError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .invalidCredential:
-            return "Apple kimlik bilgisi geçersiz."
+            return String(localized: "auth.apple.error.invalid_credential")
         case .missingIdentityToken:
-            return "Apple identity token alınamadı."
+            return String(localized: "auth.apple.error.missing_token")
         case .tokenSerializationError:
-            return "Token serileştirme hatası."
+            return String(localized: "auth.apple.error.token_serialization")
         }
     }
 }

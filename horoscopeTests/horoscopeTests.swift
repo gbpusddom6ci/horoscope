@@ -44,7 +44,7 @@ struct horoscopeTests {
     @Test("Chat session preview returns fallback and latest message")
     func chatSessionPreview() {
         var session = ChatSession(userId: "user-1")
-        #expect(session.lastMessagePreview == "Henüz mesaj yok")
+        #expect(session.lastMessagePreview == String(localized: "chat.session.empty_preview"))
 
         session.messages.append(
             ChatMessage(role: .assistant, content: "Hoş geldin")
@@ -87,4 +87,88 @@ struct horoscopeTests {
         #expect(ChatContext(rawValue: "coffee") == .coffee)
     }
 
+    @Test("Main chrome reserved space includes quick action clearance")
+    func mainChromeReservedSpaceIncludesQuickAction() {
+        let metrics = MainChromeMetrics(
+            tabBarVisible: true,
+            tabBarHeight: 78,
+            floatingQuickActionSize: 56,
+            bottomSafeAreaInset: 34
+        )
+
+        #expect(metrics.floatingQuickActionClearance > 0)
+        #expect(metrics.contentBottomReservedSpace > metrics.tabBarHeight)
+
+        let hidden = MainChromeMetrics.hidden
+        #expect(hidden.contentBottomReservedSpace == MysticLayout.contentBottomExtraSpacing)
+    }
+
+    @Test("Domain display names are localized and non-empty")
+    func localizedDomainDisplayNames() {
+        for sign in ZodiacSign.allCases {
+            #expect(!sign.localizedDisplayName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            #expect(!sign.localizedElement.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            #expect(!sign.localizedModality.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        }
+
+        for planet in Planet.allCases {
+            #expect(!planet.localizedDisplayName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        }
+
+        for mood in DreamMood.allCases {
+            #expect(!mood.localizedDisplayName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        }
+    }
+
+    @Test("Core localization keys exist in both English and Turkish files")
+    func coreLocalizationParity() throws {
+        let testFileURL = URL(fileURLWithPath: #filePath)
+        let projectRoot = testFileURL
+            .deletingLastPathComponent() // horoscopeTests
+            .deletingLastPathComponent() // project root
+        let enURL = projectRoot.appendingPathComponent("horoscope/en.lproj/Localizable.strings")
+        let trURL = projectRoot.appendingPathComponent("horoscope/tr.lproj/Localizable.strings")
+
+        let enText = try String(contentsOf: enURL, encoding: .utf8)
+        let trText = try String(contentsOf: trURL, encoding: .utf8)
+
+        let pattern = #"^\s*"([^"]+)"\s*="#
+        let regex = try NSRegularExpression(pattern: pattern, options: [.anchorsMatchLines])
+
+        func keys(from text: String) -> Set<String> {
+            let ns = text as NSString
+            let matches = regex.matches(in: text, options: [], range: NSRange(location: 0, length: ns.length))
+            return Set(matches.compactMap { match in
+                guard match.numberOfRanges > 1 else { return nil }
+                return ns.substring(with: match.range(at: 1))
+            })
+        }
+
+        let enKeys = keys(from: enText)
+        let trKeys = keys(from: trText)
+
+        let requiredCoreKeys: [String] = [
+            "chat.input.placeholder",
+            "chat.retry.message",
+            "chat.retry.action",
+            "quick_actions.title",
+            "settings.section.quick",
+            "settings.section.account",
+            "settings.section.support",
+            "config.error.missing_secret",
+            "ai.error.unauthorized",
+            "notifications.error.permission_denied",
+            "common.accessibility.selected",
+            "astro.zodiac.aries",
+            "astro.planet.sun",
+            "astro.aspect.conjunction",
+            "astro.transit_severity.low",
+            "transit.description.format"
+        ]
+
+        for key in requiredCoreKeys {
+            #expect(enKeys.contains(key))
+            #expect(trKeys.contains(key))
+        }
+    }
 }

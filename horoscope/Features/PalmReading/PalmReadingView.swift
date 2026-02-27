@@ -4,6 +4,7 @@ import UIKit
 
 struct PalmReadingView: View {
     @Environment(AuthService.self) private var authService
+    @Environment(\.mainChromeMetrics) private var chromeMetrics
 
     @State private var showCamera = false
     @State private var selectedPhotoItem: PhotosPickerItem?
@@ -19,10 +20,7 @@ struct PalmReadingView: View {
             StarField(starCount: 40)
 
             VStack(spacing: 0) {
-                Text("El Falı")
-                    .font(MysticFonts.heading(18))
-                    .foregroundColor(MysticColors.textPrimary)
-                    .padding(.top, 10)
+                MysticTopBar("palm.title")
 
                 ScrollView(.vertical, showsIndicators: false) {
                     VStack(spacing: MysticSpacing.lg) {
@@ -34,9 +32,9 @@ struct PalmReadingView: View {
                                 .foregroundStyle(MysticGradients.lavenderGlow)
                                 .shadow(color: MysticColors.neonLavender.opacity(0.4), radius: 12)
 
-                            GlowingText("El Falı", font: MysticFonts.title(32), color: MysticColors.neonLavender)
+                            GlowingText(String(localized: "palm.title"), font: MysticFonts.title(32), color: MysticColors.neonLavender)
 
-                            Text("Avuç içinizdeki çizgiler, yaşam hikayenizi anlatıyor. Net bir fotoğraf ekleyin, AI ile analiz alın.")
+                            Text("palm.subtitle")
                                 .font(MysticFonts.body(15))
                                 .foregroundColor(MysticColors.textSecondary)
                                 .multilineTextAlignment(.center)
@@ -49,14 +47,14 @@ struct PalmReadingView: View {
                                 imagePreview
 
                                 HStack(spacing: MysticSpacing.sm) {
-                                    MysticButton("Kamera", icon: "camera.fill", style: .secondary) {
+                                    MysticButton(String(localized: "palm.camera"), icon: "camera.fill", style: .secondary) {
                                         openCamera()
                                     }
 
                                     PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
                                         HStack(spacing: 8) {
                                             Image(systemName: "photo.on.rectangle")
-                                            Text("Galeri")
+                                            Text("palm.gallery")
                                         }
                                         .font(MysticFonts.body(14))
                                         .foregroundColor(MysticColors.textPrimary)
@@ -73,7 +71,7 @@ struct PalmReadingView: View {
                                 }
 
                                 MysticButton(
-                                    "Analiz Et",
+                                    String(localized: "palm.analyze"),
                                     icon: "sparkles",
                                     style: .primary,
                                     isLoading: isAnalyzing
@@ -81,6 +79,7 @@ struct PalmReadingView: View {
                                     analyzePalm()
                                 }
                                 .disabled(selectedImageData == nil || isAnalyzing)
+                                .accessibilityIdentifier("palm.analyze")
                             }
                         }
                         .padding(.horizontal, MysticSpacing.md)
@@ -101,7 +100,7 @@ struct PalmReadingView: View {
                                     HStack {
                                         Image(systemName: "sparkles")
                                             .foregroundColor(MysticColors.mysticGold)
-                                        Text("AI Analizi")
+                                        Text("palm.ai_title")
                                             .font(MysticFonts.heading(16))
                                             .foregroundColor(MysticColors.textPrimary)
                                     }
@@ -117,17 +116,19 @@ struct PalmReadingView: View {
                         }
 
                         VStack(alignment: .leading, spacing: MysticSpacing.sm) {
-                            Text("Çizgi Rehberi")
+                            Text("palm.line_guide")
                                 .font(MysticFonts.heading(18))
                                 .foregroundColor(MysticColors.textPrimary)
                                 .padding(.horizontal, MysticSpacing.md)
 
-                            lineInfo(name: "Yaşam Çizgisi", desc: "Fiziksel sağlık ve yaşam enerjisi", color: MysticColors.auroraGreen)
-                            lineInfo(name: "Kalp Çizgisi", desc: "Duygusal yaşam ve ilişkiler", color: MysticColors.celestialPink)
-                            lineInfo(name: "Akıl Çizgisi", desc: "Düşünce yapısı ve zeka", color: MysticColors.neonLavender)
-                            lineInfo(name: "Kader Çizgisi", desc: "Kariyer ve yaşam yolu", color: MysticColors.mysticGold)
+                            lineInfo(name: String(localized: "palm.line.life.title"), desc: String(localized: "palm.line.life.desc"), color: MysticColors.auroraGreen)
+                            lineInfo(name: String(localized: "palm.line.heart.title"), desc: String(localized: "palm.line.heart.desc"), color: MysticColors.celestialPink)
+                            lineInfo(name: String(localized: "palm.line.head.title"), desc: String(localized: "palm.line.head.desc"), color: MysticColors.neonLavender)
+                            lineInfo(name: String(localized: "palm.line.fate.title"), desc: String(localized: "palm.line.fate.desc"), color: MysticColors.mysticGold)
                         }
                         .fadeInOnAppear(delay: 0.2)
+
+                        Color.clear.frame(height: max(72, chromeMetrics.contentBottomReservedSpace))
                     }
                 }
             }
@@ -159,7 +160,7 @@ struct PalmReadingView: View {
                     Image(systemName: "hand.draw.fill")
                         .font(.system(size: 36))
                         .foregroundColor(MysticColors.textMuted)
-                    Text("Elinizin net bir fotoğrafını ekleyin")
+                    Text("palm.image_placeholder")
                         .font(MysticFonts.body(14))
                         .foregroundColor(MysticColors.textMuted)
                 }
@@ -194,7 +195,7 @@ struct PalmReadingView: View {
 
     private func openCamera() {
         guard UIImagePickerController.isSourceTypeAvailable(.camera) else {
-            errorMessage = "Bu cihazda kamera kullanılamıyor. Galeriden fotoğraf seçebilirsiniz."
+            errorMessage = String(localized: "palm.error.camera_unavailable")
             return
         }
 
@@ -218,7 +219,7 @@ struct PalmReadingView: View {
 
     private func analyzePalm() {
         guard let selectedImageData else {
-            errorMessage = "Lütfen önce bir fotoğraf seçin."
+            errorMessage = String(localized: "palm.error.select_image")
             return
         }
 

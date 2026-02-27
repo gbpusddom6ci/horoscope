@@ -13,8 +13,10 @@ struct OnboardingView: View {
             StarField(starCount: 80)
 
             VStack(spacing: 0) {
+                MysticTopBar("onboarding.title")
+
                 progressBar
-                    .padding(.top, MysticSpacing.md)
+                    .padding(.top, MysticSpacing.sm)
 
                 TabView(selection: $viewModel.currentStep) {
                     BirthDateStep(selectedDate: $viewModel.birthDate)
@@ -151,7 +153,7 @@ struct BirthDateStep: View {
             let sign = selectedDate.zodiacSign
             HStack(spacing: MysticSpacing.sm) {
                 ZodiacSymbol(sign, size: 24, color: sign.elementColor)
-                Text(String(format: String(localized: "onboarding.birth_date.sun_sign_format"), sign.rawValue))
+                Text(String(format: String(localized: "onboarding.birth_date.sun_sign_format"), sign.localizedDisplayName))
                     .font(MysticFonts.body(16))
                     .foregroundColor(sign.elementColor)
                     .lineLimit(1)
