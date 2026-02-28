@@ -186,7 +186,7 @@ struct ChatView: View {
             persistDraftsForCurrentUser()
         }
         .onReceive(NotificationCenter.default.publisher(for: .scrollToTop)) { notification in
-            guard let tab = notification.object as? AppTab, tab == .chat else { return }
+            guard let tab = notification.object as? AppTab, tab == .home else { return }
             withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.25)) {
                 scrollProxy?.scrollTo("bottom", anchor: .bottom)
             }

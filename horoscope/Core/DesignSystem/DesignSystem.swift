@@ -11,7 +11,7 @@ public struct AppTheme {
     public static let bgLight = Color(hex: "F6F2FF")
     public static let bgDark = Color(hex: "080510")
 
-    public static let background = Color(UIColor { traitCollection in
+    public static let background = Color(uiColor: UIColor { traitCollection in
         traitCollection.userInterfaceStyle == .dark
             ? UIColor(bgDark)
             : UIColor(bgLight)

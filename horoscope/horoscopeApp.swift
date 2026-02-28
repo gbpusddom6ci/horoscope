@@ -11,6 +11,18 @@ import FirebaseMessaging
 import UserNotifications
 import os
 
+extension Notification.Name {
+    static let didReceiveFCMToken = Notification.Name("didReceiveFCMToken")
+    static let openDreamComposer = Notification.Name("openDreamComposer")
+    static let openChatQuickAction = Notification.Name("openChatQuickAction")
+    static let scrollToTop = Notification.Name("scrollToTop")
+}
+
+enum AppNavigationPayload {
+    static let context = "context"
+    static let prompt = "prompt"
+}
+
 // MARK: - App Delegate for Firebase Setup
 class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate, MessagingDelegate {
     private let logger = Logger(subsystem: "rk.horoscope", category: "Push")

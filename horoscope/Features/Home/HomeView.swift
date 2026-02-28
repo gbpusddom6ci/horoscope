@@ -224,7 +224,7 @@ struct RecentCreationCard: View {
                 
                 Text("Generated just now")
                     .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(.tertiary)
+                    .foregroundStyle(.tertiary)
             }
             .frame(width: 240, height: 160, alignment: .topLeading)
             .padding(16)
