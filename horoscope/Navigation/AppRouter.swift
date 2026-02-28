@@ -6,7 +6,7 @@ struct AppRouter: View {
     @State private var notificationService = NotificationService.shared
     @AppStorage("selected_language") private var selectedLanguage = "en"
 
-    private let supportedLanguages: Set<String> = ["en"]
+    private let supportedLanguages: Set<String> = ["en", "tr"]
 
     private var resolvedLanguage: String {
         supportedLanguages.contains(selectedLanguage) ? selectedLanguage : "en"
@@ -15,7 +15,7 @@ struct AppRouter: View {
     var body: some View {
         ZStack {
             // Solid dark background — always visible
-            Color(red: 0.03, green: 0.02, blue: 0.06)
+            MysticColors.voidBlack
                 .ignoresSafeArea()
 
             // Content based on auth state
