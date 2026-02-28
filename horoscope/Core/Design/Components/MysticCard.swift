@@ -44,7 +44,12 @@ struct MysticCard<Content: View>: View {
                         lineWidth: 1
                     )
             )
-            .shadow(color: glowColor.opacity(0.08), radius: 12, x: 0, y: 4)
+            .shadow(
+                color: glowColor.opacity(0.08),
+                radius: MysticEffects.cardShadowRadius,
+                x: 0,
+                y: MysticEffects.cardShadowYOffset
+            )
     }
 }
 
@@ -110,7 +115,7 @@ struct MysticStateCard: View {
                     Text(detailKey)
                         .font(MysticFonts.body(14))
                         .foregroundColor(MysticColors.textSecondary)
-                        .lineSpacing(2)
+                        .lineSpacing(MysticEffects.compactTextLineSpacing)
                 }
 
                 if let actionTitle, let action {
@@ -219,7 +224,7 @@ struct FeatureCard: View {
                         .foregroundColor(MysticColors.textMuted)
                 }
             }
-            .scaleEffect(isPressed ? 0.98 : 1.0)
+            .scaleEffect(isPressed ? MysticEffects.cardPressedScale : 1.0)
         }
         .buttonStyle(.plain)
         .simultaneousGesture(
@@ -228,14 +233,14 @@ struct FeatureCard: View {
                     if reduceMotion {
                         isPressed = true
                     } else {
-                        withAnimation(.easeInOut(duration: 0.1)) { isPressed = true }
+                        withAnimation(.easeInOut(duration: MysticMotion.quickPressDuration)) { isPressed = true }
                     }
                 }
                 .onEnded { _ in
                     if reduceMotion {
                         isPressed = false
                     } else {
-                        withAnimation(.easeInOut(duration: 0.1)) { isPressed = false }
+                        withAnimation(.easeInOut(duration: MysticMotion.quickPressDuration)) { isPressed = false }
                     }
                 }
         )

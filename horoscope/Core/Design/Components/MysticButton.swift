@@ -17,7 +17,7 @@ enum MysticButtonSize {
         case .regular:
             return 52
         case .compact:
-            return 44
+            return MysticAccessibility.minimumTapTarget
         }
     }
 
@@ -104,8 +104,11 @@ struct MysticButton: View {
             .background(backgroundView)
             .clipShape(RoundedRectangle(cornerRadius: MysticRadius.lg))
             .overlay(borderOverlay)
-            .shadow(color: glowColor.opacity(glowAnimation ? 0.4 : 0.1), radius: glowAnimation ? 12 : 4)
-            .scaleEffect((isPressed && !reduceMotion && canInteract) ? 0.97 : 1.0)
+            .shadow(
+                color: glowColor.opacity(glowAnimation ? 0.4 : 0.1),
+                radius: glowAnimation ? MysticEffects.buttonGlowRadiusActive : MysticEffects.buttonGlowRadiusRest
+            )
+            .scaleEffect((isPressed && !reduceMotion && canInteract) ? MysticEffects.buttonPressedScale : 1.0)
             .opacity(canInteract ? 1 : 0.62)
         }
         .buttonStyle(.plain)
@@ -117,7 +120,7 @@ struct MysticButton: View {
                     if reduceMotion {
                         isPressed = true
                     } else {
-                        withAnimation(.easeInOut(duration: 0.1)) { isPressed = true }
+                        withAnimation(.easeInOut(duration: MysticMotion.quickPressDuration)) { isPressed = true }
                     }
                 }
                 .onEnded { _ in
@@ -125,14 +128,14 @@ struct MysticButton: View {
                     if reduceMotion {
                         isPressed = false
                     } else {
-                        withAnimation(.easeInOut(duration: 0.1)) { isPressed = false }
+                        withAnimation(.easeInOut(duration: MysticMotion.quickPressDuration)) { isPressed = false }
                     }
                 }
         )
         .onAppear {
             if style == .primary && !reduceMotion {
                 withAnimation(
-                    .easeInOut(duration: 2)
+                    .easeInOut(duration: MysticMotion.buttonGlowDuration)
                     .repeatForever(autoreverses: true)
                 ) {
                     glowAnimation = true
@@ -223,14 +226,14 @@ struct AppleSignInButton: View {
             }
             .foregroundColor(.white)
             .frame(maxWidth: .infinity)
-            .frame(height: 52)
+            .frame(height: MysticButtonSize.regular.height)
             .background(Color.white.opacity(0.1))
             .clipShape(RoundedRectangle(cornerRadius: MysticRadius.lg))
             .overlay(
                 RoundedRectangle(cornerRadius: MysticRadius.lg)
                     .stroke(Color.white.opacity(0.3), lineWidth: 1)
             )
-            .scaleEffect((isPressed && !reduceMotion) ? 0.97 : 1.0)
+            .scaleEffect((isPressed && !reduceMotion) ? MysticEffects.buttonPressedScale : 1.0)
         }
         .buttonStyle(.plain)
         .simultaneousGesture(
@@ -239,14 +242,14 @@ struct AppleSignInButton: View {
                     if reduceMotion {
                         isPressed = true
                     } else {
-                        withAnimation(.easeInOut(duration: 0.1)) { isPressed = true }
+                        withAnimation(.easeInOut(duration: MysticMotion.quickPressDuration)) { isPressed = true }
                     }
                 }
                 .onEnded { _ in
                     if reduceMotion {
                         isPressed = false
                     } else {
-                        withAnimation(.easeInOut(duration: 0.1)) { isPressed = false }
+                        withAnimation(.easeInOut(duration: MysticMotion.quickPressDuration)) { isPressed = false }
                     }
                 }
         )

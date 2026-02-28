@@ -32,7 +32,7 @@ struct GlowingText: View {
                     glowAnimation = true
                 } else {
                     withAnimation(
-                        .easeInOut(duration: 2.5)
+                        .easeInOut(duration: MysticMotion.textGlowDuration)
                         .repeatForever(autoreverses: true)
                     ) {
                         glowAnimation = true
