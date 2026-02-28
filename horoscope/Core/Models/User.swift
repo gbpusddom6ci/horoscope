@@ -10,6 +10,7 @@ struct AppUser: Codable, Identifiable {
     var createdAt: Date
     var lastActiveAt: Date?
     var fcmToken: String?
+    var hasCompletedOnboarding: Bool
 
     init(
         id: String,
@@ -19,7 +20,8 @@ struct AppUser: Codable, Identifiable {
         isPremium: Bool = false,
         createdAt: Date = Date(),
         lastActiveAt: Date? = nil,
-        fcmToken: String? = nil
+        fcmToken: String? = nil,
+        hasCompletedOnboarding: Bool = false
     ) {
         self.id = id
         self.displayName = displayName
@@ -29,10 +31,6 @@ struct AppUser: Codable, Identifiable {
         self.createdAt = createdAt
         self.lastActiveAt = lastActiveAt
         self.fcmToken = fcmToken
-    }
-
-    /// Whether the user has completed the onboarding (entered birth data)
-    var hasCompletedOnboarding: Bool {
-        birthData != nil
+        self.hasCompletedOnboarding = hasCompletedOnboarding
     }
 }

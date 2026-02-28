@@ -163,9 +163,12 @@
 "chat.input.placeholder" = "Type your message...";
 "chat.retry.message" = "Response could not be generated.";
 "chat.retry.action" = "Retry";
+"chat.retry.hint" = "Retries your last message request.";
 "chat.sent" = "Sent";
 "chat.send" = "Send";
 "chat.send.hint" = "Sends your typed message.";
+"chat.loading.reply" = "Generating a reply...";
+"chat.loading.slow" = "Still working on your reply. This may take a few more seconds.";
 "chat.error.offline" = "No internet connection. Check your connection and try again.";
 "chat.error.timeout" = "Request timed out. Please try again.";
 "chat.error.server" = "Server could not be reached. Please try again shortly.";
@@ -192,6 +195,10 @@
 "dream.new_sheet.save_hint" = "Saves your dream entry.";
 "dream.validation.required" = "Dream text cannot be empty.";
 "dream.validation.interpret_failed" = "Interpretation could not be generated. You can still save your dream.";
+"dream.loading.entries" = "Loading your dream entries...";
+"dream.loading.refresh" = "Refreshing your dream entries...";
+"dream.retry.action" = "Retry";
+"dream.retry.hint" = "Retries loading dreams.";
 
 "tab.switch.hint" = "Switches to this tab.";
 
@@ -238,6 +245,7 @@
 "home.greeting.night" = "Good night ✨";
 "home.transit.duration_days" = "%d days";
 "home.transit.exact_date" = "Exact date: %@";
+"home.personalized.loading" = "Refreshing your personalized chart insights...";
 
 "common.expand_collapse" = "Expand or collapse section";
 
@@ -276,6 +284,9 @@
 "settings.item.privacy.title" = "Privacy Policy";
 "settings.item.privacy.subtitle" = "How your data is handled";
 "settings.signout" = "Sign Out";
+"settings.signout.confirm.title" = "Sign out?";
+"settings.signout.confirm.message" = "You can sign back in any time with your account.";
+"settings.signout.confirm.action" = "Sign Out";
 
 "common.close" = "Close";
 
@@ -284,6 +295,7 @@
 "settings.edit.birth_time" = "Birth Time";
 "settings.edit.birth_place" = "Birth Place";
 "settings.edit.search_placeholder" = "Search city...";
+"settings.edit.location.resolve_failed" = "Location couldn't be resolved. Please try another result.";
 
 "settings.paywall.title" = "Mystic Premium";
 "settings.paywall.subtitle" = "Unlimited AI readings and advanced mystic features.";
@@ -333,7 +345,11 @@
 "natal.big3.ascendant" = "Ascendant";
 "natal.interpretation.title" = "AI Interpretation";
 "natal.interpretation.button" = "Interpret";
+"natal.interpretation.retry" = "Retry";
+"natal.interpretation.hint" = "Generates AI interpretation for your natal chart.";
+"natal.interpretation.retry.hint" = "Retries generating natal chart interpretation.";
 "natal.interpretation.error" = "An error occurred while loading interpretation.";
+"natal.interpretation.loading" = "Generating your AI interpretation...";
 "natal.empty" = "Enter your birth details to view your natal chart.";
 "natal.house_format" = "House %d";
 
@@ -359,10 +375,21 @@
 "palm.image_placeholder" = "Add a clear photo of your palm";
 "palm.error.camera_unavailable" = "Camera is unavailable on this device. You can select a photo from gallery.";
 "palm.error.select_image" = "Please select a photo first.";
+"palm.camera.hint" = "Takes a new palm photo with camera.";
+"palm.gallery.hint" = "Selects a palm photo from your library.";
+"palm.analyze.hint" = "Generates an AI palm reading from the selected photo.";
+"palm.analyzing" = "Analyzing your palm photo...";
+"palm.retry.hint" = "Retries palm analysis with the selected photo.";
+"palm.error.load_image_failed" = "The selected image couldn't be loaded. Please try another photo.";
+"palm.error.offline" = "No internet connection. Check your connection and try again.";
+"palm.error.timeout" = "Palm analysis timed out. Please try again.";
+"palm.error.server" = "Palm analysis service is currently unavailable. Please try again shortly.";
+"palm.error.generic" = "Palm analysis couldn't be completed right now. Please try again.";
 "puan" = "score";
 
 "common.accessibility.selected" = "Selected";
 "common.accessibility.unselected" = "Not selected";
+"common.retry" = "Retry";
 "common.unknown" = "Unknown";
 
 "settings.app_version" = "Mystic v%@";
@@ -486,3 +513,65 @@
 
 "natal.dominant.title" = "Dominant Planet";
 "premium.error.verification_failed" = "Purchase verification failed.";
+
+"natal.refresh" = "Refresh chart";
+"natal.refresh.hint" = "Recalculates your natal chart.";
+"chat.session.history" = "Chat History";
+"chat.session.no_history" = "No conversations yet";
+"chat.bubble.copy" = "Copy";
+"chat.bubble.share" = "Share";
+"common.delete" = "Delete";
+"home.quick.title" = "Quick Access";
+"home.quick.subtitle" = "Jump to your most used features.";
+"tab.chat.fab.hint" = "Opens AI chat. Long press for quick actions.";
+
+"natal.dignity.domicile" = "Domicile";
+"natal.dignity.exaltation" = "Exaltation";
+"natal.dignity.detriment" = "Detriment";
+"natal.dignity.fall" = "Fall";
+"natal.dignity.peregrine" = "Peregrine";
+"natal.orb_format" = "%.1f° orb";
+"natal.house.description.1" = "Identity, appearance, and first impression.";
+"natal.house.description.2" = "Values, resources, and self-worth.";
+"natal.house.description.3" = "Communication, learning, and close environment.";
+"natal.house.description.4" = "Home, family roots, and inner foundation.";
+"natal.house.description.5" = "Creativity, romance, and joy.";
+"natal.house.description.6" = "Routines, health, and service.";
+"natal.house.description.7" = "Partnerships and committed relationships.";
+"natal.house.description.8" = "Transformation, intimacy, and shared assets.";
+"natal.house.description.9" = "Beliefs, higher learning, and long journeys.";
+"natal.house.description.10" = "Career, status, and public role.";
+"natal.house.description.11" = "Friends, communities, and future goals.";
+"natal.house.description.12" = "Subconscious, retreat, and spiritual closure.";
+"natal.pattern.grand_trine.title" = "Grand Trine";
+"natal.pattern.grand_trine.description" = "Three planets in trine create natural flow and effortless talent.";
+"natal.pattern.t_square.title" = "T-Square";
+"natal.pattern.t_square.description" = "Two squares with one opposition create pressure that drives growth.";
+"natal.pattern.stellium.title_format" = "Stellium in %@";
+"natal.pattern.stellium.description_format" = "%@: intense concentration of energy in one sign.";
+"natal.pattern.intense_conjunction.title" = "Intense Conjunction";
+"natal.pattern.intense_conjunction.description_format" = "%d conjunctions indicate concentrated and merged planetary themes.";
+"natal.score_label" = "score";
+
+"tarot.card.reversed_format" = "%@ (Reversed)";
+"tarot.card.fool.name" = "The Fool";
+"tarot.card.fool.upright" = "A time for brave beginnings, curiosity, and spontaneous choices.";
+"tarot.card.fool.reversed" = "Pause impulsive risks and move forward with a steadier plan.";
+"tarot.card.magician.name" = "The Magician";
+"tarot.card.magician.upright" = "Focus your skills and intention; powerful results are possible now.";
+"tarot.card.magician.reversed" = "Scattered energy and indecision may block your potential.";
+"tarot.card.high_priestess.name" = "The High Priestess";
+"tarot.card.high_priestess.upright" = "Trust your intuition; your inner guidance is especially strong.";
+"tarot.card.high_priestess.reversed" = "Avoid rushed conclusions while things are still unclear.";
+"tarot.card.empress.name" = "The Empress";
+"tarot.card.empress.upright" = "Nurturing, abundance, and creative growth are highlighted.";
+"tarot.card.empress.reversed" = "Protect your boundaries and don't neglect your own needs.";
+"tarot.card.sun.name" = "The Sun";
+"tarot.card.sun.upright" = "Clarity, vitality, and visible success are within reach.";
+"tarot.card.sun.reversed" = "Low energy can pass; rebuild momentum through a healthy routine.";
+"tarot.card.star.name" = "The Star";
+"tarot.card.star.upright" = "Hope returns and your path becomes clearer with patience.";
+"tarot.card.star.reversed" = "Keep faith and continue steadily through temporary uncertainty.";
+"tarot.card.world.name" = "The World";
+"tarot.card.world.upright" = "A cycle is completing; meaningful fulfillment is near.";
+"tarot.card.world.reversed" = "Closing unfinished tasks will open your next chapter.";

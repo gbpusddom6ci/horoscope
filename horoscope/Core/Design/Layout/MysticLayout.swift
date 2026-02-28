@@ -20,7 +20,10 @@ enum MysticLayout {
     static let contentBottomExtraSpacing: CGFloat = MysticSpacing.md
 
     static func tabBarBottomPadding(bottomSafeArea: CGFloat) -> CGFloat {
-        max(bottomSafeArea - 4, tabBarVisualBottomPadding)
+        // Keep a small visual breathing room while anchoring the bar near the
+        // native bottom edge. On home-indicator devices this effectively keeps
+        // content at (safe area - 4), preventing the bar from floating too high.
+        max(tabBarVisualBottomPadding, bottomSafeArea - tabBarVisualBottomPadding)
     }
 
     static func tabBarHeight(bottomSafeArea: CGFloat) -> CGFloat {

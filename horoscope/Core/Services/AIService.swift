@@ -78,7 +78,7 @@ class AIService {
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         // Optional OpenRouter headers
-        request.setValue("Mystik Astroloji", forHTTPHeaderField: "X-Title")
+        request.setValue("Mystic Astrology", forHTTPHeaderField: "X-Title")
         
         var messages: [OpenRouterMessage] = []
         if let sysInst = systemInstruction {
@@ -126,7 +126,7 @@ class AIService {
         request.httpMethod = "POST"
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("Mystik Astroloji", forHTTPHeaderField: "X-Title")
+        request.setValue("Mystic Astrology", forHTTPHeaderField: "X-Title")
 
         var messages: [[String: Any]] = []
         if let systemInstruction {
@@ -203,15 +203,15 @@ class AIService {
         let moon = chartData.planetPositions.first(where: { $0.planet == .moon })?.sign.localizedDisplayName ?? String(localized: "common.unknown")
         let ascendant = chartData.houseCusps.first?.sign.localizedDisplayName ?? String(localized: "common.unknown")
         
-        let systemPrompt = "Sen 'Mystik' adında, uzman bir astroloji asistanısın. Kısa, samimi, modern ve ilham verici bir dille astroloji yorumu yaparsın. Markdown formatı kullanırsın."
+        let systemPrompt = "You are 'Mystic', an expert astrology assistant. Provide concise, warm, modern, and inspiring astrology guidance. Use Markdown formatting."
         
         let prompt = """
-        Kullanıcının adı yok ama ona göre bir natal harita yorumu yap.
-        Güneş Burcu: \(sun)
-        Ay Burcu: \(moon)
-        Yükselen Burcu: \(ascendant)
-        
-        Lütfen bu üç ana yerleşim (Big 3) üzerinden kişinin karakterini, iç dünyasını ve dışarıya yansıttığı imajı kısaca ama derinlemesine analiz et. Etkileyici bir başlıkla başla.
+        The user's name is unavailable, but provide a natal chart interpretation tailored to them.
+        Sun Sign: \(sun)
+        Moon Sign: \(moon)
+        Rising Sign: \(ascendant)
+
+        Please analyze personality, inner emotional world, and outward expression based on this Big 3 summary in a concise but meaningful way. Start with a compelling title.
         """
 
         return try await generateContent(prompt: prompt, systemInstruction: systemPrompt)
@@ -223,11 +223,11 @@ class AIService {
         isGenerating = true
         defer { isGenerating = false }
 
-        let systemPrompt = "Sen uzman bir astroloğsun. Transitlerin etkilerini anlaşılır şekilde açıklarsın."
+        let systemPrompt = "You are an expert astrologer. Explain transit effects clearly and practically."
         let prompt = """
-        Kullanıcının \(event.natalPlanet.localizedDisplayName) gezegeni üzerinden şu anda \(event.transitPlanet.localizedDisplayName) geçiyor ve \(event.aspectType.localizedDisplayName) açısı yapıyor. 
-        Bu \(event.durationDays) günlük bir transit. Etkisi: \(event.severity.localizedDisplayName).
-        Lütfen bu transetin kullanıcının hayatına kısa vadeli etkilerini yorumla.
+        The user's natal \(event.natalPlanet.localizedDisplayName) is currently receiving a \(event.aspectType.localizedDisplayName) from transiting \(event.transitPlanet.localizedDisplayName).
+        This transit lasts \(event.durationDays) days. Severity: \(event.severity.localizedDisplayName).
+        Please interpret the short-term effects of this transit on the user's life.
         """
 
         return try await generateContent(prompt: prompt, systemInstruction: systemPrompt)
@@ -239,10 +239,10 @@ class AIService {
         isGenerating = true
         defer { isGenerating = false }
 
-        let systemPrompt = "Sen rüya analizleri ve sembolizm konusunda uzman bir rehbersin."
+        let systemPrompt = "You are an expert guide in dream analysis and symbolism."
         let prompt = """
-        Kullanıcının gördüğü rüya: "\(dreamText)"
-        Lütfen bu rüyayı psikolojik ve spiritüel (mistik) açılardan kısaca yorumla. Sembollerin olası anlamlarını açıkla.
+        User's dream: "\(dreamText)"
+        Please interpret this dream briefly from both psychological and spiritual perspectives. Explain likely meanings of key symbols.
         """
 
         return try await generateContent(prompt: prompt, systemInstruction: systemPrompt)
@@ -258,12 +258,12 @@ class AIService {
             throw AIServiceError.missingPalmImage
         }
 
-        let systemPrompt = "Sen el falı bakan mistik bir yapay zekasın."
+        let systemPrompt = "You are a mystical AI palm reader."
         let prompt = """
-        Bu avuç içi fotoğrafını analiz et.
-        Kısa ama kişiselleştirilmiş bir el falı yorumu yaz.
-        Kalp çizgisi, akıl çizgisi, yaşam çizgisi ve kariyer eğiliminden bahset.
-        Ton: samimi, mistik, umut veren.
+        Analyze this palm photo.
+        Write a concise but personalized palm reading.
+        Mention the heart line, head line, life line, and career tendencies.
+        Tone: warm, mystical, and hopeful.
         """
 
         return try await generateMultimodalContent(
@@ -283,13 +283,13 @@ class AIService {
         isGenerating = true
         defer { isGenerating = false }
 
-        var systemPrompt = "Sen 'Mystik' adında astroloji, rüya yorumu, tarot ve spiritüel danışmanlık yapan bir yapay zekasın. Kısa, samimi ve mistik bir dille yanıt ver."
+        var systemPrompt = "You are 'Mystic', an AI assistant for astrology, dream interpretation, tarot, and spiritual guidance. Reply in concise, warm, and mystical English."
         
         if let bd = birthData {
-            systemPrompt += " Kullanıcının Güneş burcu \(bd.sunSign.localizedDisplayName). Yorumlarına bunu dahil edebilirsin."
+            systemPrompt += " The user's Sun sign is \(bd.sunSign.localizedDisplayName). You may incorporate this context in your response."
         }
         
-        systemPrompt += " Şu anda konuştuğunuz bağlam: \(context.localizedDisplayName)."
+        systemPrompt += " Current conversation context: \(context.localizedDisplayName)."
 
         // Send full conversation history for multi-turn context
         guard let url = URL(string: "https://openrouter.ai/api/v1/chat/completions") else {
@@ -305,7 +305,7 @@ class AIService {
         request.httpMethod = "POST"
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("Mystik Astroloji", forHTTPHeaderField: "X-Title")
+        request.setValue("Mystic Astrology", forHTTPHeaderField: "X-Title")
         
         // Build message array with system prompt + full history
         var orMessages: [OpenRouterMessage] = [

@@ -14,12 +14,13 @@ struct AuthView: View {
     @State private var animateButtons = false
 
     var body: some View {
-        ZStack {
-            StarField(starCount: 150)
-
+        MysticScreenScaffold(
+            "auth.title",
+            starCount: 150,
+            starMode: .screen,
+            isAnimatedBackground: !reduceMotion
+        ) {
             VStack(spacing: 0) {
-                MysticTopBar("auth.title")
-
                 Spacer()
 
                 // Logo & Title

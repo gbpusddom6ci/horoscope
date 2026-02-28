@@ -1,18 +1,33 @@
 import SwiftUI
 
 // MARK: - Planetary Dignity Helpers
-enum PlanetaryDignity: String {
-    case domicile = "Yurt"        // Planet rules this sign
-    case exaltation = "Yüceltme"  // Planet is exalted
-    case detriment = "Zarar"      // Opposite of domicile
-    case fall = "Düşüş"           // Opposite of exaltation
-    case peregrine = "Seyyah"     // No special dignity
+enum PlanetaryDignity {
+    case domicile
+    case exaltation
+    case detriment
+    case fall
+    case peregrine
+
+    var localizedTitle: String {
+        switch self {
+        case .domicile:
+            return String(localized: "natal.dignity.domicile")
+        case .exaltation:
+            return String(localized: "natal.dignity.exaltation")
+        case .detriment:
+            return String(localized: "natal.dignity.detriment")
+        case .fall:
+            return String(localized: "natal.dignity.fall")
+        case .peregrine:
+            return String(localized: "natal.dignity.peregrine")
+        }
+    }
 
     var color: Color {
         switch self {
         case .domicile: return MysticColors.auroraGreen
         case .exaltation: return MysticColors.mysticGold
-        case .detriment: return .orange
+        case .detriment: return MysticColors.celestialPink
         case .fall: return MysticColors.celestialPink
         case .peregrine: return MysticColors.textMuted
         }
@@ -187,7 +202,7 @@ struct PlanetDetailCard: View {
                     .foregroundColor(MysticColors.textSecondary)
 
                 if dignity != .peregrine {
-                    Text(dignity.rawValue)
+                    Text(dignity.localizedTitle)
                         .font(MysticFonts.caption(10))
                         .foregroundColor(dignity.color)
                 }
@@ -209,7 +224,7 @@ struct PlanetDetailCard: View {
                 dignityCell(String(localized: "natal.meta.element"), value: position.sign.localizedElement, color: position.sign.elementColor)
                 dignityCell(String(localized: "natal.meta.modality"), value: position.sign.localizedModality, color: MysticColors.textSecondary)
                 dignityCell(String(localized: "natal.meta.degree"), value: String(format: "%.2f°", position.signDegree), color: MysticColors.mysticGold)
-                dignityCell(String(localized: "natal.meta.dignity"), value: dignity.rawValue, color: dignity.color)
+                dignityCell(String(localized: "natal.meta.dignity"), value: dignity.localizedTitle, color: dignity.color)
             }
 
             if position.isRetrograde {
@@ -295,7 +310,7 @@ struct AspectCard: View {
                     Text(aspect.type.localizedDisplayName)
                         .font(MysticFonts.body(12))
                         .foregroundColor(accentColor)
-                    Text(String(format: "%.1f° orb", aspect.orb))
+                    Text(String(format: String(localized: "natal.orb_format"), aspect.orb))
                         .font(MysticFonts.caption(10))
                         .foregroundColor(MysticColors.textMuted)
                 }
@@ -311,17 +326,17 @@ struct ElementModalityBreakdown: View {
     private var elements: [(String, String, Int, Color)] {
         let grouped = Dictionary(grouping: positions) { $0.sign.localizedElement }
         return [
-            ("🔥", String(localized: "astro.element.fire"), grouped[String(localized: "astro.element.fire")]?.count ?? 0, .red),
-            ("🌍", String(localized: "astro.element.earth"), grouped[String(localized: "astro.element.earth")]?.count ?? 0, .green),
-            ("💨", String(localized: "astro.element.air"), grouped[String(localized: "astro.element.air")]?.count ?? 0, .cyan),
-            ("💧", String(localized: "astro.element.water"), grouped[String(localized: "astro.element.water")]?.count ?? 0, .blue)
+            ("🔥", String(localized: "astro.element.fire"), grouped[String(localized: "astro.element.fire")]?.count ?? 0, MysticColors.celestialPink),
+            ("🌍", String(localized: "astro.element.earth"), grouped[String(localized: "astro.element.earth")]?.count ?? 0, MysticColors.auroraGreen),
+            ("💨", String(localized: "astro.element.air"), grouped[String(localized: "astro.element.air")]?.count ?? 0, MysticColors.neonLavender),
+            ("💧", String(localized: "astro.element.water"), grouped[String(localized: "astro.element.water")]?.count ?? 0, Color(hex: "4fc3f7"))
         ]
     }
 
     private var modalities: [(String, Int, Color)] {
         let grouped = Dictionary(grouping: positions) { $0.sign.localizedModality }
         return [
-            (String(localized: "astro.modality.cardinal"), grouped[String(localized: "astro.modality.cardinal")]?.count ?? 0, .orange),
+            (String(localized: "astro.modality.cardinal"), grouped[String(localized: "astro.modality.cardinal")]?.count ?? 0, MysticColors.mysticGold),
             (String(localized: "astro.modality.fixed"), grouped[String(localized: "astro.modality.fixed")]?.count ?? 0, MysticColors.neonLavender),
             (String(localized: "astro.modality.mutable"), grouped[String(localized: "astro.modality.mutable")]?.count ?? 0, MysticColors.auroraGreen)
         ]
@@ -405,19 +420,19 @@ struct HouseCard: View {
     let cusp: HouseCusp
     let planetsInHouse: [PlanetPosition]
 
-    private static let descriptions: [Int: String] = [
-        1: "Benlik, kimlik, fiziksel görünüm",
-        2: "Değerler, maddi kazanç, özsaygı",
-        3: "İletişim, kardeşler, kısa yolculuk",
-        4: "Aile, ev, kökler, iç dünya",
-        5: "Yaratıcılık, aşk, çocuklar, eğlence",
-        6: "Sağlık, günlük iş, hizmet",
-        7: "İlişkiler, ortaklık, evlilik",
-        8: "Dönüşüm, gizem, miras, cinsellik",
-        9: "Felsefe, yüksek öğrenim, uzun yolculuk",
-        10: "Kariyer, statü, toplumsal rol",
-        11: "Arkadaşlık, topluluk, idealler",
-        12: "Bilinçaltı, spiritüellik, yalnızlık"
+    private static let descriptionKeys: [Int: String] = [
+        1: "natal.house.description.1",
+        2: "natal.house.description.2",
+        3: "natal.house.description.3",
+        4: "natal.house.description.4",
+        5: "natal.house.description.5",
+        6: "natal.house.description.6",
+        7: "natal.house.description.7",
+        8: "natal.house.description.8",
+        9: "natal.house.description.9",
+        10: "natal.house.description.10",
+        11: "natal.house.description.11",
+        12: "natal.house.description.12"
     ]
 
     var body: some View {
@@ -447,9 +462,11 @@ struct HouseCard: View {
                             .font(MysticFonts.caption(12))
                             .foregroundColor(cusp.sign.elementColor)
                     }
-                    Text(Self.descriptions[cusp.houseNumber] ?? "")
-                        .font(MysticFonts.caption(11))
-                        .foregroundColor(MysticColors.textMuted)
+                    if let descriptionKey = Self.descriptionKeys[cusp.houseNumber] {
+                        Text(LocalizedStringKey(descriptionKey))
+                            .font(MysticFonts.caption(11))
+                            .foregroundColor(MysticColors.textMuted)
+                    }
                 }
 
                 Spacer()
@@ -517,17 +534,39 @@ struct ChartPatternCard: View {
         let oppositions = chart.aspects.filter { $0.type == .opposition }
 
         // Check for Grand Trine (3 mutual trines)
-        if trines.count >= 3 { patterns.append(("Büyük Üçgen", "Üç gezegen trine ile bağlı — doğal yetenek ve akış", "△")) }
+        if trines.count >= 3 {
+            patterns.append((
+                String(localized: "natal.pattern.grand_trine.title"),
+                String(localized: "natal.pattern.grand_trine.description"),
+                "△"
+            ))
+        }
         // Check for T-Square
-        if squares.count >= 2 && oppositions.count >= 1 { patterns.append(("T-Kare", "İki kare ve bir karşıtlık — zorluk ile büyüme", "⊤")) }
+        if squares.count >= 2 && oppositions.count >= 1 {
+            patterns.append((
+                String(localized: "natal.pattern.t_square.title"),
+                String(localized: "natal.pattern.t_square.description"),
+                "⊤"
+            ))
+        }
         // Stellium (3+ planets in same sign)
         let signGroups = Dictionary(grouping: chart.planetPositions) { $0.sign }
         for (sign, planets) in signGroups where planets.count >= 3 {
             let names = planets.map { $0.planet.localizedDisplayName }.joined(separator: ", ")
-            patterns.append(("Stellium — \(sign.localizedDisplayName)", "\(names): \(String(localized: "natal.patterns.stellium.subtitle"))", "⭐"))
+            patterns.append((
+                String(format: String(localized: "natal.pattern.stellium.title_format"), sign.localizedDisplayName),
+                String(format: String(localized: "natal.pattern.stellium.description_format"), names),
+                "⭐"
+            ))
         }
         // Many conjunctions
-        if conjunctions.count >= 4 { patterns.append(("Yoğun Kavuşum", "\(conjunctions.count) kavuşum — güçlü birleşik enerji", "◉")) }
+        if conjunctions.count >= 4 {
+            patterns.append((
+                String(localized: "natal.pattern.intense_conjunction.title"),
+                String(format: String(localized: "natal.pattern.intense_conjunction.description_format"), conjunctions.count),
+                "◉"
+            ))
+        }
 
         return patterns
     }
@@ -571,7 +610,7 @@ struct DominantPlanetCard: View {
                         Text("\(score)")
                             .font(MysticFonts.heading(22))
                             .foregroundColor(MysticColors.mysticGold)
-                        Text("puan")
+                        Text("natal.score_label")
                             .font(MysticFonts.caption(10))
                             .foregroundColor(MysticColors.textMuted)
                     }

@@ -16,7 +16,7 @@ struct PaywallView: View {
         NavigationStack {
             ZStack {
                 MysticColors.voidBlack.ignoresSafeArea()
-                StarField(starCount: 35)
+                StarField(starCount: 35, mode: .modal)
 
                 ScrollView {
                     VStack(spacing: MysticSpacing.lg) {
@@ -169,7 +169,7 @@ struct NotificationPreferencesView: View {
         NavigationStack {
             ZStack {
                 MysticColors.voidBlack.ignoresSafeArea()
-                StarField(starCount: 25)
+                StarField(starCount: 25, mode: .modal)
 
                 VStack(spacing: MysticSpacing.lg) {
                     MysticCard(glowColor: MysticColors.neonLavender) {
@@ -245,10 +245,9 @@ struct NotificationPreferencesView: View {
 
 struct LanguageSettingsView: View {
     @Environment(\.dismiss) private var dismiss
-    @AppStorage("selected_language") private var selectedLanguage = "tr"
+    @AppStorage("selected_language") private var selectedLanguage = "en"
 
     private let languages: [(code: String, title: String, enabled: Bool)] = [
-        ("tr", "Türkçe", true),
         ("en", "English", true)
     ]
 
@@ -256,7 +255,7 @@ struct LanguageSettingsView: View {
         NavigationStack {
             ZStack {
                 MysticColors.voidBlack.ignoresSafeArea()
-                StarField(starCount: 20)
+                StarField(starCount: 20, mode: .modal)
 
                 VStack(spacing: MysticSpacing.md) {
                     ForEach(languages, id: \.code) { language in
@@ -304,7 +303,7 @@ struct LanguageSettingsView: View {
             }
             .onAppear {
                 if !languages.contains(where: { $0.code == selectedLanguage && $0.enabled }) {
-                    selectedLanguage = "tr"
+                    selectedLanguage = "en"
                 }
             }
         }
@@ -319,7 +318,7 @@ struct HelpCenterView: View {
         NavigationStack {
             ZStack {
                 MysticColors.voidBlack.ignoresSafeArea()
-                StarField(starCount: 15)
+                StarField(starCount: 15, mode: .modal)
 
                 ScrollView {
                     VStack(alignment: .leading, spacing: MysticSpacing.md) {
@@ -380,7 +379,7 @@ struct PrivacyPolicyView: View {
         NavigationStack {
             ZStack {
                 MysticColors.voidBlack.ignoresSafeArea()
-                StarField(starCount: 15)
+                StarField(starCount: 15, mode: .modal)
 
                 ScrollView {
                     MysticCard(glowColor: MysticColors.mysticGold) {

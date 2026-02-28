@@ -31,7 +31,7 @@ jobs:
         run: |
           EN_KEYS="$(mktemp)"
           TR_KEYS="$(mktemp)"
-          CORE_PREFIXES='^(tab\\.|common\\.|auth\\.|onboarding\\.|home\\.|chat\\.|dream\\.|settings\\.|quick_actions\\.|config\\.|ai\\.|notifications\\.|astro\\.|transit\\.)'
+          CORE_PREFIXES='^(tab\\.|common\\.|auth\\.|onboarding\\.|home\\.|chat\\.|dream\\.|settings\\.|quick_actions\\.|config\\.|ai\\.|notifications\\.|astro\\.|transit\\.|natal\\.|palm\\.|tarot\\.)'
           awk -F '=' '/\".*\"[[:space:]]*=/{gsub(/[[:space:]]|\"/, "", $1); print $1}' horoscope/en.lproj/Localizable.strings | grep -E "$CORE_PREFIXES" | sort -u > "$EN_KEYS"
           awk -F '=' '/\".*\"[[:space:]]*=/{gsub(/[[:space:]]|\"/, "", $1); print $1}' horoscope/tr.lproj/Localizable.strings | grep -E "$CORE_PREFIXES" | sort -u > "$TR_KEYS"
           if ! diff -u "$EN_KEYS" "$TR_KEYS"; then
@@ -72,6 +72,6 @@ jobs:
             -project horoscope.xcodeproj \
             -scheme horoscope \
             -destination "platform=iOS Simulator,name=${SIMULATOR_NAME}" \
-            -only-testing:horoscopeUITests/testQuickActionsSheetShowsItems \
+            -only-testing:horoscopeUITests/testQuickActionsButtonNavigatesToChat \
             -only-testing:horoscopeUITests/testChatComposerKeyboardAdaptiveChrome \
             test

@@ -75,15 +75,15 @@ class ChatService {
     func addMessage(_ message: ChatMessage, to sessionId: String) {
         guard let index = sessions.firstIndex(where: { $0.id == sessionId }) else { return }
 
+        let updatedTitle = Self.updatedTitle(
+            currentTitle: sessions[index].title,
+            existingMessages: sessions[index].messages,
+            incomingMessage: message
+        )
+
         sessions[index].messages.append(message)
         sessions[index].updatedAt = Date()
-
-        // Auto-title based on first user message.
-        let hasAnyUserMessage = sessions[index].messages.contains(where: { $0.role == .user })
-        let untitledLabels = [String(localized: "chat.session.new_title"), "Yeni Sohbet", "New Chat"]
-        if !hasAnyUserMessage && untitledLabels.contains(sessions[index].title), message.role == .user {
-            sessions[index].title = String(message.content.prefix(40))
-        }
+        sessions[index].title = updatedTitle
 
         let updatedSession = sessions[index]
         sessions.sort { $0.updatedAt > $1.updatedAt }
@@ -151,5 +151,37 @@ class ChatService {
                 }
             }
         }
+    }
+
+    nonisolated static func updatedTitle(
+        currentTitle: String,
+        existingMessages: [ChatMessage],
+        incomingMessage: ChatMessage
+    ) -> String {
+        guard incomingMessage.role == .user else { return currentTitle }
+
+        let hasUserMessageAlready = existingMessages.contains(where: { $0.role == .user })
+        guard !hasUserMessageAlready else { return currentTitle }
+        guard isUntitledTitle(currentTitle) else { return currentTitle }
+
+        let proposal = incomingMessage.content.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !proposal.isEmpty else { return String(localized: "chat.session.new_title") }
+        return String(proposal.prefix(40))
+    }
+
+    nonisolated static func isUntitledTitle(_ title: String) -> Bool {
+        if title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return true
+        }
+
+        let normalized = title.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let untitledLabels = [
+            String(localized: "chat.session.new_title"),
+            "Yeni Sohbet",
+            "New Chat"
+        ]
+        .map { $0.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() }
+
+        return untitledLabels.contains(normalized)
     }
 }

@@ -47,9 +47,42 @@ struct horoscopeTests {
         #expect(session.lastMessagePreview == String(localized: "chat.session.empty_preview"))
 
         session.messages.append(
-            ChatMessage(role: .assistant, content: "Hoş geldin")
+            ChatMessage(role: .assistant, content: "Welcome")
         )
-        #expect(session.lastMessagePreview == "Hoş geldin")
+        #expect(session.lastMessagePreview == "Welcome")
+    }
+
+    @Test("Chat title auto-generates from first user message when untitled")
+    func chatSessionAutoTitleGeneration() {
+        let firstUserMessage = ChatMessage(role: .user, content: "   Please read my weekly energy and transit themes in detail   ")
+        let updated = ChatService.updatedTitle(
+            currentTitle: String(localized: "chat.session.new_title"),
+            existingMessages: [],
+            incomingMessage: firstUserMessage
+        )
+
+        let expected = String(firstUserMessage.content.trimmingCharacters(in: .whitespacesAndNewlines).prefix(40))
+        #expect(updated == expected)
+    }
+
+    @Test("Chat title is preserved for custom titles or non-first user messages")
+    func chatSessionTitlePreservation() {
+        let incoming = ChatMessage(role: .user, content: "New question")
+        let existingUser = ChatMessage(role: .user, content: "Previous question")
+
+        let preservedCustom = ChatService.updatedTitle(
+            currentTitle: "My Custom Title",
+            existingMessages: [],
+            incomingMessage: incoming
+        )
+        #expect(preservedCustom == "My Custom Title")
+
+        let preservedAfterFirst = ChatService.updatedTitle(
+            currentTitle: String(localized: "chat.session.new_title"),
+            existingMessages: [existingUser],
+            incomingMessage: incoming
+        )
+        #expect(preservedAfterFirst == String(localized: "chat.session.new_title"))
     }
 
     @Test("Transit duration is calculated from start and end dates")
@@ -103,6 +136,139 @@ struct horoscopeTests {
         #expect(hidden.contentBottomReservedSpace == MysticLayout.contentBottomExtraSpacing)
     }
 
+    @Test("Tab bar bottom padding aligns with native bottom spacing")
+    func tabBarBottomPaddingAlignment() {
+        #expect(MysticLayout.tabBarBottomPadding(bottomSafeArea: 0) == 4)
+        #expect(MysticLayout.tabBarBottomPadding(bottomSafeArea: 34) == 30)
+    }
+
+    @Test("Tab bar height reflects bottom alignment spacing")
+    func tabBarHeightAlignment() {
+        #expect(MysticLayout.tabBarHeight(bottomSafeArea: 34) == 94)
+    }
+
+    @Test("Date helpers honor selected app language with fallback locale")
+    func dateHelperLocaleSelection() {
+        let fallback = Locale(identifier: "en_US_POSIX")
+
+        let turkish = Date.appLocale(selectedLanguage: "tr", fallback: fallback)
+        #expect(turkish.identifier.hasPrefix("tr"))
+
+        let english = Date.appLocale(selectedLanguage: "en", fallback: fallback)
+        #expect(english.identifier.hasPrefix("en"))
+
+        let blank = Date.appLocale(selectedLanguage: " ", fallback: fallback)
+        #expect(blank.identifier == fallback.identifier)
+
+        let missing = Date.appLocale(selectedLanguage: nil, fallback: fallback)
+        #expect(missing.identifier == fallback.identifier)
+    }
+
+    @Test("Home personalized loading state is shown only while chart is pending")
+    func homePersonalizedLoadingState() {
+        let birthData = BirthData(
+            birthDate: Date(),
+            birthTime: nil,
+            birthPlace: "Istanbul",
+            latitude: 41.0082,
+            longitude: 28.9784,
+            timeZoneIdentifier: "Europe/Istanbul"
+        )
+
+        #expect(
+            HomeView.shouldShowPersonalizedLoading(
+                birthData: birthData,
+                isLoading: true,
+                natalChart: nil
+            )
+        )
+        #expect(
+            !HomeView.shouldShowPersonalizedLoading(
+                birthData: nil,
+                isLoading: true,
+                natalChart: nil
+            )
+        )
+        #expect(
+            !HomeView.shouldShowPersonalizedLoading(
+                birthData: birthData,
+                isLoading: false,
+                natalChart: nil
+            )
+        )
+        #expect(
+            !HomeView.shouldShowPersonalizedLoading(
+                birthData: birthData,
+                isLoading: true,
+                natalChart: ChartData()
+            )
+        )
+    }
+
+    @Test("Dream loading placeholder appears only for initial refresh")
+    func dreamInitialLoadingPlaceholderState() {
+        #expect(DreamJournalView.shouldShowInitialLoadingState(isRefreshing: true, dreamsCount: 0))
+        #expect(!DreamJournalView.shouldShowInitialLoadingState(isRefreshing: false, dreamsCount: 0))
+        #expect(!DreamJournalView.shouldShowInitialLoadingState(isRefreshing: true, dreamsCount: 2))
+    }
+
+    @Test("Dream refresh notice appears only while refreshing existing entries")
+    func dreamRefreshNoticeState() {
+        #expect(DreamJournalView.shouldShowRefreshNotice(isRefreshing: true, dreamsCount: 2))
+        #expect(!DreamJournalView.shouldShowRefreshNotice(isRefreshing: true, dreamsCount: 0))
+        #expect(!DreamJournalView.shouldShowRefreshNotice(isRefreshing: false, dreamsCount: 4))
+    }
+
+    @Test("Chat slow-response notice appears only after threshold while loading")
+    func chatSlowResponseNoticeState() {
+        #expect(ChatView.shouldShowSlowResponseNotice(isLoading: true, didExceedThreshold: true))
+        #expect(!ChatView.shouldShowSlowResponseNotice(isLoading: true, didExceedThreshold: false))
+        #expect(!ChatView.shouldShowSlowResponseNotice(isLoading: false, didExceedThreshold: true))
+    }
+
+    @Test("Natal interpretation retry visibility depends on error and loading state")
+    func natalInterpretationRetryVisibility() {
+        #expect(NatalChartView.shouldShowInterpretationRetry(errorMessage: "Failed", isLoading: false))
+        #expect(!NatalChartView.shouldShowInterpretationRetry(errorMessage: "Failed", isLoading: true))
+        #expect(!NatalChartView.shouldShowInterpretationRetry(errorMessage: "  ", isLoading: false))
+        #expect(!NatalChartView.shouldShowInterpretationRetry(errorMessage: nil, isLoading: false))
+    }
+
+    @Test("Palm errors are mapped to user-facing messages")
+    func palmErrorMapping() {
+        let offline = PalmReadingView.userFacingErrorMessage(for: URLError(.notConnectedToInternet))
+        #expect(offline == String(localized: "palm.error.offline"))
+
+        let timeout = PalmReadingView.userFacingErrorMessage(for: URLError(.timedOut))
+        #expect(timeout == String(localized: "palm.error.timeout"))
+
+        let aiRateLimited = PalmReadingView.userFacingErrorMessage(for: AIServiceError.rateLimited)
+        #expect(aiRateLimited == String(localized: "ai.error.rate_limited"))
+    }
+
+    @Test("Palm retry action visibility requires selected image and idle state")
+    func palmRetryActionVisibility() {
+        #expect(PalmReadingView.shouldShowRetryAction(hasSelectedImage: true, isAnalyzing: false))
+        #expect(!PalmReadingView.shouldShowRetryAction(hasSelectedImage: false, isAnalyzing: false))
+        #expect(!PalmReadingView.shouldShowRetryAction(hasSelectedImage: true, isAnalyzing: true))
+    }
+
+    @Test("Onboarding location name formatting avoids trailing separators")
+    func onboardingLocationNameFormatting() {
+        #expect(
+            OnboardingViewModel.composedLocationName(title: "Istanbul", subtitle: "Turkey")
+            == "Istanbul, Turkey"
+        )
+        #expect(
+            OnboardingViewModel.composedLocationName(title: "Istanbul", subtitle: "")
+            == "Istanbul"
+        )
+        #expect(
+            OnboardingViewModel.composedLocationName(title: " ", subtitle: "Turkey")
+            == "Turkey"
+        )
+    }
+
     @Test("Domain display names are localized and non-empty")
     func localizedDomainDisplayNames() {
         for sign in ZodiacSign.allCases {
@@ -151,19 +317,43 @@ struct horoscopeTests {
             "chat.input.placeholder",
             "chat.retry.message",
             "chat.retry.action",
+            "chat.retry.hint",
+            "chat.loading.reply",
+            "chat.loading.slow",
             "quick_actions.title",
+            "tab.chat.fab.hint",
+            "home.personalized.loading",
+            "dream.loading.entries",
+            "dream.loading.refresh",
+            "dream.retry.action",
+            "natal.interpretation.retry",
+            "natal.dignity.domicile",
+            "natal.house.description.1",
+            "natal.pattern.grand_trine.title",
+            "natal.orb_format",
+            "natal.score_label",
             "settings.section.quick",
             "settings.section.account",
+            "settings.edit.location.resolve_failed",
             "settings.section.support",
+            "settings.signout.confirm.title",
+            "settings.signout.confirm.message",
+            "settings.signout.confirm.action",
             "config.error.missing_secret",
             "ai.error.unauthorized",
+            "palm.error.generic",
+            "palm.analyzing",
+            "palm.retry.hint",
             "notifications.error.permission_denied",
             "common.accessibility.selected",
+            "common.retry",
             "astro.zodiac.aries",
             "astro.planet.sun",
             "astro.aspect.conjunction",
             "astro.transit_severity.low",
-            "transit.description.format"
+            "transit.description.format",
+            "tarot.card.reversed_format",
+            "tarot.card.fool.name"
         ]
 
         for key in requiredCoreKeys {

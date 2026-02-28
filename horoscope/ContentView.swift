@@ -17,10 +17,10 @@ struct ContentView: View {
                     .bold()
 
                 if isFirebaseConfigured {
-                    Text("✅ Firebase Bağlantısı Başarılı")
+                    Text("✅ Firebase Connection Successful")
                         .foregroundColor(.green)
 
-                    Button("Uygulamaya Git") {
+                    Button("Go to App") {
                         // Normally this would transition to AppRouter
                     }
                     .padding()
@@ -28,9 +28,9 @@ struct ContentView: View {
                     .foregroundColor(.white)
                     .cornerRadius(10)
                 } else if hasError {
-                    Text("❌ Firebase Başlatılamadı")
+                    Text("❌ Firebase Failed to Initialize")
                         .foregroundColor(.red)
-                    Text("GoogleService-Info.plist dosyası projede eksik olabilir!")
+                    Text("GoogleService-Info.plist file might be missing in the project!")
                         .font(.caption)
                         .foregroundColor(.gray)
                         .multilineTextAlignment(.center)
@@ -38,7 +38,7 @@ struct ContentView: View {
                 } else {
                     ProgressView()
                         .tint(.white)
-                    Text("Firebase kontrol ediliyor...")
+                    Text("Checking Firebase...")
                         .foregroundColor(.gray)
                 }
             }

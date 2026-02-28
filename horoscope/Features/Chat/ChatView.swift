@@ -20,7 +20,11 @@ struct ChatView: View {
     @State private var inlineStatusMessage: String?
     @State private var transientErrorMessage: String?
     @State private var showMoreContexts = false
+    @State private var showSessionHistory = false
+    @State private var suppressAutoSessionSelectionOnContextChange = false
     @State private var composerHeight: CGFloat = 0
+    @State private var activeResponseRequestID: UUID?
+    @State private var didExceedSlowResponseThreshold = false
 
     private let aiService = AIService.shared
     private let chatService = ChatService.shared
@@ -34,12 +38,26 @@ struct ChatView: View {
         currentSession?.messages ?? []
     }
 
+    private var visibleFailedRequest: FailedChatRequest? {
+        guard let failedRequest else { return nil }
+        guard failedRequest.sessionId == currentSessionId,
+              failedRequest.context == chatContext else { return nil }
+        return failedRequest
+    }
+
     private var trimmedInput: String {
         inputText.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     private var canSend: Bool {
         !trimmedInput.isEmpty && !isLoading
+    }
+
+    private var shouldShowSlowResponseNotice: Bool {
+        Self.shouldShowSlowResponseNotice(
+            isLoading: isLoading,
+            didExceedThreshold: didExceedSlowResponseThreshold
+        )
     }
 
     private var primaryContexts: [ChatContext] {
@@ -51,22 +69,34 @@ struct ChatView: View {
     }
 
     var body: some View {
-        ZStack {
-            StarField(starCount: 40)
-
-            VStack(spacing: 0) {
-                MysticTopBar("chat.title") {
-                    Button {
-                        startNewChat()
-                    } label: {
-                        Image(systemName: "plus.bubble.fill")
-                            .font(.system(size: 18))
-                            .foregroundColor(MysticColors.neonLavender)
-                    }
-                    .accessibilityLabel(Text(String(localized: "chat.new_chat")))
-                    .accessibilityHint(Text(String(localized: "chat.new_chat.hint")))
+        MysticScreenScaffold(
+            "chat.title",
+            showsBackground: false
+        ) {
+            HStack(spacing: MysticSpacing.sm) {
+                Button {
+                    showSessionHistory = true
+                } label: {
+                    Image(systemName: "clock.arrow.circlepath")
+                        .font(.system(size: 17))
+                        .foregroundColor(MysticColors.textSecondary)
                 }
+                .accessibilityLabel(Text(String(localized: "chat.session.history")))
+                .accessibilityIdentifier("chat.history")
 
+                Button {
+                    startNewChat()
+                } label: {
+                    Image(systemName: "plus.bubble.fill")
+                        .font(.system(size: 18))
+                        .foregroundColor(MysticColors.neonLavender)
+                }
+                .accessibilityLabel(Text(String(localized: "chat.new_chat")))
+                .accessibilityHint(Text(String(localized: "chat.new_chat.hint")))
+                .accessibilityIdentifier("chat.new_topbar")
+            }
+        } content: {
+            VStack(spacing: 0) {
                 contextPickerBar
 
                 if let syncError = chatService.lastErrorMessage {
@@ -75,13 +105,13 @@ struct ChatView: View {
                         .padding(.bottom, MysticSpacing.xs)
                 }
 
-                if let transientErrorMessage {
+                if let transientErrorMessage, visibleFailedRequest != nil {
                     syncErrorBanner(transientErrorMessage)
                         .padding(.horizontal, MysticSpacing.md)
                         .padding(.bottom, MysticSpacing.xs)
                 }
 
-                if let failedRequest {
+                if let failedRequest = visibleFailedRequest {
                     retryBanner(for: failedRequest)
                         .padding(.horizontal, MysticSpacing.md)
                         .padding(.bottom, MysticSpacing.xs)
@@ -121,7 +151,6 @@ struct ChatView: View {
                         Color.clear.preference(key: ChatComposerHeightKey.self, value: geometry.size.height)
                     }
                 )
-                .padding(.bottom, chromeMetrics.tabBarVisible ? MysticSpacing.xs : MysticSpacing.sm)
         }
         .onPreferenceChange(ChatComposerHeightKey.self) { newValue in
             composerHeight = newValue
@@ -144,11 +173,23 @@ struct ChatView: View {
             draftsByContext[oldValue] = inputText
             inputText = draftsByContext[newValue] ?? ""
             persistDraftsForCurrentUser()
+
+            if suppressAutoSessionSelectionOnContextChange {
+                suppressAutoSessionSelectionOnContextChange = false
+                return
+            }
+
             loadOrCreateSession()
         }
         .onChange(of: inputText) { _, newValue in
             draftsByContext[chatContext] = newValue
             persistDraftsForCurrentUser()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .scrollToTop)) { notification in
+            guard let tab = notification.object as? AppTab, tab == .chat else { return }
+            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.25)) {
+                scrollProxy?.scrollTo("bottom", anchor: .bottom)
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: .openChatQuickAction)) { notification in
             if let rawContext = notification.userInfo?[AppNavigationPayload.context] as? String,
@@ -166,6 +207,28 @@ struct ChatView: View {
             moreContextsSheet
                 .presentationDetents([.medium])
                 .presentationDragIndicator(.visible)
+        }
+        .sheet(isPresented: $showSessionHistory) {
+            ChatSessionHistorySheet(
+                sessions: chatService.sessionsForUser(authService.currentUser?.id ?? ""),
+                onSelect: { session in
+                    currentSessionId = session.id
+                    if session.context != chatContext {
+                        suppressAutoSessionSelectionOnContextChange = true
+                        chatContext = session.context
+                    }
+                    showSessionHistory = false
+                },
+                onDelete: { session in
+                    chatService.deleteSession(session.id)
+                    if currentSessionId == session.id {
+                        loadOrCreateSession()
+                    }
+                }
+            )
+            .environment(authService)
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
         }
     }
 
@@ -337,7 +400,7 @@ struct ChatView: View {
     private var moreContextsSheet: some View {
         ZStack {
             MysticColors.voidBlack.ignoresSafeArea()
-            StarField(starCount: 25)
+            StarField(starCount: 25, mode: .modal)
 
             VStack(alignment: .leading, spacing: MysticSpacing.md) {
                 Text("chat.context.sheet.title")
@@ -447,6 +510,7 @@ struct ChatView: View {
                 quickPrompt(String(localized: "chat.quick.love"), icon: "heart.fill")
             }
         }
+        .accessibilityIdentifier("chat.empty.state")
     }
 
     private func quickPrompt(_ text: String, icon: String) -> some View {
@@ -484,35 +548,68 @@ struct ChatView: View {
 
     // MARK: - Typing Indicator
     private var typingIndicator: some View {
-        HStack {
-            HStack(spacing: 4) {
-                ForEach(0..<3) { i in
-                    Circle()
-                        .fill(MysticColors.neonLavender)
-                        .frame(width: 8, height: 8)
-                        .opacity(0.5)
-                        .animation(
-                            .easeInOut(duration: 0.6)
-                            .repeatForever()
-                            .delay(Double(i) * 0.2),
-                            value: isLoading
-                        )
+        VStack(alignment: .leading, spacing: MysticSpacing.xs) {
+            HStack {
+                HStack(spacing: 4) {
+                    ForEach(0..<3, id: \.self) { i in
+                        Circle()
+                            .fill(MysticColors.neonLavender)
+                            .frame(width: 6, height: 6)
+                            .offset(y: isLoading ? -4 : 0)
+                            .animation(
+                                .easeInOut(duration: 0.5)
+                                .repeatForever(autoreverses: true)
+                                .delay(Double(i) * 0.15),
+                                value: isLoading
+                            )
+                    }
                 }
-            }
-            .padding(.horizontal, MysticSpacing.md)
-            .padding(.vertical, MysticSpacing.sm)
-            .background(MysticColors.cardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: MysticRadius.lg))
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .background(MysticColors.cardBackground)
+                .clipShape(
+                    UnevenRoundedRectangle(
+                        topLeadingRadius: MysticRadius.lg,
+                        bottomLeadingRadius: 4,
+                        bottomTrailingRadius: MysticRadius.lg,
+                        topTrailingRadius: MysticRadius.lg
+                    )
+                )
+                .overlay(
+                    UnevenRoundedRectangle(
+                        topLeadingRadius: MysticRadius.lg,
+                        bottomLeadingRadius: 4,
+                        bottomTrailingRadius: MysticRadius.lg,
+                        topTrailingRadius: MysticRadius.lg
+                    )
+                    .stroke(MysticColors.cardBorder.opacity(0.5), lineWidth: 1)
+                )
 
-            Spacer()
+                Spacer()
+            }
+
+            if shouldShowSlowResponseNotice {
+                Text("chat.loading.slow")
+                    .font(MysticFonts.caption(12))
+                    .foregroundColor(MysticColors.textMuted)
+                    .padding(.leading, MysticSpacing.xs)
+            }
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text(String(localized: "chat.loading.reply")))
+        .accessibilityIdentifier("chat.loading.reply")
     }
 
     // MARK: - Input Bar
     private var inputBar: some View {
         VStack(spacing: 0) {
+            Color.clear
+                .frame(height: 1)
+                .accessibilityElement()
+                .accessibilityIdentifier("chat.composer")
+
             Divider()
-                .background(MysticColors.cardBorder)
+                .background(MysticColors.cardBorder.opacity(0.5))
 
             HStack(spacing: MysticSpacing.sm) {
                 HStack {
@@ -522,6 +619,8 @@ struct ChatView: View {
                         .lineLimit(1...5)
                         .submitLabel(.send)
                         .textFieldStyle(.plain)
+                        .padding(.vertical, 10)
+                        .padding(.horizontal, 14)
                         .onSubmit {
                             if canSend {
                                 sendMessage()
@@ -529,16 +628,14 @@ struct ChatView: View {
                         }
                         .accessibilityIdentifier("chat.input.field")
                 }
-                .padding(.horizontal, MysticSpacing.md)
-                .padding(.vertical, MysticSpacing.sm)
                 .background(MysticColors.inputBackground)
-                .clipShape(RoundedRectangle(cornerRadius: 20))
+                .clipShape(RoundedRectangle(cornerRadius: 22))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 20)
+                    RoundedRectangle(cornerRadius: 22)
                         .stroke(
                             isLoading
                                 ? MysticColors.neonLavender.opacity(0.6)
-                                : (canSend ? MysticColors.mysticGold.opacity(0.65) : MysticColors.cardBorder),
+                                : (canSend ? MysticColors.mysticGold.opacity(0.5) : MysticColors.cardBorder.opacity(0.3)),
                             lineWidth: 1
                         )
                 )
@@ -552,18 +649,18 @@ struct ChatView: View {
                         if isLoading {
                             Circle()
                                 .fill(MysticColors.neonLavender.opacity(0.25))
-                                .frame(width: 44, height: 44)
+                                .frame(width: 42, height: 42)
 
                             ProgressView()
                                 .tint(MysticColors.neonLavender)
                         } else {
                             Circle()
-                                .fill(canSend ? MysticColors.mysticGold : MysticColors.textMuted.opacity(0.2))
-                                .frame(width: 44, height: 44)
+                                .fill(canSend ? MysticColors.mysticGold : MysticColors.textMuted.opacity(0.15))
+                                .frame(width: 42, height: 42)
 
                             Image(systemName: "arrow.up")
-                                .font(.system(size: 18, weight: .semibold))
-                                .foregroundColor(canSend ? MysticColors.voidBlack : MysticColors.textMuted)
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundColor(canSend ? MysticColors.voidBlack : MysticColors.textSecondary)
                         }
                     }
                 }
@@ -577,20 +674,23 @@ struct ChatView: View {
                 .accessibilityIdentifier("chat.send.button")
             }
             .padding(.horizontal, MysticSpacing.md)
-            .padding(.top, MysticSpacing.sm)
+            .padding(.vertical, 8)
 
             if let inlineStatusMessage {
                 Text(inlineStatusMessage)
                     .font(MysticFonts.caption(12))
                     .foregroundColor(MysticColors.auroraGreen)
-                    .padding(.top, 4)
-                    .padding(.bottom, MysticSpacing.xs)
-            } else {
-                Color.clear.frame(height: MysticSpacing.xs)
+                    .padding(.bottom, 6)
             }
         }
-        .background(MysticColors.voidBlack.opacity(0.92))
-        .accessibilityIdentifier("chat.composer")
+        .background(
+            ZStack {
+                MysticColors.voidBlack
+                Rectangle()
+                    .fill(MysticGradients.cardGlass)
+            }
+            .ignoresSafeArea(.container, edges: .bottom)
+        )
     }
 
     // MARK: - Error / Retry UI
@@ -611,11 +711,15 @@ struct ChatView: View {
             }
             .font(MysticFonts.caption(12))
             .foregroundColor(MysticColors.neonLavender)
+            .accessibilityHint(Text(String(localized: "chat.retry.hint")))
+            .accessibilityIdentifier("chat.retry.action")
         }
         .padding(.horizontal, MysticSpacing.sm)
         .padding(.vertical, 8)
         .background(MysticColors.celestialPink.opacity(0.08))
         .clipShape(RoundedRectangle(cornerRadius: MysticRadius.sm))
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("chat.retry.banner")
     }
 
     private func syncErrorBanner(_ text: String) -> some View {
@@ -631,13 +735,15 @@ struct ChatView: View {
         .padding(.vertical, 8)
         .background(MysticColors.celestialPink.opacity(0.08))
         .clipShape(RoundedRectangle(cornerRadius: MysticRadius.sm))
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("chat.error.banner")
     }
 
     // MARK: - Actions
 
     private func sendMessage() {
         let text = trimmedInput
-        guard !text.isEmpty, let sessionId = currentSessionId else { return }
+        guard !isLoading, !text.isEmpty, let sessionId = currentSessionId else { return }
 
         let userMessage = ChatMessage(role: .user, content: text, context: chatContext)
         chatService.addMessage(userMessage, to: sessionId)
@@ -647,6 +753,7 @@ struct ChatView: View {
 
         let history = chatService.sessions.first(where: { $0.id == sessionId })?.messages ?? [userMessage]
         failedRequest = nil
+        transientErrorMessage = nil
 
         withAnimation {
             scrollProxy?.scrollTo("bottom", anchor: .bottom)
@@ -664,11 +771,18 @@ struct ChatView: View {
     }
 
     private func retryLastRequest(_ request: FailedChatRequest) {
+        failedRequest = nil
+        transientErrorMessage = nil
         requestAssistantResponse(history: request.messageHistory, sessionId: request.sessionId, context: request.context)
     }
 
     private func requestAssistantResponse(history: [ChatMessage], sessionId: String, context: ChatContext) {
+        let requestID = UUID()
+        activeResponseRequestID = requestID
+        didExceedSlowResponseThreshold = false
         isLoading = true
+
+        scheduleSlowResponseHint(for: requestID)
 
         Task {
             do {
@@ -702,7 +816,21 @@ struct ChatView: View {
             }
 
             await MainActor.run {
+                if activeResponseRequestID == requestID {
+                    activeResponseRequestID = nil
+                }
+                didExceedSlowResponseThreshold = false
                 isLoading = false
+            }
+        }
+    }
+
+    private func scheduleSlowResponseHint(for requestID: UUID) {
+        Task {
+            try? await Task.sleep(nanoseconds: 8_000_000_000)
+            await MainActor.run {
+                guard activeResponseRequestID == requestID else { return }
+                didExceedSlowResponseThreshold = true
             }
         }
     }
@@ -728,6 +856,10 @@ struct ChatView: View {
         }
 
         return String(localized: "chat.error.generic")
+    }
+
+    nonisolated static func shouldShowSlowResponseNotice(isLoading: Bool, didExceedThreshold: Bool) -> Bool {
+        isLoading && didExceedThreshold
     }
 }
 
@@ -758,24 +890,47 @@ struct ChatBubbleView: View {
                 Text(message.content)
                     .font(MysticFonts.body(15))
                     .foregroundColor(isUser ? MysticColors.voidBlack : MysticColors.textPrimary)
-                    .lineSpacing(3)
-                    .padding(.horizontal, MysticSpacing.md)
-                    .padding(.vertical, MysticSpacing.sm + 2)
+                    .lineSpacing(4)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
                     .background(
                         isUser
                             ? AnyShapeStyle(MysticGradients.goldShimmer)
                             : AnyShapeStyle(MysticColors.cardBackground)
                     )
-                    .clipShape(RoundedRectangle(cornerRadius: MysticRadius.lg))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: MysticRadius.lg)
-                            .stroke(
-                                isUser
-                                    ? MysticColors.mysticGold.opacity(0.3)
-                                    : MysticColors.cardBorder,
-                                lineWidth: 1
-                            )
+                    .clipShape(
+                        UnevenRoundedRectangle(
+                            topLeadingRadius: MysticRadius.lg,
+                            bottomLeadingRadius: isUser ? MysticRadius.lg : 4,
+                            bottomTrailingRadius: isUser ? 4 : MysticRadius.lg,
+                            topTrailingRadius: MysticRadius.lg
+                        )
                     )
+                    .overlay(
+                        UnevenRoundedRectangle(
+                            topLeadingRadius: MysticRadius.lg,
+                            bottomLeadingRadius: isUser ? MysticRadius.lg : 4,
+                            bottomTrailingRadius: isUser ? 4 : MysticRadius.lg,
+                            topTrailingRadius: MysticRadius.lg
+                        )
+                        .stroke(
+                            isUser
+                                ? MysticColors.mysticGold.opacity(0.2)
+                                : MysticColors.cardBorder.opacity(0.5),
+                            lineWidth: 1
+                        )
+                    )
+                    .contextMenu {
+                        Button {
+                            UIPasteboard.general.string = message.content
+                        } label: {
+                            Label(String(localized: "chat.bubble.copy"), systemImage: "doc.on.doc")
+                        }
+
+                        ShareLink(item: message.content) {
+                            Label(String(localized: "chat.bubble.share"), systemImage: "square.and.arrow.up")
+                        }
+                    }
 
                 Text(message.timestamp.formatted(as: "HH:mm"))
                     .font(MysticFonts.caption(10))
@@ -797,5 +952,113 @@ private struct ChatComposerHeightKey: PreferenceKey {
 
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
         value = nextValue()
+    }
+}
+
+// MARK: - Chat Session History Sheet
+struct ChatSessionHistorySheet: View {
+    let sessions: [ChatSession]
+    let onSelect: (ChatSession) -> Void
+    let onDelete: (ChatSession) -> Void
+
+    var body: some View {
+        ZStack {
+            MysticColors.voidBlack.ignoresSafeArea()
+            StarField(starCount: 25, mode: .modal)
+
+            VStack(alignment: .leading, spacing: MysticSpacing.md) {
+                Text("chat.session.history")
+                    .font(MysticFonts.heading(20))
+                    .foregroundColor(MysticColors.textPrimary)
+
+                if sessions.isEmpty {
+                    VStack(spacing: MysticSpacing.md) {
+                        Spacer().frame(height: 40)
+                        Image(systemName: "bubble.left.and.bubble.right")
+                            .font(.system(size: 40))
+                            .foregroundColor(MysticColors.textMuted)
+                        Text("chat.session.no_history")
+                            .font(MysticFonts.body(15))
+                            .foregroundColor(MysticColors.textSecondary)
+                        Spacer()
+                    }
+                    .frame(maxWidth: .infinity)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityIdentifier("chat.session.empty")
+                } else {
+                    ScrollView(.vertical, showsIndicators: false) {
+                        LazyVStack(spacing: MysticSpacing.sm) {
+                            ForEach(sessions) { session in
+                                Button {
+                                    onSelect(session)
+                                } label: {
+                                    MysticCard(glowColor: contextColor(session.context)) {
+                                        VStack(alignment: .leading, spacing: MysticSpacing.xs) {
+                                            HStack {
+                                                Image(systemName: contextIcon(session.context))
+                                                    .font(.system(size: 14))
+                                                    .foregroundColor(contextColor(session.context))
+                                                Text(session.title)
+                                                    .font(MysticFonts.body(15))
+                                                    .foregroundColor(MysticColors.textPrimary)
+                                                    .lineLimit(1)
+                                                Spacer()
+                                                Text(session.updatedAt.relativeFormatted)
+                                                    .font(MysticFonts.caption(11))
+                                                    .foregroundColor(MysticColors.textMuted)
+                                            }
+
+                                            Text(session.lastMessagePreview)
+                                                .font(MysticFonts.caption(13))
+                                                .foregroundColor(MysticColors.textSecondary)
+                                                .lineLimit(2)
+                                        }
+                                        .frame(minHeight: MysticAccessibility.minimumTapTarget)
+                                    }
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityLabel(Text(session.title))
+                                .accessibilityHint(Text(String(localized: "chat.context.select.hint")))
+                                .accessibilityIdentifier("chat.session.\(session.id)")
+                                .contextMenu {
+                                    Button(role: .destructive) {
+                                        onDelete(session)
+                                    } label: {
+                                        Label(String(localized: "common.delete"), systemImage: "trash")
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Spacer(minLength: 0)
+            }
+            .padding(MysticSpacing.md)
+        }
+    }
+
+    private func contextColor(_ context: ChatContext) -> Color {
+        switch context {
+        case .general: return MysticColors.neonLavender
+        case .natal: return MysticColors.mysticGold
+        case .transit: return MysticColors.auroraGreen
+        case .dream: return MysticColors.celestialPink
+        case .palmReading: return MysticColors.neonLavender
+        case .tarot: return MysticColors.mysticGold
+        case .coffee: return MysticColors.mysticGold
+        }
+    }
+
+    private func contextIcon(_ context: ChatContext) -> String {
+        switch context {
+        case .general: return "sparkles"
+        case .natal: return "moon.stars"
+        case .transit: return "arrow.triangle.2.circlepath"
+        case .dream: return "moon.zzz"
+        case .palmReading: return "hand.raised"
+        case .tarot: return "suit.diamond"
+        case .coffee: return "cup.and.saucer"
+        }
     }
 }

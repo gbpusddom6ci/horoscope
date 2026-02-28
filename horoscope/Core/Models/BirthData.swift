@@ -25,17 +25,17 @@ struct BirthData: Codable, Equatable {
 
 // MARK: - Planet
 enum Planet: String, CaseIterable, Codable {
-    case sun = "Güneş"
-    case moon = "Ay"
-    case mercury = "Merkür"
-    case venus = "Venüs"
+    case sun = "Sun"
+    case moon = "Moon"
+    case mercury = "Mercury"
+    case venus = "Venus"
     case mars = "Mars"
-    case jupiter = "Jüpiter"
-    case saturn = "Satürn"
-    case uranus = "Uranüs"
-    case neptune = "Neptün"
-    case pluto = "Plüton"
-    case northNode = "Kuzey Düğüm"
+    case jupiter = "Jupiter"
+    case saturn = "Saturn"
+    case uranus = "Uranus"
+    case neptune = "Neptune"
+    case pluto = "Pluto"
+    case northNode = "North Node"
     case chiron = "Chiron"
 
     var localizedDisplayName: String {
@@ -115,11 +115,11 @@ enum House: Int, CaseIterable, Codable {
 
 // MARK: - Aspect
 enum AspectType: String, Codable {
-    case conjunction = "Kavuşum"        // 0°
-    case opposition = "Karşıt"          // 180°
-    case trine = "Üçgen"                // 120°
-    case square = "Kare"                // 90°
-    case sextile = "Altıgen"            // 60°
+    case conjunction = "Conjunction"        // 0°
+    case opposition = "Opposition"          // 180°
+    case trine = "Trine"                // 120°
+    case square = "Square"                // 90°
+    case sextile = "Sextile"            // 60°
     case quincunx = "Quincunx"          // 150°
 
     var localizedDisplayName: String {

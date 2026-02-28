@@ -5,6 +5,9 @@ struct DreamJournalView: View {
     @Environment(\.mainChromeMetrics) private var chromeMetrics
     @State private var showNewDreamSheet = false
     @State private var showSavedToast = false
+    @State private var selectedDream: DreamEntry?
+    @State private var scrollProxy: ScrollViewProxy?
+    @State private var isRefreshingEntries = false
 
     private let dreamService = DreamService.shared
 
@@ -13,48 +16,80 @@ struct DreamJournalView: View {
         return dreamService.entriesForUser(userId)
     }
 
+    private var shouldShowInitialLoadingState: Bool {
+        Self.shouldShowInitialLoadingState(
+            isRefreshing: isRefreshingEntries,
+            dreamsCount: dreams.count
+        )
+    }
+
+    private var shouldShowRefreshNotice: Bool {
+        Self.shouldShowRefreshNotice(
+            isRefreshing: isRefreshingEntries,
+            dreamsCount: dreams.count
+        )
+    }
+
     var body: some View {
         ZStack(alignment: .top) {
-            StarField(starCount: 40)
-
-            VStack(spacing: 0) {
-                MysticTopBar("dream.title") {
-                    Button {
-                        showNewDreamSheet = true
-                    } label: {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.system(size: 19))
-                            .foregroundColor(MysticColors.celestialPink)
-                    }
-                    .accessibilityLabel(Text(String(localized: "dream.new")))
-                    .accessibilityHint(Text(String(localized: "dream.quick_add.hint")))
-                    .accessibilityIdentifier("dream.new_topbar")
+            MysticScreenScaffold(
+                "dream.title",
+                showsBackground: false
+            ) {
+                Button {
+                    showNewDreamSheet = true
+                } label: {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.system(size: 19))
+                        .foregroundColor(MysticColors.celestialPink)
                 }
+                .accessibilityLabel(Text(String(localized: "dream.new")))
+                .accessibilityHint(Text(String(localized: "dream.quick_add.hint")))
+                .accessibilityIdentifier("dream.new_topbar")
+            } content: {
+                ScrollViewReader { proxy in
+                    ScrollView(.vertical, showsIndicators: false) {
+                        VStack(spacing: MysticSpacing.lg) {
+                            Color.clear
+                                .frame(height: 0)
+                                .id("dream_top")
 
-                ScrollView(.vertical, showsIndicators: false) {
-                    VStack(spacing: MysticSpacing.lg) {
-                        if let syncError = dreamService.lastErrorMessage {
-                            syncErrorBanner(syncError)
-                                .padding(.top, MysticSpacing.xs)
-                        }
-
-                        if dreams.isEmpty {
-                            headerCard.fadeInOnAppear(delay: 0)
-                            emptyState.fadeInOnAppear(delay: 0.1)
-                        } else {
-                            compactHeaderCard.fadeInOnAppear(delay: 0)
-                            ForEach(dreams) { dream in
-                                dreamCard(dream: dream)
+                            if let syncError = dreamService.lastErrorMessage {
+                                syncErrorBanner(syncError)
+                                    .padding(.top, MysticSpacing.xs)
                             }
+
+                            if shouldShowRefreshNotice {
+                                refreshNotice
+                            }
+
+                            if shouldShowInitialLoadingState {
+                                initialLoadingState
+                                    .fadeInOnAppear(delay: 0)
+                            } else if dreams.isEmpty {
+                                headerCard.fadeInOnAppear(delay: 0)
+                                emptyState.fadeInOnAppear(delay: 0.1)
+                            } else {
+                                compactHeaderCard.fadeInOnAppear(delay: 0)
+                                ForEach(dreams) { dream in
+                                    dreamCard(dream: dream)
+                                }
+                            }
+                            Color.clear.frame(
+                                height: dreams.isEmpty
+                                    ? max(72, chromeMetrics.contentBottomReservedSpace)
+                                    : max(128, chromeMetrics.contentBottomReservedSpace + 44)
+                            )
                         }
-                        Color.clear.frame(
-                            height: dreams.isEmpty
-                                ? max(72, chromeMetrics.contentBottomReservedSpace)
-                                : max(128, chromeMetrics.contentBottomReservedSpace + 44)
-                        )
+                        .padding(.horizontal, MysticLayout.screenHorizontalPadding)
+                        .padding(.top, MysticSpacing.sm)
                     }
-                    .padding(.horizontal, MysticLayout.screenHorizontalPadding)
-                    .padding(.top, MysticSpacing.sm)
+                    .onAppear {
+                        scrollProxy = proxy
+                    }
+                    .refreshable {
+                        await refreshEntries()
+                    }
                 }
             }
             .sheet(isPresented: $showNewDreamSheet, onDismiss: {
@@ -83,26 +118,43 @@ struct DreamJournalView: View {
         .task(id: authService.currentUser?.id) {
             await refreshEntries()
         }
+        .sheet(item: $selectedDream) { dream in
+            DreamDetailSheet(
+                dream: dream,
+                onDelete: {
+                    dreamService.deleteEntry(dream.id)
+                    selectedDream = nil
+                }
+            )
+        }
         .onReceive(NotificationCenter.default.publisher(for: .openDreamComposer)) { _ in
             showNewDreamSheet = true
         }
+        .onReceive(NotificationCenter.default.publisher(for: .scrollToTop)) { notification in
+            guard let tab = notification.object as? AppTab, tab == .dream else { return }
+            withAnimation(.easeInOut(duration: 0.25)) {
+                scrollProxy?.scrollTo("dream_top", anchor: .top)
+            }
+        }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if !dreams.isEmpty {
-                VStack {
+                VStack(spacing: 0) {
                     MysticButton(String(localized: "dream.new"), icon: "plus.circle.fill", style: .primary) {
                         showNewDreamSheet = true
                     }
                     .accessibilityHint(Text(String(localized: "dream.quick_add.hint")))
                     .accessibilityIdentifier("dream.new_dock_cta")
+                    .padding(.horizontal, MysticLayout.screenHorizontalPadding)
+                    .padding(.top, MysticSpacing.sm)
+                    .padding(.bottom, MysticSpacing.sm)
                 }
-                .padding(.horizontal, MysticLayout.screenHorizontalPadding)
-                .padding(.top, MysticSpacing.sm)
-                .padding(.bottom, chromeMetrics.tabBarVisible ? MysticSpacing.xs : MysticSpacing.md)
                 .background(
                     Rectangle()
                         .fill(MysticColors.voidBlack.opacity(0.9))
                         .overlay(Rectangle().fill(MysticGradients.cardGlass))
+                        .ignoresSafeArea(.container, edges: .bottom)
                 )
+                .ignoresSafeArea(.keyboard, edges: .bottom)
             }
         }
     }
@@ -178,32 +230,76 @@ struct DreamJournalView: View {
                 showNewDreamSheet = true
             }
             .frame(maxWidth: 260)
+            .accessibilityHint(Text(String(localized: "dream.quick_add.hint")))
+            .accessibilityIdentifier("dream.empty.cta")
         }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("dream.empty.state")
+    }
+
+    private var initialLoadingState: some View {
+        MysticStateCard(
+            variant: .loading(messageKey: "dream.loading.entries"),
+            accessibilityIdentifier: "dream.loading.state"
+        )
+        .frame(maxWidth: .infinity)
+    }
+
+    private var refreshNotice: some View {
+        HStack(spacing: MysticSpacing.xs) {
+            ProgressView()
+                .tint(MysticColors.neonLavender)
+                .scaleEffect(0.9)
+            Text("dream.loading.refresh")
+                .font(MysticFonts.caption(12))
+                .foregroundColor(MysticColors.textMuted)
+            Spacer()
+        }
+        .padding(.horizontal, MysticSpacing.sm)
+        .padding(.vertical, 8)
+        .background(MysticColors.cardBackground.opacity(0.7))
+        .clipShape(RoundedRectangle(cornerRadius: MysticRadius.sm))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text(String(localized: "dream.loading.refresh")))
+        .accessibilityIdentifier("dream.refresh.notice")
     }
 
     private func dreamCard(dream: DreamEntry) -> some View {
-        MysticCard {
-            VStack(alignment: .leading, spacing: MysticSpacing.sm) {
-                HStack {
-                    if let mood = dream.mood { Text(mood.emoji).font(.system(size: 20)) }
-                    Text(dream.createdAt.formatted(as: "d MMMM yyyy"))
-                        .font(MysticFonts.caption(13))
-                        .foregroundColor(MysticColors.textMuted)
-                    Spacer()
-                }
-                Text(dream.dreamText)
-                    .font(MysticFonts.body(14))
-                    .foregroundColor(MysticColors.textPrimary)
-                    .lineLimit(3)
-                    .lineSpacing(2)
-                if let interpretation = dream.interpretation {
-                    Divider().background(MysticColors.cardBorder)
-                    Text(interpretation)
-                        .font(MysticFonts.body(13))
-                        .foregroundColor(MysticColors.textSecondary)
-                        .lineLimit(4)
+        Button {
+            selectedDream = dream
+        } label: {
+            MysticCard {
+                VStack(alignment: .leading, spacing: MysticSpacing.sm) {
+                    HStack {
+                        if let mood = dream.mood { Text(mood.emoji).font(.system(size: 20)) }
+                        Text(dream.createdAt.formatted(as: "d MMMM yyyy"))
+                            .font(MysticFonts.caption(13))
+                            .foregroundColor(MysticColors.textMuted)
+                        Spacer()
+                    }
+                    Text(dream.dreamText)
+                        .font(MysticFonts.body(14))
+                        .foregroundColor(MysticColors.textPrimary)
+                        .lineLimit(3)
                         .lineSpacing(2)
+                    if let interpretation = dream.interpretation {
+                        Divider().background(MysticColors.cardBorder)
+                        Text(interpretation)
+                            .font(MysticFonts.body(13))
+                            .foregroundColor(MysticColors.textSecondary)
+                            .lineLimit(4)
+                            .lineSpacing(2)
+                    }
                 }
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("dream.entry.\(dream.id)")
+        .contextMenu {
+            Button(role: .destructive) {
+                dreamService.deleteEntry(dream.id)
+            } label: {
+                Label(String(localized: "common.delete"), systemImage: "trash")
             }
         }
     }
@@ -216,16 +312,40 @@ struct DreamJournalView: View {
                 .font(MysticFonts.caption(12))
                 .foregroundColor(MysticColors.celestialPink)
             Spacer()
+            Button(String(localized: "dream.retry.action")) {
+                Task { await refreshEntries() }
+            }
+            .disabled(isRefreshingEntries)
+            .font(MysticFonts.caption(12))
+            .foregroundColor(MysticColors.neonLavender)
+            .accessibilityHint(Text(String(localized: "dream.retry.hint")))
+            .accessibilityIdentifier("dream.retry.load")
         }
         .padding(.horizontal, MysticSpacing.sm)
         .padding(.vertical, 8)
         .background(MysticColors.celestialPink.opacity(0.08))
         .clipShape(RoundedRectangle(cornerRadius: MysticRadius.sm))
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("dream.error.banner")
     }
 
     private func refreshEntries() async {
-        guard let userId = authService.currentUser?.id else { return }
+        await MainActor.run {
+            isRefreshingEntries = true
+        }
+
+        guard let userId = authService.currentUser?.id else {
+            await MainActor.run {
+                isRefreshingEntries = false
+            }
+            return
+        }
+
         await dreamService.loadEntries(for: userId)
+
+        await MainActor.run {
+            isRefreshingEntries = false
+        }
     }
 
     private func showDreamSavedToast() {
@@ -241,6 +361,145 @@ struct DreamJournalView: View {
                 }
             }
         }
+    }
+
+    nonisolated static func shouldShowInitialLoadingState(isRefreshing: Bool, dreamsCount: Int) -> Bool {
+        isRefreshing && dreamsCount == 0
+    }
+
+    nonisolated static func shouldShowRefreshNotice(isRefreshing: Bool, dreamsCount: Int) -> Bool {
+        isRefreshing && dreamsCount > 0
+    }
+}
+
+// MARK: - Dream Detail Sheet
+private struct DreamDetailSheet: View {
+    let dream: DreamEntry
+    let onDelete: () -> Void
+
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            ScrollView(.vertical, showsIndicators: false) {
+                    VStack(spacing: MysticSpacing.lg) {
+                        headerCard
+                        dreamTextCard
+
+                        if let interpretation = dream.interpretation {
+                            interpretationCard(text: interpretation)
+                        }
+
+                        MysticButton(String(localized: "common.delete"), icon: "trash", style: .danger) {
+                            onDelete()
+                            dismiss()
+                        }
+                        .accessibilityIdentifier("dream.detail.delete")
+                    }
+                    .padding(MysticSpacing.md)
+                }
+                .background {
+                    ZStack {
+                        MysticColors.voidBlack.ignoresSafeArea()
+                        StarField(starCount: 30, mode: .modal)
+                    }
+                }
+            .navigationTitle(Text(verbatim: dream.createdAt.formatted(as: "d MMMM yyyy")))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarColorScheme(.dark, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button(String(localized: "common.close")) { dismiss() }
+                        .foregroundColor(MysticColors.neonLavender)
+                }
+
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(role: .destructive) {
+                        onDelete()
+                        dismiss()
+                    } label: {
+                        Image(systemName: "trash")
+                    }
+                    .foregroundColor(MysticColors.celestialPink)
+                    .accessibilityLabel(Text(String(localized: "common.delete")))
+                }
+            }
+        }
+    }
+
+    private var headerCard: some View {
+        MysticCard(glowColor: MysticColors.celestialPink.opacity(0.7)) {
+            VStack(alignment: .leading, spacing: MysticSpacing.sm) {
+                HStack(spacing: MysticSpacing.sm) {
+                    if let mood = dream.mood {
+                        Text(mood.emoji)
+                            .font(.system(size: 28))
+                            .accessibilityHidden(true)
+
+                        Text(mood.localizedDisplayName)
+                            .font(MysticFonts.heading(16))
+                            .foregroundColor(MysticColors.textPrimary)
+                    } else {
+                        Image(systemName: "moon.zzz.fill")
+                            .font(.system(size: 18))
+                            .foregroundColor(MysticColors.celestialPink)
+
+                        Text("dream.title")
+                            .font(MysticFonts.heading(16))
+                            .foregroundColor(MysticColors.textPrimary)
+                    }
+
+                    Spacer()
+                }
+
+                Text(dream.createdAt.formatted(as: "EEEE, d MMMM yyyy"))
+                    .font(MysticFonts.caption(12))
+                    .foregroundColor(MysticColors.textMuted)
+            }
+        }
+        .accessibilityIdentifier("dream.detail.header")
+    }
+
+    private var dreamTextCard: some View {
+        MysticCard {
+            VStack(alignment: .leading, spacing: MysticSpacing.sm) {
+                HStack(spacing: MysticSpacing.xs) {
+                    Image(systemName: "pencil.and.scribble")
+                        .foregroundColor(MysticColors.neonLavender)
+                    Text("dream.new_sheet.input_title")
+                        .font(MysticFonts.heading(16))
+                        .foregroundColor(MysticColors.textPrimary)
+                }
+
+                Text(dream.dreamText)
+                    .font(MysticFonts.body(15))
+                    .foregroundColor(MysticColors.textSecondary)
+                    .lineSpacing(3)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        .accessibilityIdentifier("dream.detail.text")
+    }
+
+    private func interpretationCard(text: String) -> some View {
+        MysticCard(glowColor: MysticColors.mysticGold.opacity(0.35)) {
+            VStack(alignment: .leading, spacing: MysticSpacing.sm) {
+                HStack(spacing: MysticSpacing.xs) {
+                    Image(systemName: "sparkles")
+                        .foregroundColor(MysticColors.mysticGold)
+                    Text("dream.new_sheet.ai_title")
+                        .font(MysticFonts.heading(16))
+                        .foregroundColor(MysticColors.textPrimary)
+                }
+
+                Text(text)
+                    .font(MysticFonts.body(14))
+                    .foregroundColor(MysticColors.textSecondary)
+                    .lineSpacing(3)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        .accessibilityIdentifier("dream.detail.interpretation")
     }
 }
 
@@ -263,11 +522,7 @@ struct NewDreamSheet: View {
 
     var body: some View {
         NavigationStack {
-            ZStack {
-                MysticColors.voidBlack.ignoresSafeArea()
-                StarField(starCount: 30)
-
-                ScrollView {
+            ScrollView {
                     VStack(spacing: MysticSpacing.lg) {
                         moodPicker
                         dreamInput
@@ -288,7 +543,13 @@ struct NewDreamSheet: View {
                     }
                     .padding(MysticSpacing.md)
                 }
-            }
+                .scrollDismissesKeyboard(.interactively)
+                .background {
+                    ZStack {
+                        MysticColors.voidBlack.ignoresSafeArea()
+                        StarField(starCount: 30, mode: .modal)
+                    }
+                }
             .navigationTitle(Text("dream.new_sheet.title"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)

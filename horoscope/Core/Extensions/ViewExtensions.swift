@@ -99,6 +99,19 @@ struct FadeInModifier: ViewModifier {
 
 // MARK: - Date Extensions
 extension Date {
+    static func appLocale(
+        selectedLanguage: String?,
+        fallback: Locale = .autoupdatingCurrent
+    ) -> Locale {
+        guard let selectedLanguage = selectedLanguage?
+            .trimmingCharacters(in: .whitespacesAndNewlines),
+              !selectedLanguage.isEmpty else {
+            return fallback
+        }
+
+        return Locale(identifier: selectedLanguage)
+    }
+
     var zodiacSign: ZodiacSign {
         let calendar = Calendar.current
         let month = calendar.component(.month, from: self)
@@ -109,13 +122,17 @@ extension Date {
     func formatted(as format: String) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = format
-        formatter.locale = Locale.autoupdatingCurrent
+        formatter.locale = Self.appLocale(
+            selectedLanguage: UserDefaults.standard.string(forKey: "selected_language")
+        )
         return formatter.string(from: self)
     }
 
     var relativeFormatted: String {
         let formatter = RelativeDateTimeFormatter()
-        formatter.locale = Locale.autoupdatingCurrent
+        formatter.locale = Self.appLocale(
+            selectedLanguage: UserDefaults.standard.string(forKey: "selected_language")
+        )
         formatter.unitsStyle = .short
         return formatter.localizedString(for: self, relativeTo: Date())
     }

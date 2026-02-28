@@ -133,7 +133,8 @@ class AuthService {
                 email: fbUser.email ?? appleCredential.email ?? "",
                 birthData: birthData,
                 isPremium: isPremium,
-                createdAt: createdAt
+                createdAt: createdAt,
+                hasCompletedOnboarding: hasCompletedOnboarding
             )
 
             await MainActor.run {
@@ -177,7 +178,7 @@ class AuthService {
 
             let displayName = data?["displayName"] as? String ?? email.components(separatedBy: "@").first ?? String(localized: "common.user")
             let birthData = extractBirthData(from: data)
-            let hasCompletedOnboarding = (data?["hasCompletedOnboarding"] as? Bool) ?? (birthData != nil)
+            let hasCompletedOnboarding = data?["hasCompletedOnboarding"] as? Bool ?? false
             
             let appUser = AppUser(
                 id: fbUser.uid,
@@ -185,7 +186,8 @@ class AuthService {
                 email: email,
                 birthData: birthData,
                 isPremium: data?["isPremium"] as? Bool ?? false,
-                createdAt: (data?["createdAt"] as? Timestamp)?.dateValue() ?? Date()
+                createdAt: (data?["createdAt"] as? Timestamp)?.dateValue() ?? Date(),
+                hasCompletedOnboarding: hasCompletedOnboarding
             )
 
             await MainActor.run {
@@ -242,7 +244,8 @@ class AuthService {
                 displayName: finalName,
                 email: email,
                 isPremium: false,
-                createdAt: Date()
+                createdAt: Date(),
+                hasCompletedOnboarding: false
             )
 
             await MainActor.run {
@@ -273,19 +276,19 @@ class AuthService {
     }
 
     @MainActor
-    func completeOnboarding(with birthData: BirthData) async throws {
+    func completeOnboarding() async throws {
         guard var user = currentUser else {
             throw AuthServiceError.notAuthenticated
         }
 
         let previousUser = user
-        user.birthData = birthData
+        user.hasCompletedOnboarding = true
         currentUser = user
         authState = .authenticated
         saveSession(user)
 
         do {
-            try await syncBirthDataToFirestore(userId: user.id, birthData: birthData, setOnboarding: true)
+            try await firestoreService.updateUserDocument(userId: user.id, data: ["hasCompletedOnboarding": true])
             errorMessage = nil
         } catch {
             // Revert local state if backend sync fails.
@@ -298,13 +301,26 @@ class AuthService {
     }
 
     /// Updates birth data after initial onboarding (e.g., from profile edit).
+    @MainActor
     func updateBirthData(_ birthData: BirthData) async throws {
-        currentUser?.birthData = birthData
-        guard let user = currentUser else {
+        guard var user = currentUser else {
             throw AuthServiceError.notAuthenticated
         }
+
+        let previousUser = user
+        user.birthData = birthData
+        currentUser = user
         saveSession(user)
-        try await syncBirthDataToFirestore(userId: user.id, birthData: birthData, setOnboarding: false)
+
+        do {
+            try await syncBirthDataToFirestore(userId: user.id, birthData: birthData, setOnboarding: false)
+            errorMessage = nil
+        } catch {
+            currentUser = previousUser
+            saveSession(previousUser)
+            errorMessage = error.localizedDescription
+            throw error
+        }
     }
 
     /// Syncs premium state from StoreKit purchases to local session + Firestore.
@@ -412,7 +428,7 @@ class AuthService {
         let doc = try? await firestoreService.fetchUserDocument(userId: firebaseUser.uid)
         let data = doc?.data()
         let birthData = extractBirthData(from: data)
-        let hasCompletedOnboarding = (data?["hasCompletedOnboarding"] as? Bool) ?? (birthData != nil)
+        let hasCompletedOnboarding = data?["hasCompletedOnboarding"] as? Bool ?? false
 
         let fallbackName = firebaseUser.displayName
             ?? firebaseUser.email?.components(separatedBy: "@").first
@@ -425,7 +441,8 @@ class AuthService {
             birthData: birthData,
             isPremium: data?["isPremium"] as? Bool ?? false,
             createdAt: (data?["createdAt"] as? Timestamp)?.dateValue() ?? Date(),
-            fcmToken: data?["fcmToken"] as? String
+            fcmToken: data?["fcmToken"] as? String,
+            hasCompletedOnboarding: hasCompletedOnboarding
         )
 
         await MainActor.run {

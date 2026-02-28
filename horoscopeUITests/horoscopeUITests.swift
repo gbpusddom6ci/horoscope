@@ -56,38 +56,43 @@ final class horoscopeUITests: XCTestCase {
     }
 
     @MainActor
-    func testQuickActionsSheetShowsItems() throws {
+    func testQuickActionsButtonNavigatesToChat() throws {
         let app = launchAuthenticatedApp()
 
         let quickButton = app.buttons["quick_actions.button"]
         XCTAssertTrue(quickButton.waitForExistence(timeout: 8))
         quickButton.tap()
 
-        XCTAssertTrue(app.buttons["quick_action.new_chat"].waitForExistence(timeout: 3))
-        XCTAssertTrue(app.buttons["quick_action.new_dream"].exists)
-        XCTAssertTrue(app.buttons["quick_action.open_tarot"].exists)
-        XCTAssertTrue(app.buttons["quick_action.open_palm"].exists)
+        // Floating button should navigate to Chat tab
+        let composer = app.otherElements["chat.composer"]
+        XCTAssertTrue(composer.waitForExistence(timeout: 5))
     }
 
     @MainActor
     func testQuickActionDreamOpensComposer() throws {
         let app = launchAuthenticatedApp()
 
-        let quickButton = app.buttons["quick_actions.button"]
-        XCTAssertTrue(quickButton.waitForExistence(timeout: 8))
-        quickButton.tap()
-        app.buttons["quick_action.new_dream"].tap()
+        // Navigate to Dream tab directly
+        let dreamTab = app.buttons["tab.dream"]
+        XCTAssertTrue(dreamTab.waitForExistence(timeout: 8))
+        dreamTab.tap()
 
-        XCTAssertTrue(app.navigationBars["New Dream"].waitForExistence(timeout: 5))
+        // Use topbar + button to open dream composer
+        let topBarCta = app.buttons["dream.new_topbar"]
+        XCTAssertTrue(topBarCta.waitForExistence(timeout: 5))
+        topBarCta.tap()
+
+        XCTAssertTrue(app.staticTexts["New Dream"].waitForExistence(timeout: 5))
     }
 
     @MainActor
     func testChatMoreContextsSheetOpens() throws {
         let app = launchAuthenticatedApp()
 
-        let chatTab = app.buttons["tab.chat"]
-        XCTAssertTrue(chatTab.waitForExistence(timeout: 8))
-        chatTab.tap()
+        // Navigate to Chat via floating button
+        let quickButton = app.buttons["quick_actions.button"]
+        XCTAssertTrue(quickButton.waitForExistence(timeout: 8))
+        quickButton.tap()
 
         let moreButton = app.buttons["chat.context.more"]
         XCTAssertTrue(moreButton.waitForExistence(timeout: 5))
@@ -126,26 +131,42 @@ final class horoscopeUITests: XCTestCase {
     func testSelectedTabPersistsAfterRelaunch() throws {
         let app = launchAuthenticatedApp()
 
-        let dreamTab = app.buttons["tab.dream"]
+        let dreamTab = app.buttons["tab.dream"].firstMatch
         XCTAssertTrue(dreamTab.waitForExistence(timeout: 8))
         dreamTab.tap()
-        XCTAssertEqual(dreamTab.value as? String, "Selected")
+        XCTAssertTrue(app.staticTexts["Dream Journal"].waitForExistence(timeout: 8))
 
         app.terminate()
         app.launch()
 
-        let relaunchedDreamTab = app.buttons["tab.dream"]
+        let relaunchedDreamTab = app.buttons["tab.dream"].firstMatch
         XCTAssertTrue(relaunchedDreamTab.waitForExistence(timeout: 8))
-        XCTAssertEqual(relaunchedDreamTab.value as? String, "Selected")
+        XCTAssertTrue(app.staticTexts["Dream Journal"].waitForExistence(timeout: 10))
+    }
+
+    @MainActor
+    func testMainTabBarIsAnchoredNearBottomEdge() throws {
+        let app = launchAuthenticatedApp()
+
+        let tabBar = app.otherElements["main.tab_bar"]
+        XCTAssertTrue(tabBar.waitForExistence(timeout: 8))
+
+        let window = app.windows.firstMatch
+        XCTAssertTrue(window.waitForExistence(timeout: 8))
+
+        let gap = window.frame.maxY - tabBar.frame.maxY
+        XCTAssertLessThanOrEqual(gap, 4, "Tab bar should sit near the native bottom edge.")
+        XCTAssertGreaterThanOrEqual(gap, -1, "Tab bar should not render below the window edge.")
     }
 
     @MainActor
     func testChatComposerKeyboardAdaptiveChrome() throws {
         let app = launchAuthenticatedApp()
 
-        let chatTab = app.buttons["tab.chat"]
-        XCTAssertTrue(chatTab.waitForExistence(timeout: 8))
-        chatTab.tap()
+        // Navigate to Chat via floating button
+        let quickButton = app.buttons["quick_actions.button"]
+        XCTAssertTrue(quickButton.waitForExistence(timeout: 8))
+        quickButton.tap()
 
         let composer = app.otherElements["chat.composer"]
         XCTAssertTrue(composer.waitForExistence(timeout: 5))
@@ -169,12 +190,14 @@ final class horoscopeUITests: XCTestCase {
     func testDreamPrimaryCtaIsReachable() throws {
         let app = launchAuthenticatedApp()
 
-        let dreamTab = app.buttons["tab.dream"]
+        let dreamTab = app.buttons["tab.dream"].firstMatch
         XCTAssertTrue(dreamTab.waitForExistence(timeout: 8))
         dreamTab.tap()
 
+        XCTAssertTrue(app.staticTexts["Dream Journal"].waitForExistence(timeout: 8))
+
         let topBarCta = app.buttons["dream.new_topbar"]
-        XCTAssertTrue(topBarCta.waitForExistence(timeout: 5))
+        XCTAssertTrue(topBarCta.waitForExistence(timeout: 10))
     }
 
     @MainActor

@@ -8,12 +8,47 @@ enum MysticButtonStyle {
     case danger       // Pink/red
 }
 
+enum MysticButtonSize {
+    case regular
+    case compact
+
+    var height: CGFloat {
+        switch self {
+        case .regular:
+            return 52
+        case .compact:
+            return 44
+        }
+    }
+
+    var font: Font {
+        switch self {
+        case .regular:
+            return MysticFonts.body(16)
+        case .compact:
+            return MysticFonts.body(14)
+        }
+    }
+
+    var iconSize: CGFloat {
+        switch self {
+        case .regular:
+            return 18
+        case .compact:
+            return 15
+        }
+    }
+}
+
 struct MysticButton: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     let title: String
     let icon: String?
     let style: MysticButtonStyle
+    let size: MysticButtonSize
     let isLoading: Bool
+    let isEnabled: Bool
     let action: () -> Void
 
     @State private var isPressed = false
@@ -23,23 +58,30 @@ struct MysticButton: View {
         _ title: String,
         icon: String? = nil,
         style: MysticButtonStyle = .primary,
+        size: MysticButtonSize = .regular,
         isLoading: Bool = false,
+        isEnabled: Bool = true,
         action: @escaping () -> Void
     ) {
         self.title = title
         self.icon = icon
         self.style = style
+        self.size = size
         self.isLoading = isLoading
+        self.isEnabled = isEnabled
         self.action = action
+    }
+
+    private var canInteract: Bool {
+        isEnabled && !isLoading
     }
 
     var body: some View {
         Button(action: {
-            if !isLoading {
-                let impact = UIImpactFeedbackGenerator(style: .medium)
-                impact.impactOccurred()
-                action()
-            }
+            guard canInteract else { return }
+            let impact = UIImpactFeedbackGenerator(style: .medium)
+            impact.impactOccurred()
+            action()
         }) {
             HStack(spacing: MysticSpacing.sm) {
                 if isLoading {
@@ -49,26 +91,29 @@ struct MysticButton: View {
                 } else {
                     if let icon = icon {
                         Image(systemName: icon)
-                            .font(.system(size: 18, weight: .semibold))
+                            .font(.system(size: size.iconSize, weight: .semibold))
                     }
                     Text(title)
-                        .font(MysticFonts.body(16))
+                        .font(size.font)
                         .fontWeight(.semibold)
                 }
             }
             .foregroundColor(textColor)
             .frame(maxWidth: .infinity)
-            .frame(height: 52)
+            .frame(height: size.height)
             .background(backgroundView)
             .clipShape(RoundedRectangle(cornerRadius: MysticRadius.lg))
             .overlay(borderOverlay)
             .shadow(color: glowColor.opacity(glowAnimation ? 0.4 : 0.1), radius: glowAnimation ? 12 : 4)
-            .scaleEffect((isPressed && !reduceMotion) ? 0.97 : 1.0)
+            .scaleEffect((isPressed && !reduceMotion && canInteract) ? 0.97 : 1.0)
+            .opacity(canInteract ? 1 : 0.62)
         }
         .buttonStyle(.plain)
+        .disabled(!canInteract)
         .simultaneousGesture(
             DragGesture(minimumDistance: 0)
                 .onChanged { _ in
+                    guard canInteract else { return }
                     if reduceMotion {
                         isPressed = true
                     } else {
@@ -76,6 +121,7 @@ struct MysticButton: View {
                     }
                 }
                 .onEnded { _ in
+                    guard canInteract else { return }
                     if reduceMotion {
                         isPressed = false
                     } else {
@@ -211,9 +257,9 @@ struct AppleSignInButton: View {
     ZStack {
         StarField()
         VStack(spacing: 16) {
-            MysticButton("Keşfet", icon: "sparkles", style: .primary) {}
-            MysticButton("Devam Et", icon: "arrow.right", style: .secondary) {}
-            MysticButton("Atla", style: .ghost) {}
+            MysticButton("Explore", icon: "sparkles", style: .primary) {}
+            MysticButton("Continue", icon: "arrow.right", style: .secondary) {}
+            MysticButton("Skip", style: .ghost, size: .compact) {}
             AppleSignInButton {}
         }
         .padding(24)

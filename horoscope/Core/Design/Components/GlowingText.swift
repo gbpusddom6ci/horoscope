@@ -206,8 +206,8 @@ enum ZodiacSign: String, CaseIterable, Codable {
     ZStack {
         StarField()
         VStack(spacing: 20) {
-            GlowingText("✨ Mistik Rehber", color: MysticColors.mysticGold)
-            GlowingText("Yıldızlar Konuşuyor", font: MysticFonts.mystic(24), color: MysticColors.neonLavender)
+            GlowingText("✨ Mystic Guide", color: MysticColors.mysticGold)
+            GlowingText("The Stars Are Speaking", font: MysticFonts.mystic(24), color: MysticColors.neonLavender)
 
             HStack(spacing: 12) {
                 ForEach(ZodiacSign.allCases.prefix(6), id: \.self) { sign in

@@ -4,7 +4,13 @@ struct AppRouter: View {
     @State private var authService = AuthService()
     @State private var premiumService = PremiumService.shared
     @State private var notificationService = NotificationService.shared
-    @AppStorage("selected_language") private var selectedLanguage = "tr"
+    @AppStorage("selected_language") private var selectedLanguage = "en"
+
+    private let supportedLanguages: Set<String> = ["en"]
+
+    private var resolvedLanguage: String {
+        supportedLanguages.contains(selectedLanguage) ? selectedLanguage : "en"
+    }
 
     var body: some View {
         ZStack {
@@ -18,8 +24,13 @@ struct AppRouter: View {
         .environment(authService)
         .environment(premiumService)
         .environment(notificationService)
-        .environment(\.locale, Locale(identifier: selectedLanguage))
+        .environment(\.locale, Locale(identifier: resolvedLanguage))
         .preferredColorScheme(.dark)
+        .onAppear {
+            if selectedLanguage != resolvedLanguage {
+                selectedLanguage = resolvedLanguage
+            }
+        }
     }
 
     @ViewBuilder

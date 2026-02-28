@@ -5,11 +5,14 @@ struct NatalChartView: View {
     @Environment(\.mainChromeMetrics) private var chromeMetrics
     @State private var chartData: ChartData?
     @State private var interpretation: String?
+    @State private var interpretationErrorMessage: String?
     @State private var isLoadingInterpretation = false
     @State private var isLoadingChart = false
     @State private var selectedPlanet: PlanetPosition?
     @State private var expandedPlanet: String?
     @State private var selectedTab: ChartTab = .planets
+    @State private var scrollProxy: ScrollViewProxy?
+    @State private var activeInterpretationRequestID: UUID?
 
     private let engine = AstrologyEngine.shared
     private let aiService = AIService.shared
@@ -32,20 +35,31 @@ struct NatalChartView: View {
     }
 
     var body: some View {
-        ZStack {
-            StarField(starCount: 50)
-
-            VStack(spacing: 0) {
-                header
-                content
+        MysticScreenScaffold(
+            "natal.title",
+            showsBackground: false
+        ) {
+            Button {
+                loadChart()
+            } label: {
+                Image(systemName: "arrow.clockwise")
+                    .font(.system(size: 17))
+                    .foregroundColor(MysticColors.neonLavender)
             }
+            .disabled(isLoadingChart || isLoadingInterpretation)
+            .accessibilityLabel(Text(String(localized: "natal.refresh")))
+            .accessibilityHint(Text(String(localized: "natal.refresh.hint")))
+            .accessibilityIdentifier("natal.refresh")
+        } content: {
+            content
         }
         .onAppear { loadChart() }
-    }
-
-    // MARK: - Header
-    private var header: some View {
-        MysticTopBar("natal.title")
+        .onReceive(NotificationCenter.default.publisher(for: .scrollToTop)) { notification in
+            guard let tab = notification.object as? AppTab, tab == .chart else { return }
+            withAnimation(.easeInOut(duration: 0.25)) {
+                scrollProxy?.scrollTo("chart_top", anchor: .top)
+            }
+        }
     }
 
     // MARK: - Main Content
@@ -72,45 +86,57 @@ struct NatalChartView: View {
                 .foregroundColor(MysticColors.textMuted)
             Spacer()
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text(String(localized: "natal.loading")))
+        .accessibilityIdentifier("natal.loading.state")
     }
 
     // MARK: - Chart Content
     private func chartContent(chart: ChartData) -> some View {
-        ScrollView(.vertical, showsIndicators: false) {
-            VStack(spacing: MysticSpacing.lg) {
-                // Chart Wheel
-                ChartWheelView(chartData: chart, selectedPlanet: $selectedPlanet)
-                    .frame(height: 330)
-                    .fadeInOnAppear(delay: 0)
+        ScrollViewReader { proxy in
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(spacing: MysticSpacing.lg) {
+                    Color.clear
+                        .frame(height: 0)
+                        .id("chart_top")
 
-                // Big 3 Summary
-                big3Section(chart: chart)
-                    .fadeInOnAppear(delay: 0.05)
+                    // Chart Wheel
+                    ChartWheelView(chartData: chart, selectedPlanet: $selectedPlanet)
+                        .frame(height: 330)
+                        .fadeInOnAppear(delay: 0)
 
-                // Dominant Planet
-                DominantPlanetCard(chart: chart)
-                    .padding(.horizontal, MysticSpacing.md)
-                    .fadeInOnAppear(delay: 0.08)
+                    // Big 3 Summary
+                    big3Section(chart: chart)
+                        .fadeInOnAppear(delay: 0.05)
 
-                // Element & Modality
-                ElementModalityBreakdown(positions: chart.planetPositions)
-                    .padding(.horizontal, MysticSpacing.md)
-                    .fadeInOnAppear(delay: 0.1)
+                    // Dominant Planet
+                    DominantPlanetCard(chart: chart)
+                        .padding(.horizontal, MysticSpacing.md)
+                        .fadeInOnAppear(delay: 0.08)
 
-                // Chart Patterns
-                ChartPatternCard(chart: chart)
-                    .padding(.horizontal, MysticSpacing.md)
-                    .fadeInOnAppear(delay: 0.12)
+                    // Element & Modality
+                    ElementModalityBreakdown(positions: chart.planetPositions)
+                        .padding(.horizontal, MysticSpacing.md)
+                        .fadeInOnAppear(delay: 0.1)
 
-                // Tab Picker + Content
-                tabPicker.fadeInOnAppear(delay: 0.15)
-                tabContent(chart: chart)
+                    // Chart Patterns
+                    ChartPatternCard(chart: chart)
+                        .padding(.horizontal, MysticSpacing.md)
+                        .fadeInOnAppear(delay: 0.12)
 
-                // AI Interpretation
-                interpretationSection
-                    .fadeInOnAppear(delay: 0.25)
+                    // Tab Picker + Content
+                    tabPicker.fadeInOnAppear(delay: 0.15)
+                    tabContent(chart: chart)
 
-                Color.clear.frame(height: max(72, chromeMetrics.contentBottomReservedSpace))
+                    // AI Interpretation
+                    interpretationSection
+                        .fadeInOnAppear(delay: 0.25)
+
+                    Color.clear.frame(height: max(72, chromeMetrics.contentBottomReservedSpace))
+                }
+            }
+            .onAppear {
+                scrollProxy = proxy
             }
         }
     }
@@ -126,7 +152,7 @@ struct NatalChartView: View {
             Big3Card(
                 label: String(localized: "natal.big3.sun"), symbol: "☉",
                 sign: sun?.sign, degree: sun?.formattedDegree,
-                color: .orange
+                color: MysticColors.mysticGold
             )
             Big3Card(
                 label: String(localized: "natal.big3.moon"), symbol: "☽",
@@ -233,11 +259,16 @@ struct NatalChartView: View {
                     .font(MysticFonts.heading(18))
                     .foregroundColor(MysticColors.textPrimary)
                 Spacer()
-                if interpretation == nil {
-                    MysticButton(String(localized: "natal.interpretation.button"), icon: "sparkles", style: .secondary, isLoading: isLoadingInterpretation) {
+                if interpretation == nil || interpretationErrorMessage != nil {
+                    let ctaKey = interpretationErrorMessage == nil
+                        ? "natal.interpretation.button"
+                        : "natal.interpretation.retry"
+                    MysticButton(NSLocalizedString(ctaKey, comment: ""), icon: "sparkles", style: .secondary, isLoading: isLoadingInterpretation) {
                         requestInterpretation()
                     }
                     .frame(width: 140)
+                    .accessibilityHint(Text(String(localized: "natal.interpretation.hint")))
+                    .accessibilityIdentifier("natal.interpretation.cta")
                 }
             }
 
@@ -248,23 +279,60 @@ struct NatalChartView: View {
                         .foregroundColor(MysticColors.textSecondary)
                         .lineSpacing(4)
                 }
+            } else if isLoadingInterpretation {
+                // Skeleton loading state
+                MysticStateCard(
+                    variant: .loading(messageKey: "natal.interpretation.loading"),
+                    accessibilityIdentifier: "natal.interpretation.loading.state"
+                )
+                .transition(.opacity)
+            } else if let interpretationErrorMessage {
+                interpretationErrorCard(message: interpretationErrorMessage)
             }
         }
         .padding(.horizontal, MysticSpacing.md)
+    }
+
+    private func interpretationErrorCard(message: String) -> some View {
+        MysticCard(glowColor: MysticColors.celestialPink) {
+            VStack(alignment: .leading, spacing: MysticSpacing.sm) {
+                Text(message)
+                    .font(MysticFonts.body(14))
+                    .foregroundColor(MysticColors.celestialPink)
+                    .lineSpacing(3)
+
+                if Self.shouldShowInterpretationRetry(
+                    errorMessage: interpretationErrorMessage,
+                    isLoading: isLoadingInterpretation
+                ) {
+                    Button(String(localized: "natal.interpretation.retry")) {
+                        requestInterpretation()
+                    }
+                    .buttonStyle(.plain)
+                    .font(MysticFonts.caption(13))
+                    .foregroundColor(MysticColors.neonLavender)
+                    .frame(minHeight: MysticAccessibility.minimumTapTarget, alignment: .leading)
+                    .accessibilityHint(Text(String(localized: "natal.interpretation.retry.hint")))
+                    .accessibilityIdentifier("natal.interpretation.retry")
+                }
+            }
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("natal.interpretation.error")
     }
 
     // MARK: - No Data View
     private var noBirthDataView: some View {
         VStack(spacing: MysticSpacing.lg) {
             Spacer().frame(height: 100)
-            Image(systemName: "moon.stars.fill")
-                .font(.system(size: 64))
-                .foregroundStyle(MysticGradients.lavenderGlow)
-                .opacity(0.5)
-            Text("natal.empty")
-                .font(MysticFonts.body(16))
-                .foregroundColor(MysticColors.textSecondary)
-                .multilineTextAlignment(.center)
+            MysticStateCard(
+                variant: .empty(
+                    icon: "moon.stars.fill",
+                    titleKey: "natal.empty"
+                ),
+                accessibilityIdentifier: "natal.empty.state"
+            )
+            .padding(.horizontal, MysticSpacing.md)
             Spacer()
         }
     }
@@ -272,30 +340,75 @@ struct NatalChartView: View {
     // MARK: - Actions
 
     private func loadChart() {
-        guard let birthData = authService.currentUser?.birthData else { return }
-        isLoadingChart = true
-        Task {
-            chartData = await engine.calculateNatalChartAsync(birthData: birthData)
+        guard let birthData = authService.currentUser?.birthData else {
+            chartData = nil
+            interpretation = nil
+            interpretationErrorMessage = nil
+            activeInterpretationRequestID = nil
+            isLoadingInterpretation = false
             isLoadingChart = false
+            return
+        }
+
+        guard !isLoadingChart else { return }
+
+        isLoadingChart = true
+        interpretation = nil
+        interpretationErrorMessage = nil
+        activeInterpretationRequestID = nil
+        isLoadingInterpretation = false
+        selectedPlanet = nil
+        expandedPlanet = nil
+
+        Task {
+            let calculatedChart = await engine.calculateNatalChartAsync(birthData: birthData)
+            await MainActor.run {
+                chartData = calculatedChart
+                isLoadingChart = false
+            }
         }
     }
 
     private func requestInterpretation() {
-        guard let chart = chartData,
+        guard !isLoadingInterpretation,
+              let chart = chartData,
               let birthData = authService.currentUser?.birthData else { return }
 
+        let requestID = UUID()
+        activeInterpretationRequestID = requestID
         isLoadingInterpretation = true
+        interpretationErrorMessage = nil
+
         Task {
             do {
-                interpretation = try await aiService.interpretNatalChart(
+                let generatedInterpretation = try await aiService.interpretNatalChart(
                     chartData: chart,
                     birthData: birthData
                 )
+                await MainActor.run {
+                    guard activeInterpretationRequestID == requestID else { return }
+                    interpretation = generatedInterpretation
+                    interpretationErrorMessage = nil
+                }
             } catch {
-                interpretation = String(localized: "natal.interpretation.error")
+                await MainActor.run {
+                    guard activeInterpretationRequestID == requestID else { return }
+                    interpretation = nil
+                    interpretationErrorMessage = String(localized: "natal.interpretation.error")
+                }
             }
-            isLoadingInterpretation = false
+
+            await MainActor.run {
+                guard activeInterpretationRequestID == requestID else { return }
+                activeInterpretationRequestID = nil
+                isLoadingInterpretation = false
+            }
         }
+    }
+
+    nonisolated static func shouldShowInterpretationRetry(errorMessage: String?, isLoading: Bool) -> Bool {
+        let hasError = !(errorMessage?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true)
+        return hasError && !isLoading
     }
 }
 
@@ -351,8 +464,9 @@ struct ChartWheelView: View {
                 selectedPlanetCard(selected)
                     .transition(.asymmetric(
                         insertion: .move(edge: .bottom).combined(with: .opacity),
-                        removal: .opacity
+                        removal: .scale(scale: 0.95).combined(with: .opacity)
                     ))
+                    .zIndex(1)
             }
         }
         .onAppear {
@@ -600,7 +714,7 @@ struct ChartWheelView: View {
             withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
                 selectedPlanet = isSelected ? nil : pos
             }
-            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         } label: {
             ZStack {
                 // Outer glow for selected
@@ -687,7 +801,7 @@ struct ChartWheelView: View {
                         HStack(spacing: 3) {
                             Image(systemName: dignity.icon)
                                 .font(.system(size: 10))
-                            Text(dignity.rawValue)
+                            Text(dignity.localizedTitle)
                                 .font(MysticFonts.caption(10))
                         }
                         .foregroundColor(dignity.color)
