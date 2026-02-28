@@ -11,18 +11,6 @@ import FirebaseMessaging
 import UserNotifications
 import os
 
-extension Notification.Name {
-    static let didReceiveFCMToken = Notification.Name("didReceiveFCMToken")
-    static let openDreamComposer = Notification.Name("openDreamComposer")
-    static let openChatQuickAction = Notification.Name("openChatQuickAction")
-    static let scrollToTop = Notification.Name("scrollToTop")
-}
-
-enum AppNavigationPayload {
-    static let context = "context"
-    static let prompt = "prompt"
-}
-
 // MARK: - App Delegate for Firebase Setup
 class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate, MessagingDelegate {
     private let logger = Logger(subsystem: "rk.horoscope", category: "Push")
@@ -66,14 +54,10 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 // MARK: - Main App
 @main
 struct horoscopeApp: App {
-    // Register app delegate for Firebase setup
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
 
     var body: some Scene {
         WindowGroup {
-            // First display a very simple view, ignoring AppRouter initially
-            // This isolates whether the White Screen is from SwiftUI/Router
-            // or from something else like Firebase crashing.
             AppRouter()
                 .preferredColorScheme(.dark)
         }

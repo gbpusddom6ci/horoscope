@@ -131,7 +131,7 @@ struct DreamJournalView: View {
             showNewDreamSheet = true
         }
         .onReceive(NotificationCenter.default.publisher(for: .scrollToTop)) { notification in
-            guard let tab = notification.object as? AppTab, tab == .library else { return }
+            guard let tab = notification.object as? AppTab, tab == .dream else { return }
             withAnimation(.easeInOut(duration: 0.25)) {
                 scrollProxy?.scrollTo("dream_top", anchor: .top)
             }
