@@ -34,6 +34,11 @@
   - hardcoded secret patterns
   - `git diff --check` whitespace issues (current working tree)
 
+## RC Release Runbook (Deterministic)
+- Primary handoff runbook: `docs/RC_RELEASE_RUNBOOK.md`
+- Recommended one-command flow:
+  - `RUN_ARCHIVE=1 ARTIFACT_ROOT=/tmp/horoscope_rc_release RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)" ./scripts/local_xcode_validation.sh`
+
 ## Final Manual Submission Workflow
 1. Run local sanity checks:
    - `./scripts/release_prep_checks.sh`

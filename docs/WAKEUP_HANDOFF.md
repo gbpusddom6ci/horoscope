@@ -5,6 +5,7 @@ Date: February 27, 2026
 ## Purpose
 - Single runbook for immediate local Xcode validation before App Store submission.
 - Keep behavior unchanged; focus on verification confidence and handoff clarity.
+- Canonical deterministic RC flow now lives in `docs/RC_RELEASE_RUNBOOK.md`.
 
 ## Exact Command Sequence (Local Xcode Machine)
 Run from repo root (`/Users/malware/horoscope/horoscope`):

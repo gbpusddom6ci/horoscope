@@ -72,8 +72,14 @@ if [[ -n "${ARTIFACT_PATH}" ]]; then
   require_command tee
   mkdir -p "$(dirname "${ARTIFACT_PATH}")"
   echo "Writing release-prep check log to ${ARTIFACT_PATH}"
-  if ! run_checks 2>&1 | tee "${ARTIFACT_PATH}"; then
-    exit "${PIPESTATUS[0]}"
+  if run_checks 2>&1 | tee "${ARTIFACT_PATH}"; then
+    :
+  else
+    pipeline_statuses=("${PIPESTATUS[@]}")
+    if [[ "${pipeline_statuses[0]}" -ne 0 ]]; then
+      exit "${pipeline_statuses[0]}"
+    fi
+    exit "${pipeline_statuses[1]}"
   fi
 else
   run_checks
