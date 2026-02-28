@@ -10,6 +10,8 @@ SCHEME="${SCHEME:-horoscope}"
 SIMULATOR_NAME="${SIMULATOR_NAME:-iPhone 15}"
 DESTINATION="${DESTINATION:-platform=iOS Simulator,name=${SIMULATOR_NAME}}"
 RUN_ARCHIVE="${RUN_ARCHIVE:-0}"
+SINGLE_SIMULATOR_MODE="${SINGLE_SIMULATOR_MODE:-1}"
+MAX_CONCURRENT_TEST_SIMULATORS="${MAX_CONCURRENT_TEST_SIMULATORS:-1}"
 
 PREFLIGHT_ENABLED="${PREFLIGHT_ENABLED:-1}"
 XCODE_APP_PATH="${XCODE_APP_PATH:-/Applications/Xcode.app}"
@@ -65,6 +67,7 @@ validate_inputs() {
   fi
 
   require_bool "RUN_ARCHIVE" "${RUN_ARCHIVE}"
+  require_bool "SINGLE_SIMULATOR_MODE" "${SINGLE_SIMULATOR_MODE}"
   require_bool "PREFLIGHT_ENABLED" "${PREFLIGHT_ENABLED}"
   require_bool "AUTO_SWITCH_XCODE" "${AUTO_SWITCH_XCODE}"
   require_bool "CLEAN_DERIVED_DATA" "${CLEAN_DERIVED_DATA}"
@@ -124,6 +127,8 @@ echo "Project: ${PROJECT}"
 echo "Scheme: ${SCHEME}"
 echo "Destination: ${DESTINATION}"
 echo "Run archive: ${RUN_ARCHIVE}"
+echo "Single simulator mode: ${SINGLE_SIMULATOR_MODE}"
+echo "Max concurrent test simulators: ${MAX_CONCURRENT_TEST_SIMULATORS}"
 echo "Preflight enabled: ${PREFLIGHT_ENABLED}"
 echo "Artifact directory: ${ARTIFACT_DIR}"
 echo "Source packages directory: ${CLONED_SOURCE_PACKAGES_DIR_PATH}"
@@ -146,7 +151,16 @@ fi
 run_step env RELEASE_PREP_ARTIFACT_PATH="${RELEASE_PREP_ARTIFACT_PATH}" ./scripts/release_prep_checks.sh
 run_step_with_log "${LIST_LOG_PATH}" xcodebuild -list -project "${PROJECT}"
 run_step_with_log "${RESOLVE_LOG_PATH}" xcodebuild -resolvePackageDependencies -project "${PROJECT}" -clonedSourcePackagesDirPath "${CLONED_SOURCE_PACKAGES_DIR_PATH}"
-run_step_with_log "${TEST_LOG_PATH}" xcodebuild -project "${PROJECT}" -scheme "${SCHEME}" -destination "${DESTINATION}" -clonedSourcePackagesDirPath "${CLONED_SOURCE_PACKAGES_DIR_PATH}" -resultBundlePath "${TEST_RESULT_BUNDLE_PATH}" test
+TEST_COMMAND=(xcodebuild -project "${PROJECT}" -scheme "${SCHEME}" -destination "${DESTINATION}" -clonedSourcePackagesDirPath "${CLONED_SOURCE_PACKAGES_DIR_PATH}" -resultBundlePath "${TEST_RESULT_BUNDLE_PATH}")
+if [[ "${SINGLE_SIMULATOR_MODE}" == "1" ]]; then
+  TEST_COMMAND+=(
+    -parallel-testing-enabled NO
+    -maximum-concurrent-test-simulator-destinations "${MAX_CONCURRENT_TEST_SIMULATORS}"
+    -maximum-concurrent-test-device-destinations 1
+  )
+fi
+TEST_COMMAND+=(test)
+run_step_with_log "${TEST_LOG_PATH}" "${TEST_COMMAND[@]}"
 
 if [[ "${RUN_ARCHIVE}" == "1" ]]; then
   run_step_with_log "${ARCHIVE_LOG_PATH}" xcodebuild -project "${PROJECT}" -scheme "${SCHEME}" -configuration Release -destination "generic/platform=iOS" -clonedSourcePackagesDirPath "${CLONED_SOURCE_PACKAGES_DIR_PATH}" -archivePath "${ARCHIVE_PATH}" archive

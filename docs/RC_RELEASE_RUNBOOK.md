@@ -43,6 +43,8 @@ export RC_ROOT=/tmp/horoscope_rc_release
 export RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)"
 
 RUN_ARCHIVE=1 \
+SINGLE_SIMULATOR_MODE=1 \
+MAX_CONCURRENT_TEST_SIMULATORS=1 \
 PREFLIGHT_ENABLED=1 \
 AUTO_SWITCH_XCODE=0 \
 CLEAN_DERIVED_DATA=0 \
@@ -114,7 +116,7 @@ CLONED_SOURCE_PACKAGES_DIR_PATH="${CLONED_SOURCE_PACKAGES_DIR_PATH}" \
 RELEASE_PREP_ARTIFACT_PATH="${RC_DIR}/01_release_prep_checks.log" ./scripts/release_prep_checks.sh
 xcodebuild -list -project "${PROJECT}" 2>&1 | tee "${RC_DIR}/02_xcodebuild_list.log"
 xcodebuild -resolvePackageDependencies -project "${PROJECT}" -clonedSourcePackagesDirPath "${CLONED_SOURCE_PACKAGES_DIR_PATH}" 2>&1 | tee "${RC_DIR}/03_resolve_packages.log"
-xcodebuild -project "${PROJECT}" -scheme "${SCHEME}" -destination "${DESTINATION}" -clonedSourcePackagesDirPath "${CLONED_SOURCE_PACKAGES_DIR_PATH}" -resultBundlePath "${RC_DIR}/horoscope-tests.xcresult" test 2>&1 | tee "${RC_DIR}/04_tests.log"
+xcodebuild -project "${PROJECT}" -scheme "${SCHEME}" -destination "${DESTINATION}" -clonedSourcePackagesDirPath "${CLONED_SOURCE_PACKAGES_DIR_PATH}" -resultBundlePath "${RC_DIR}/horoscope-tests.xcresult" -parallel-testing-enabled NO -maximum-concurrent-test-simulator-destinations 1 -maximum-concurrent-test-device-destinations 1 test 2>&1 | tee "${RC_DIR}/04_tests.log"
 xcodebuild -project "${PROJECT}" -scheme "${SCHEME}" -configuration Release -destination 'generic/platform=iOS' -clonedSourcePackagesDirPath "${CLONED_SOURCE_PACKAGES_DIR_PATH}" -archivePath "${RC_DIR}/horoscope.xcarchive" archive 2>&1 | tee "${RC_DIR}/05_archive.log"
 
 echo "RC artifacts: ${RC_DIR}"
