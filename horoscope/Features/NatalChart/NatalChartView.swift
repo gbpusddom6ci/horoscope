@@ -55,7 +55,7 @@ struct NatalChartView: View {
         }
         .onAppear { loadChart() }
         .onReceive(NotificationCenter.default.publisher(for: .scrollToTop)) { notification in
-            guard let tab = notification.object as? AppTab, tab == .home else { return }
+            guard let tab = notification.object as? AppTab, tab == .chart else { return }
             withAnimation(.easeInOut(duration: 0.25)) {
                 scrollProxy?.scrollTo("chart_top", anchor: .top)
             }

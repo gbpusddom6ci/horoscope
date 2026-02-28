@@ -111,6 +111,27 @@ struct horoscopeTests {
         }
     }
 
+    @Test("Navigation quick actions retain pending payloads until consumed")
+    func navigationQuickActionPendingPayloads() {
+        AppNavigation.openChat(context: .tarot, prompt: "test prompt")
+        let pendingChat = AppNavigation.consumePendingChatQuickAction()
+        #expect(pendingChat?.context == .tarot)
+        #expect(pendingChat?.prompt == "test prompt")
+        #expect(AppNavigation.consumePendingChatQuickAction() == nil)
+
+        AppNavigation.openDreamComposer()
+        #expect(AppNavigation.consumePendingDreamComposer())
+        #expect(!AppNavigation.consumePendingDreamComposer())
+
+        AppNavigation.openTarotQuickAction()
+        #expect(AppNavigation.consumePendingTarotQuickAction())
+        #expect(!AppNavigation.consumePendingTarotQuickAction())
+
+        AppNavigation.openPalmQuickAction()
+        #expect(AppNavigation.consumePendingPalmQuickAction())
+        #expect(!AppNavigation.consumePendingPalmQuickAction())
+    }
+
     @Test("Additional chat contexts can be restored from raw values")
     func chatContextRoundTrip() {
         #expect(ChatContext(rawValue: "general") == .general)
@@ -162,6 +183,15 @@ struct horoscopeTests {
 
         let missing = Date.appLocale(selectedLanguage: nil, fallback: fallback)
         #expect(missing.identifier == fallback.identifier)
+    }
+
+    @Test("App router language codes normalize safely with fallback")
+    func appRouterLanguageNormalization() {
+        #expect(AppRouter.resolveLanguageCode("tr") == "tr")
+        #expect(AppRouter.resolveLanguageCode("TR_tr") == "tr")
+        #expect(AppRouter.resolveLanguageCode("en-US") == "en")
+        #expect(AppRouter.resolveLanguageCode("  ") == "en")
+        #expect(AppRouter.resolveLanguageCode("de") == "en")
     }
 
     @Test("Home view initializes")

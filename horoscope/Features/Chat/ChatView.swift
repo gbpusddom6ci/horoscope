@@ -165,6 +165,9 @@ struct ChatView: View {
                 scrollProxy?.scrollTo("bottom", anchor: .bottom)
             }
         }
+        .onAppear {
+            applyPendingChatQuickActionIfNeeded()
+        }
         .task(id: authService.currentUser?.id) {
             loadDraftsForCurrentUser()
             await loadSessionsForCurrentUser()
@@ -186,22 +189,26 @@ struct ChatView: View {
             persistDraftsForCurrentUser()
         }
         .onReceive(NotificationCenter.default.publisher(for: .scrollToTop)) { notification in
-            guard let tab = notification.object as? AppTab, tab == .home else { return }
+            guard let tab = notification.object as? AppTab, tab == .chat else { return }
             withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.25)) {
                 scrollProxy?.scrollTo("bottom", anchor: .bottom)
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .openChatQuickAction)) { notification in
-            if let rawContext = notification.userInfo?[AppNavigationPayload.context] as? String,
-               let targetContext = ChatContext(rawValue: rawContext) {
-                chatContext = targetContext
+            if let pendingAction = AppNavigation.consumePendingChatQuickAction() {
+                applyChatQuickAction(context: pendingAction.context, prompt: pendingAction.prompt)
+                return
             }
 
-            if let prompt = notification.userInfo?[AppNavigationPayload.prompt] as? String {
-                inputText = prompt
-                draftsByContext[chatContext] = prompt
-                persistDraftsForCurrentUser()
+            let targetContext: ChatContext?
+            if let rawContext = notification.userInfo?[AppNavigationPayload.context] as? String {
+                targetContext = ChatContext(rawValue: rawContext)
+            } else {
+                targetContext = nil
             }
+
+            let prompt = notification.userInfo?[AppNavigationPayload.prompt] as? String
+            applyChatQuickAction(context: targetContext, prompt: prompt)
         }
         .sheet(isPresented: $showMoreContexts) {
             moreContextsSheet
@@ -740,6 +747,23 @@ struct ChatView: View {
     }
 
     // MARK: - Actions
+
+    private func applyPendingChatQuickActionIfNeeded() {
+        guard let pendingAction = AppNavigation.consumePendingChatQuickAction() else { return }
+        applyChatQuickAction(context: pendingAction.context, prompt: pendingAction.prompt)
+    }
+
+    private func applyChatQuickAction(context: ChatContext?, prompt: String?) {
+        if let targetContext = context {
+            chatContext = targetContext
+        }
+
+        if let prompt {
+            inputText = prompt
+            draftsByContext[chatContext] = prompt
+            persistDraftsForCurrentUser()
+        }
+    }
 
     private func sendMessage() {
         let text = trimmedInput

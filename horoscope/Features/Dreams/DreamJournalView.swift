@@ -118,6 +118,11 @@ struct DreamJournalView: View {
         .task(id: authService.currentUser?.id) {
             await refreshEntries()
         }
+        .onAppear {
+            if AppNavigation.consumePendingDreamComposer() {
+                showNewDreamSheet = true
+            }
+        }
         .sheet(item: $selectedDream) { dream in
             DreamDetailSheet(
                 dream: dream,
@@ -128,6 +133,7 @@ struct DreamJournalView: View {
             )
         }
         .onReceive(NotificationCenter.default.publisher(for: .openDreamComposer)) { _ in
+            _ = AppNavigation.consumePendingDreamComposer()
             showNewDreamSheet = true
         }
         .onReceive(NotificationCenter.default.publisher(for: .scrollToTop)) { notification in

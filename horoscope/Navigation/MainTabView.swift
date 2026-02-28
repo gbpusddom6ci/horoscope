@@ -51,7 +51,20 @@ struct MainTabView: View {
             }
             .environment(\.mainChromeMetrics, chromeMetrics)
             .onAppear {
-                selectedTab = AppTab(rawValue: selectedTabRawValue) ?? .home
+                let restoredTab = AppTab(rawValue: selectedTabRawValue) ?? .home
+                selectedTab = restoredTab
+                if selectedTabRawValue != restoredTab.rawValue {
+                    selectedTabRawValue = restoredTab.rawValue
+                }
+            }
+            .onChange(of: selectedTabRawValue) { _, newRawValue in
+                let restoredTab = AppTab(rawValue: newRawValue) ?? .home
+                if selectedTab != restoredTab {
+                    selectedTab = restoredTab
+                }
+                if newRawValue != restoredTab.rawValue {
+                    selectedTabRawValue = restoredTab.rawValue
+                }
             }
             .onChange(of: selectedTab) { _, newValue in
                 selectedTabRawValue = newValue.rawValue
@@ -295,6 +308,11 @@ enum AppNavigationPayload {
 }
 
 enum AppNavigation {
+    private static var pendingChatQuickAction: (context: ChatContext, prompt: String?)?
+    private static var pendingDreamComposer = false
+    private static var pendingTarotQuickAction = false
+    private static var pendingPalmQuickAction = false
+
     static func switchToTab(_ tab: AppTab) {
         NotificationCenter.default.post(name: .switchToMainTab, object: tab)
     }
@@ -304,6 +322,8 @@ enum AppNavigation {
     }
 
     static func openChat(context: ChatContext, prompt: String? = nil) {
+        pendingChatQuickAction = (context: context, prompt: prompt)
+
         var payload: [String: Any] = [AppNavigationPayload.context: context.rawValue]
         if let prompt {
             payload[AppNavigationPayload.prompt] = prompt
@@ -311,16 +331,39 @@ enum AppNavigation {
         NotificationCenter.default.post(name: .openChatQuickAction, object: nil, userInfo: payload)
     }
 
+    static func consumePendingChatQuickAction() -> (context: ChatContext, prompt: String?)? {
+        defer { pendingChatQuickAction = nil }
+        return pendingChatQuickAction
+    }
+
     static func openDreamComposer() {
+        pendingDreamComposer = true
         NotificationCenter.default.post(name: .openDreamComposer, object: nil)
     }
 
+    static func consumePendingDreamComposer() -> Bool {
+        defer { pendingDreamComposer = false }
+        return pendingDreamComposer
+    }
+
     static func openTarotQuickAction() {
+        pendingTarotQuickAction = true
         NotificationCenter.default.post(name: .openTarotQuickAction, object: nil)
     }
 
+    static func consumePendingTarotQuickAction() -> Bool {
+        defer { pendingTarotQuickAction = false }
+        return pendingTarotQuickAction
+    }
+
     static func openPalmQuickAction() {
+        pendingPalmQuickAction = true
         NotificationCenter.default.post(name: .openPalmQuickAction, object: nil)
+    }
+
+    static func consumePendingPalmQuickAction() -> Bool {
+        defer { pendingPalmQuickAction = false }
+        return pendingPalmQuickAction
     }
 
     static func openQuickActionsSheet() {

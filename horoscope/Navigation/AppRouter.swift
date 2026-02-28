@@ -9,7 +9,7 @@ struct AppRouter: View {
     private let supportedLanguages: Set<String> = ["en", "tr"]
 
     private var resolvedLanguage: String {
-        supportedLanguages.contains(selectedLanguage) ? selectedLanguage : "en"
+        Self.resolveLanguageCode(selectedLanguage, supportedLanguages: supportedLanguages)
     }
 
     var body: some View {
@@ -27,9 +27,10 @@ struct AppRouter: View {
         .environment(\.locale, Locale(identifier: resolvedLanguage))
         .preferredColorScheme(.dark)
         .onAppear {
-            if selectedLanguage != resolvedLanguage {
-                selectedLanguage = resolvedLanguage
-            }
+            sanitizeLanguageSelection()
+        }
+        .onChange(of: selectedLanguage) { _, _ in
+            sanitizeLanguageSelection()
         }
     }
 
@@ -48,6 +49,39 @@ struct AppRouter: View {
         case .authenticated:
             MainTabView()
         }
+    }
+
+    private func sanitizeLanguageSelection() {
+        let normalized = resolvedLanguage
+        if selectedLanguage != normalized {
+            selectedLanguage = normalized
+        }
+    }
+
+    static func resolveLanguageCode(
+        _ rawValue: String,
+        supportedLanguages: Set<String> = ["en", "tr"],
+        fallback: String = "en"
+    ) -> String {
+        let normalized = rawValue
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(of: "_", with: "-")
+            .lowercased()
+
+        guard !normalized.isEmpty else {
+            return fallback
+        }
+
+        let baseCode = normalized.split(separator: "-").first.map(String.init) ?? normalized
+        if supportedLanguages.contains(baseCode) {
+            return baseCode
+        }
+
+        if supportedLanguages.contains(normalized) {
+            return normalized
+        }
+
+        return fallback
     }
 
     // MARK: - Splash View
