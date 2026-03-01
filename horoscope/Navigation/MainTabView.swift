@@ -101,7 +101,7 @@ struct MainTabView: View {
             tabButton(.home)
             tabButton(.chart)
 
-            Spacer(minLength: MysticLayout.floatingQuickActionSize + MysticSpacing.sm)
+            Spacer(minLength: MysticLayout.floatingQuickActionSize + (MysticSpacing.md * 2))
 
             tabButton(.dream)
             tabButton(.profile)
@@ -135,6 +135,7 @@ struct MainTabView: View {
                 }
             }
         )
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("main.tab_bar")
     }
 
@@ -188,6 +189,7 @@ struct MainTabView: View {
             .frame(maxWidth: .infinity, minHeight: MysticAccessibility.minimumTapTarget)
         }
         .buttonStyle(.plain)
+        .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(tab.title))
         .accessibilityHint(Text(String(localized: "tab.switch.hint")))
         .accessibilityValue(Text(selectedTab == tab ? String(localized: "common.accessibility.selected") : String(localized: "common.accessibility.unselected")))
