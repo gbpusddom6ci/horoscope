@@ -332,7 +332,7 @@ struct HomeView: View {
 
                 Spacer()
 
-                Text("\(currentTransits.count)")
+                Text(verbatim: "\(currentTransits.count)")
                     .font(MysticFonts.caption(13))
                     .foregroundColor(MysticColors.mysticGold)
                     .padding(.horizontal, 10)
@@ -567,7 +567,7 @@ struct EnergyBar: View {
             }
             .frame(height: 6)
 
-            Text("\(Int(value * 100))%")
+            Text(verbatim: "\(Int(value * 100))%")
                 .font(MysticFonts.caption(10))
                 .foregroundColor(color)
         }
@@ -592,7 +592,7 @@ struct TransitCard: View {
             VStack(alignment: .leading, spacing: MysticSpacing.sm) {
                 HStack {
                     Text(transit.severity.emoji)
-                    Text("\(transit.transitPlanet.symbol) \(transit.aspectType.symbol) \(transit.natalPlanet.symbol)")
+                    Text(verbatim: "\(transit.transitPlanet.symbol) \(transit.aspectType.symbol) \(transit.natalPlanet.symbol)")
                         .font(MysticFonts.heading(16))
                         .foregroundColor(MysticColors.textPrimary)
                     Spacer()

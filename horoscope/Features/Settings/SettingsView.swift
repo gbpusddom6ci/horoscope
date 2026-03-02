@@ -225,7 +225,7 @@ struct SettingsView: View {
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundColor(MysticColors.celestialPink)
 
-                Text("settings.sign_out")
+                Text("settings.signout")
                     .font(MysticFonts.body(15))
                     .foregroundColor(MysticColors.celestialPink)
 

@@ -142,7 +142,7 @@ struct DreamJournalView: View {
                 scrollProxy?.scrollTo("dream_top", anchor: .top)
             }
         }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
+        .overlay(alignment: .bottom) {
             if !dreams.isEmpty {
                 VStack(spacing: 0) {
                     MysticButton(String(localized: "dream.new"), icon: "plus.circle.fill", style: .primary) {
@@ -154,6 +154,7 @@ struct DreamJournalView: View {
                     .padding(.top, MysticSpacing.sm)
                     .padding(.bottom, MysticSpacing.sm)
                 }
+                .padding(.bottom, chromeMetrics.tabBarVisible ? chromeMetrics.tabBarHeight : 0)
                 .background(
                     Rectangle()
                         .fill(MysticColors.voidBlack.opacity(0.9))
@@ -173,7 +174,7 @@ struct DreamJournalView: View {
                         .font(.system(size: 28))
                         .foregroundColor(MysticColors.celestialPink)
                     Spacer()
-                    Text("\(dreams.count) \(String(localized: "dream.count_suffix"))")
+                    Text(verbatim: "\(dreams.count) \(String(localized: "dream.count_suffix"))")
                         .font(MysticFonts.caption(13))
                         .foregroundColor(MysticColors.textMuted)
                 }
@@ -207,7 +208,7 @@ struct DreamJournalView: View {
 
                 Spacer()
 
-                Text("\(dreams.count) \(String(localized: "dream.count_suffix"))")
+                Text(verbatim: "\(dreams.count) \(String(localized: "dream.count_suffix"))")
                     .font(MysticFonts.caption(12))
                     .foregroundColor(MysticColors.textMuted)
                     .padding(.horizontal, 8)
@@ -239,8 +240,6 @@ struct DreamJournalView: View {
             .accessibilityHint(Text(String(localized: "dream.quick_add.hint")))
             .accessibilityIdentifier("dream.empty.cta")
         }
-        .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("dream.empty.state")
     }
 
     private var initialLoadingState: some View {
@@ -667,6 +666,8 @@ struct NewDreamSheet: View {
     }
 
     private func interpretDream() {
+        guard UsageLimitService.shared.canPerformAction(.dreamInterpretation) else { return }
+
         isInterpreting = true
 
         Task {
@@ -674,6 +675,9 @@ struct NewDreamSheet: View {
             await MainActor.run {
                 interpretation = result
                 isInterpreting = false
+                if result != nil {
+                    UsageLimitService.shared.recordAction(.dreamInterpretation)
+                }
             }
 
             if result == nil {

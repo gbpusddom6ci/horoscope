@@ -11,6 +11,10 @@ import FirebaseMessaging
 import UserNotifications
 import os
 
+#if canImport(FirebaseCrashlytics)
+import FirebaseCrashlytics
+#endif
+
 // MARK: - App Delegate for Firebase Setup
 class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate, MessagingDelegate {
     private let logger = Logger(subsystem: "rk.horoscope", category: "Push")
@@ -22,6 +26,10 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         if FirebaseApp.app() == nil {
             FirebaseApp.configure()
         }
+        
+        #if canImport(FirebaseCrashlytics)
+        Crashlytics.crashlytics().setCrashlyticsCollectionEnabled(true)
+        #endif
 
         UNUserNotificationCenter.current().delegate = self
         Messaging.messaging().delegate = self
@@ -48,6 +56,35 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
         completionHandler([.badge, .sound, .banner, .list])
+    }
+
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        let userInfo = response.notification.request.content.userInfo
+        
+        if response.notification.request.identifier == "daily_horoscope_notification" {
+            NotificationCenter.default.post(name: .switchToMainTab, object: AppTab.home)
+        }
+        
+        if let action = userInfo["action"] as? String {
+            switch action {
+            case "chat":
+                NotificationCenter.default.post(name: .switchToMainTab, object: AppTab.chat)
+            case "dream":
+                NotificationCenter.default.post(name: .switchToMainTab, object: AppTab.dream)
+            case "chart":
+                NotificationCenter.default.post(name: .switchToMainTab, object: AppTab.chart)
+            case "profile":
+                NotificationCenter.default.post(name: .switchToMainTab, object: AppTab.profile)
+            default:
+                break
+            }
+        }
+        
+        completionHandler()
     }
 }
 

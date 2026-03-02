@@ -575,3 +575,4 @@
 "tarot.card.world.name" = "The World";
 "tarot.card.world.upright" = "A cycle is completing; meaningful fulfillment is near.";
 "tarot.card.world.reversed" = "Closing unfinished tasks will open your next chapter.";
+"settings.account.no_birth_data" = "No birth data saved.";

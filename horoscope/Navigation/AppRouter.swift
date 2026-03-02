@@ -4,6 +4,8 @@ struct AppRouter: View {
     @State private var authService = AuthService()
     @State private var premiumService = PremiumService.shared
     @State private var notificationService = NotificationService.shared
+    @State private var usageLimitService = UsageLimitService.shared
+    @State private var networkMonitor = NetworkMonitor.shared
     @AppStorage("selected_language") private var selectedLanguage = "en"
 
     private let supportedLanguages: Set<String> = ["en", "tr"]
@@ -20,13 +22,39 @@ struct AppRouter: View {
 
             // Content based on auth state
             contentView
+            
+            // Global No Internet Banner
+            if !networkMonitor.isConnected {
+                VStack {
+                    HStack(spacing: MysticSpacing.sm) {
+                        Image(systemName: "wifi.slash")
+                        Text(String(localized: "common.error.no_internet", defaultValue: "No Internet Connection"))
+                            .font(MysticFonts.body(14))
+                    }
+                    .foregroundColor(MysticColors.starWhite)
+                    .padding(.horizontal, MysticSpacing.md)
+                    .padding(.vertical, 12)
+                    .background(MysticColors.celestialPink.opacity(0.95))
+                    .clipShape(Capsule())
+                    .shadow(color: MysticColors.celestialPink.opacity(0.3), radius: 8, x: 0, y: 4)
+                    .padding(.top, 50)
+                    
+                    Spacer()
+                }
+                .transition(.move(edge: .top).combined(with: .opacity))
+                .animation(.spring(response: 0.4, dampingFraction: 0.7), value: networkMonitor.isConnected)
+                .zIndex(999)
+            }
         }
         .environment(authService)
         .environment(premiumService)
         .environment(notificationService)
+        .environment(usageLimitService)
+        .environment(networkMonitor)
         .environment(\.locale, Locale(identifier: resolvedLanguage))
         .preferredColorScheme(.dark)
         .onAppear {
+            usageLimitService.authService = authService
             sanitizeLanguageSelection()
         }
         .onChange(of: selectedLanguage) { _, _ in
@@ -86,19 +114,7 @@ struct AppRouter: View {
 
     // MARK: - Splash View
     private var splashView: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "moon.stars.fill")
-                .font(.system(size: 64))
-                .foregroundColor(Color(red: 0.79, green: 0.64, blue: 0.15))
-
-            Text("Mystic")
-                .font(.system(size: 36, weight: .bold, design: .rounded))
-                .foregroundColor(Color(red: 0.79, green: 0.64, blue: 0.15))
-
-            ProgressView()
-                .tint(Color(red: 0.70, green: 0.53, blue: 1.0))
-                .scaleEffect(1.2)
-        }
+        SplashView()
     }
 }
 

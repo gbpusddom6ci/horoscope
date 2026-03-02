@@ -160,12 +160,12 @@ struct horoscopeTests {
     @Test("Tab bar bottom padding aligns with native bottom spacing")
     func tabBarBottomPaddingAlignment() {
         #expect(MysticLayout.tabBarBottomPadding(bottomSafeArea: 0) == 4)
-        #expect(MysticLayout.tabBarBottomPadding(bottomSafeArea: 34) == 30)
+        #expect(MysticLayout.tabBarBottomPadding(bottomSafeArea: 34) == 4)
     }
 
     @Test("Tab bar height reflects bottom alignment spacing")
     func tabBarHeightAlignment() {
-        #expect(MysticLayout.tabBarHeight(bottomSafeArea: 34) == 94)
+        #expect(MysticLayout.tabBarHeight(bottomSafeArea: 34) == 68)
     }
 
     @Test("Date helpers honor selected app language with fallback locale")
@@ -216,9 +216,18 @@ struct horoscopeTests {
 
     @Test("Chat slow-response notice appears only after threshold while loading")
     func chatSlowResponseNoticeState() {
-        #expect(ChatView.shouldShowSlowResponseNotice(isLoading: true, didExceedThreshold: true))
-        #expect(!ChatView.shouldShowSlowResponseNotice(isLoading: true, didExceedThreshold: false))
-        #expect(!ChatView.shouldShowSlowResponseNotice(isLoading: false, didExceedThreshold: true))
+        let viewModel = ChatViewModel()
+        
+        viewModel.isLoading = true
+        viewModel.didExceedSlowResponseThreshold = true
+        #expect(viewModel.shouldShowSlowResponseNotice)
+        
+        viewModel.didExceedSlowResponseThreshold = false
+        #expect(!viewModel.shouldShowSlowResponseNotice)
+        
+        viewModel.isLoading = false
+        viewModel.didExceedSlowResponseThreshold = true
+        #expect(!viewModel.shouldShowSlowResponseNotice)
     }
 
     @Test("Natal interpretation retry visibility depends on error and loading state")

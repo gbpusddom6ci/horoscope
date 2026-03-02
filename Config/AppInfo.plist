@@ -18,6 +18,8 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>FREE_ASTRO_API_KEY</key>
+	<string>$(FREE_ASTRO_API_KEY)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
@@ -26,8 +28,6 @@
 	<string>El falı analizi için fotoğraf seçimi gerekiyor.</string>
 	<key>OPENROUTER_API_KEY</key>
 	<string>$(OPENROUTER_API_KEY)</string>
-	<key>FREE_ASTRO_API_KEY</key>
-	<string>$(FREE_ASTRO_API_KEY)</string>
 	<key>PREMIUM_PRODUCT_IDS</key>
 	<string>$(PREMIUM_PRODUCT_IDS)</string>
 	<key>UIApplicationSceneManifest</key>

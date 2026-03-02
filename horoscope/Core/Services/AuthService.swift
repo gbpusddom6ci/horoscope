@@ -281,22 +281,21 @@ class AuthService {
             throw AuthServiceError.notAuthenticated
         }
 
-        let previousUser = user
         user.hasCompletedOnboarding = true
         currentUser = user
         authState = .authenticated
         saveSession(user)
+        errorMessage = nil
 
-        do {
-            try await firestoreService.updateUserDocument(userId: user.id, data: ["hasCompletedOnboarding": true])
-            errorMessage = nil
-        } catch {
-            // Revert local state if backend sync fails.
-            currentUser = previousUser
-            authState = previousUser.hasCompletedOnboarding ? .authenticated : .onboarding
-            saveSession(previousUser)
-            errorMessage = error.localizedDescription
-            throw error
+        // Sync to Firestore in the background — don't block or revert on failure.
+        let userId = user.id
+        Task.detached { [firestoreService] in
+            do {
+                try await firestoreService.updateUserDocument(userId: userId, data: ["hasCompletedOnboarding": true])
+            } catch {
+                Logger(subsystem: "rk.horoscope", category: "AuthService")
+                    .error("Background onboarding sync failed: \(error.localizedDescription, privacy: .public)")
+            }
         }
     }
 
@@ -307,19 +306,30 @@ class AuthService {
             throw AuthServiceError.notAuthenticated
         }
 
-        let previousUser = user
         user.birthData = birthData
         currentUser = user
         saveSession(user)
+        errorMessage = nil
 
-        do {
-            try await syncBirthDataToFirestore(userId: user.id, birthData: birthData, setOnboarding: false)
-            errorMessage = nil
-        } catch {
-            currentUser = previousUser
-            saveSession(previousUser)
-            errorMessage = error.localizedDescription
-            throw error
+        // Sync to Firestore in the background — don't block the caller.
+        let userId = user.id
+        Task.detached { [firestoreService] in
+            do {
+                try await firestoreService.updateUserDocument(userId: userId, data: [
+                    "birthData": [
+                        "date": Timestamp(date: birthData.birthDate),
+                        "city": birthData.birthPlace,
+                        "latitude": birthData.latitude,
+                        "longitude": birthData.longitude,
+                        "timeZone": birthData.timeZoneIdentifier,
+                        "time": birthData.birthTime.map { Timestamp(date: $0) } as Any
+                    ]
+                ])
+                try? await firestoreService.deleteChartData(userId: userId, type: .natal)
+            } catch {
+                Logger(subsystem: "rk.horoscope", category: "AuthService")
+                    .error("Background birth-data sync failed: \(error.localizedDescription, privacy: .public)")
+            }
         }
     }
 

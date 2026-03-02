@@ -4,6 +4,7 @@ import UIKit
 
 struct MainTabView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(UsageLimitService.self) private var usageLimitService
     @AppStorage("selected_main_tab_v1") private var selectedTabRawValue = AppTab.home.rawValue
     @State private var selectedTab: AppTab = .home
     @State private var showQuickActions = false
@@ -93,6 +94,9 @@ struct MainTabView: View {
                 .presentationDetents([.medium])
                 .presentationDragIndicator(.visible)
             }
+            .sheet(isPresented: Bindable(usageLimitService).showPaywall) {
+                PaywallView()
+            }
         }
     }
 
@@ -134,6 +138,7 @@ struct MainTabView: View {
                     Spacer()
                 }
             }
+            .ignoresSafeArea(.container, edges: .bottom)
         )
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("main.tab_bar")

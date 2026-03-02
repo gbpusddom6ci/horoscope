@@ -14,7 +14,7 @@ enum MysticLayout {
 
     static let floatingQuickActionSize: CGFloat = 56
     static let floatingQuickActionBottomSpacing: CGFloat = 6
-    static let floatingQuickActionLift: CGFloat = 18
+    static let floatingQuickActionLift: CGFloat = 48
     static let floatingQuickActionContentClearanceFactor: CGFloat = 0.25
 
     static let contentBottomExtraSpacing: CGFloat = MysticSpacing.md

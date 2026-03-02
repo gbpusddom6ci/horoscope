@@ -175,7 +175,7 @@ struct PlanetDetailCard: View {
                         .foregroundColor(MysticColors.textPrimary)
 
                     if position.isRetrograde {
-                        Text("℞")
+                        Text(verbatim: "℞")
                             .font(.system(size: 11, weight: .bold))
                             .foregroundColor(MysticColors.celestialPink)
                             .padding(.horizontal, 5)
@@ -374,11 +374,11 @@ struct ElementModalityBreakdown: View {
 
     private func elementColumn(emoji: String, name: String, count: Int, color: Color) -> some View {
         VStack(spacing: 4) {
-            Text("\(count)")
+            Text(verbatim: "\(count)")
                 .font(MysticFonts.heading(18))
                 .foregroundColor(color)
             progressBar(count: count, color: color)
-            Text("\(emoji) \(name)")
+            Text(verbatim: "\(emoji) \(name)")
                 .font(MysticFonts.caption(10))
                 .foregroundColor(MysticColors.textMuted)
                 .lineLimit(1)
@@ -388,7 +388,7 @@ struct ElementModalityBreakdown: View {
 
     private func modalityColumn(name: String, count: Int, color: Color) -> some View {
         VStack(spacing: 4) {
-            Text("\(count)")
+            Text(verbatim: "\(count)")
                 .font(MysticFonts.heading(18))
                 .foregroundColor(color)
             progressBar(count: count, color: color)
@@ -443,7 +443,7 @@ struct HouseCard: View {
                     RoundedRectangle(cornerRadius: 8)
                         .fill(cusp.sign.elementColor.opacity(0.12))
                         .frame(width: 42, height: 42)
-                    Text("\(cusp.houseNumber)")
+                    Text(verbatim: "\(cusp.houseNumber)")
                         .font(MysticFonts.heading(18))
                         .foregroundColor(cusp.sign.elementColor)
                 }
@@ -607,7 +607,7 @@ struct DominantPlanetCard: View {
                     Spacer()
 
                     VStack {
-                        Text("\(score)")
+                        Text(verbatim: "\(score)")
                             .font(MysticFonts.heading(22))
                             .foregroundColor(MysticColors.mysticGold)
                         Text("natal.score_label")

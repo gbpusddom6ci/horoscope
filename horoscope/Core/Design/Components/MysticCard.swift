@@ -283,10 +283,10 @@ struct StatCard: View {
             VStack(spacing: 16) {
                 MysticCard {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Daily Insight")
+                        Text(verbatim: "Daily Insight")
                             .font(MysticFonts.heading())
                             .foregroundColor(MysticColors.textPrimary)
-                        Text("Good things will happen today...")
+                        Text(verbatim: "Good things will happen today...")
                             .font(MysticFonts.body())
                             .foregroundColor(MysticColors.textSecondary)
                     }

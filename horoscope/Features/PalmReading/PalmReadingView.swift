@@ -313,6 +313,8 @@ struct PalmReadingView: View {
             return
         }
 
+        guard UsageLimitService.shared.canPerformAction(.palmReading) else { return }
+
         isAnalyzing = true
         interpretation = nil
         errorMessage = nil
@@ -325,6 +327,7 @@ struct PalmReadingView: View {
                 await MainActor.run {
                     guard activeAnalysisRequestID == requestID else { return }
                     interpretation = result
+                    UsageLimitService.shared.recordAction(.palmReading)
                 }
             } catch {
                 await MainActor.run {

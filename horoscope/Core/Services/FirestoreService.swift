@@ -131,6 +131,12 @@ class FirestoreService {
         return try snapshot.data(as: ChartData.self)
     }
 
+    func deleteChartData(userId: String, type: ChartType) async throws {
+        try await chartsCollection(userId: userId)
+            .document(type.rawValue)
+            .delete()
+    }
+
     // MARK: - Shared Helpers
 
     private func deleteAllDocuments(in collection: CollectionReference) async throws {

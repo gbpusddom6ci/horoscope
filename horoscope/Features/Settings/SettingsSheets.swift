@@ -340,6 +340,17 @@ struct HelpCenterView: View {
                                 openURL(url)
                             }
                         }
+                        
+                        // Developer Crashlytics Test Button
+                        #if canImport(FirebaseCrashlytics)
+                        Button("Developer: Force Crash") {
+                            fatalError("Crashlytics Test Crash")
+                        }
+                        .font(MysticFonts.caption(12))
+                        .foregroundColor(.red.opacity(0.8))
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.top, MysticSpacing.lg)
+                        #endif
                     }
                     .padding(MysticSpacing.md)
                 }
