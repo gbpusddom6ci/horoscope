@@ -1,4 +1,5 @@
 import SwiftUI
+import os
 
 struct DreamJournalView: View {
     @Environment(AuthService.self) private var authService
@@ -157,8 +158,16 @@ struct DreamJournalView: View {
                 .padding(.bottom, chromeMetrics.tabBarVisible ? chromeMetrics.tabBarHeight : 0)
                 .background(
                     Rectangle()
-                        .fill(MysticColors.voidBlack.opacity(0.9))
-                        .overlay(Rectangle().fill(MysticGradients.cardGlass))
+                        .fill(MysticColors.voidBlack.opacity(0.92))
+                        .overlay(
+                            Rectangle().fill(
+                                LinearGradient(
+                                    colors: [Color.white.opacity(0.04), Color.white.opacity(0.01)],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            )
+                        )
                         .ignoresSafeArea(.container, edges: .bottom)
                 )
                 .ignoresSafeArea(.keyboard, edges: .bottom)
@@ -172,7 +181,8 @@ struct DreamJournalView: View {
                 HStack {
                     Image(systemName: "moon.zzz.fill")
                         .font(.system(size: 28))
-                        .foregroundColor(MysticColors.celestialPink)
+                        .foregroundStyle(MysticGradients.cosmicRose)
+                        .shadow(color: MysticColors.celestialPink.opacity(0.3), radius: 8)
                     Spacer()
                     Text(verbatim: "\(dreams.count) \(String(localized: "dream.count_suffix"))")
                         .font(MysticFonts.caption(13))
@@ -224,8 +234,9 @@ struct DreamJournalView: View {
             Spacer().frame(height: 40)
             Image(systemName: "moon.zzz.fill")
                 .font(.system(size: 56))
-                .foregroundStyle(MysticGradients.lavenderGlow)
-                .opacity(0.4)
+                .foregroundStyle(MysticGradients.cosmicRose)
+                .opacity(0.5)
+                .shadow(color: MysticColors.celestialPink.opacity(0.2), radius: 16)
             Text("dream.empty.title")
                 .font(MysticFonts.heading(18))
                 .foregroundColor(MysticColors.textSecondary)
@@ -273,27 +284,39 @@ struct DreamJournalView: View {
         Button {
             selectedDream = dream
         } label: {
-            MysticCard {
+            MysticCard(glowColor: MysticColors.celestialPink.opacity(0.4)) {
                 VStack(alignment: .leading, spacing: MysticSpacing.sm) {
                     HStack {
                         if let mood = dream.mood { Text(mood.emoji).font(.system(size: 20)) }
                         Text(dream.createdAt.formatted(as: "d MMMM yyyy"))
-                            .font(MysticFonts.caption(13))
+                            .font(MysticFonts.caption(12))
                             .foregroundColor(MysticColors.textMuted)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(MysticColors.elevatedSurface)
+                            .clipShape(Capsule())
                         Spacer()
                     }
                     Text(dream.dreamText)
                         .font(MysticFonts.body(14))
                         .foregroundColor(MysticColors.textPrimary)
                         .lineLimit(3)
-                        .lineSpacing(2)
+                        .lineSpacing(MysticEffects.compactTextLineSpacing)
                     if let interpretation = dream.interpretation {
-                        Divider().background(MysticColors.cardBorder)
+                        Rectangle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [MysticColors.celestialPink.opacity(0.15), MysticColors.cardBorder.opacity(0.3), MysticColors.celestialPink.opacity(0.15)],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .frame(height: 0.5)
                         Text(interpretation)
                             .font(MysticFonts.body(13))
                             .foregroundColor(MysticColors.textSecondary)
                             .lineLimit(4)
-                            .lineSpacing(2)
+                            .lineSpacing(MysticEffects.compactTextLineSpacing)
                     }
                 }
             }
@@ -520,6 +543,7 @@ struct NewDreamSheet: View {
 
     private let dreamService = DreamService.shared
     private let onSaved: () -> Void
+    private let logger = Logger(subsystem: "rk.horoscope", category: "DreamJournal")
 
     init(onSaved: @escaping () -> Void = {}) {
         self.onSaved = onSaved
@@ -671,17 +695,18 @@ struct NewDreamSheet: View {
         isInterpreting = true
 
         Task {
-            let result = try? await AIService.shared.interpretDream(dreamText: dreamText)
-            await MainActor.run {
-                interpretation = result
-                isInterpreting = false
-                if result != nil {
+            do {
+                let result = try await AIService.shared.interpretDream(dreamText: dreamText)
+                await MainActor.run {
+                    interpretation = result
+                    isInterpreting = false
                     UsageLimitService.shared.recordAction(.dreamInterpretation)
                 }
-            }
-
-            if result == nil {
+            } catch {
+                logger.error("Dream interpretation failed: \(error.localizedDescription)")
                 await MainActor.run {
+                    interpretation = nil
+                    isInterpreting = false
                     validationMessage = String(localized: "dream.validation.interpret_failed")
                 }
             }

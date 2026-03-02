@@ -20,12 +20,24 @@ struct MysticCard<Content: View>: View {
             .padding(padding)
             .background(
                 ZStack {
-                    // Glassmorphism background
+                    RoundedRectangle(cornerRadius: MysticRadius.lg)
+                        .fill(MysticColors.cardBackground)
+
                     RoundedRectangle(cornerRadius: MysticRadius.lg)
                         .fill(MysticGradients.cardGlass)
 
                     RoundedRectangle(cornerRadius: MysticRadius.lg)
-                        .fill(MysticColors.cardBackground)
+                        .fill(
+                            RadialGradient(
+                                colors: [
+                                    glowColor.opacity(0.06),
+                                    Color.clear
+                                ],
+                                center: .topLeading,
+                                startRadius: 0,
+                                endRadius: 200
+                            )
+                        )
                 }
             )
             .clipShape(RoundedRectangle(cornerRadius: MysticRadius.lg))
@@ -34,18 +46,19 @@ struct MysticCard<Content: View>: View {
                     .stroke(
                         LinearGradient(
                             colors: [
-                                glowColor.opacity(0.3),
-                                glowColor.opacity(0.05),
-                                glowColor.opacity(0.15)
+                                glowColor.opacity(0.35),
+                                glowColor.opacity(0.08),
+                                Color.white.opacity(0.04),
+                                glowColor.opacity(0.2)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         ),
-                        lineWidth: 1
+                        lineWidth: 0.8
                     )
             )
             .shadow(
-                color: glowColor.opacity(0.08),
+                color: glowColor.opacity(0.1),
                 radius: MysticEffects.cardShadowRadius,
                 x: 0,
                 y: MysticEffects.cardShadowYOffset
@@ -194,14 +207,24 @@ struct FeatureCard: View {
         }) {
             MysticCard(glowColor: color) {
                 HStack(spacing: MysticSpacing.md) {
-                    // Icon circle
                     ZStack {
                         Circle()
-                            .fill(color.opacity(0.15))
-                            .frame(width: 48, height: 48)
+                            .fill(
+                                RadialGradient(
+                                    colors: [color.opacity(0.25), color.opacity(0.08)],
+                                    center: .center,
+                                    startRadius: 0,
+                                    endRadius: 28
+                                )
+                            )
+                            .frame(width: 50, height: 50)
+
+                        Circle()
+                            .stroke(color.opacity(0.2), lineWidth: 0.8)
+                            .frame(width: 50, height: 50)
 
                         Image(systemName: icon)
-                            .font(.system(size: 22))
+                            .font(.system(size: 22, weight: .medium))
                             .foregroundColor(color)
                     }
 
@@ -220,8 +243,8 @@ struct FeatureCard: View {
                     Spacer()
 
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(MysticColors.textMuted)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(color.opacity(0.6))
                 }
             }
             .scaleEffect(isPressed ? MysticEffects.cardPressedScale : 1.0)
@@ -233,14 +256,14 @@ struct FeatureCard: View {
                     if reduceMotion {
                         isPressed = true
                     } else {
-                        withAnimation(.easeInOut(duration: MysticMotion.quickPressDuration)) { isPressed = true }
+                        withAnimation(.spring(response: MysticMotion.springResponse, dampingFraction: MysticMotion.springDamping)) { isPressed = true }
                     }
                 }
                 .onEnded { _ in
                     if reduceMotion {
                         isPressed = false
                     } else {
-                        withAnimation(.easeInOut(duration: MysticMotion.quickPressDuration)) { isPressed = false }
+                        withAnimation(.spring(response: MysticMotion.springResponse, dampingFraction: MysticMotion.springDamping)) { isPressed = false }
                     }
                 }
         )
@@ -257,13 +280,20 @@ struct StatCard: View {
     var body: some View {
         MysticCard(glowColor: color) {
             VStack(spacing: MysticSpacing.sm) {
-                Image(systemName: icon)
-                    .font(.system(size: 24))
-                    .foregroundColor(color)
+                ZStack {
+                    Circle()
+                        .fill(color.opacity(0.12))
+                        .frame(width: 40, height: 40)
+                    Image(systemName: icon)
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundColor(color)
+                }
 
                 Text(value)
-                    .font(MysticFonts.heading(20))
+                    .font(MysticFonts.heading(18))
                     .foregroundColor(MysticColors.textPrimary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
 
                 Text(label)
                     .font(MysticFonts.caption(11))

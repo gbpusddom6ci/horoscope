@@ -20,7 +20,7 @@ Reviewed areas:
   - `Features/PalmReading/PalmReadingView.swift`
   - `Features/Tarot/TarotView.swift`
   - `Features/Settings/*`
-- Localization: `horoscope/en.lproj/Localizable.strings`, `horoscope/tr.lproj/Localizable.strings`
+- Localization: `horoscope/en.lproj/Localizable.strings`
 - Tests: `horoscopeTests/horoscopeTests.swift`, `horoscopeUITests/horoscopeUITests.swift`
 - CI/workflow: `.github/workflows/ios-ci.yml`
 - Firebase ops/security files: `firebase/firestore.rules`, `firebase/firestore.indexes.json`, `docs/OPERATIONS.md`

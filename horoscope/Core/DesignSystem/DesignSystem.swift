@@ -1,15 +1,14 @@
 import SwiftUI
 
-// MARK: - App Theme
+// MARK: - App Theme (delegates to MysticColors for single source of truth)
 public struct AppTheme {
-    // Mystic baseline palette (shared across legacy screens and new mystical UI)
-    public static let primary = Color(hex: "B388FF") // Neon lavender
-    public static let accent = Color(hex: "C9A227")  // Mystic gold
-    public static let success = Color(hex: "69F0AE") // Aurora green
+    public static let primary = MysticColors.neonLavender
+    public static let accent = MysticColors.mysticGold
+    public static let success = MysticColors.auroraGreen
 
     // Adaptive backgrounds: celestial tint in light mode, cosmic void in dark mode
-    public static let bgLight = Color(hex: "F6F2FF")
-    public static let bgDark = Color(hex: "080510")
+    public static let bgLight = Color(hex: "F0ECFF")
+    public static let bgDark = MysticColors.voidBlack
 
     public static let background = Color(uiColor: UIColor { traitCollection in
         traitCollection.userInterfaceStyle == .dark
@@ -20,10 +19,10 @@ public struct AppTheme {
 
 // MARK: - Shared Tokens
 public struct AppSpacing {
-    public static let xs: CGFloat = 4
-    public static let sm: CGFloat = 8
-    public static let md: CGFloat = 16
-    public static let lg: CGFloat = 24
+    public static let xs: CGFloat = MysticSpacing.xs
+    public static let sm: CGFloat = MysticSpacing.sm
+    public static let md: CGFloat = MysticSpacing.md
+    public static let lg: CGFloat = MysticSpacing.lg
 }
 
 public struct AppRadius {
@@ -33,7 +32,7 @@ public struct AppRadius {
 }
 
 public struct AppAccessibility {
-    public static let minimumTapTarget: CGFloat = 44
+    public static let minimumTapTarget: CGFloat = MysticAccessibility.minimumTapTarget
 }
 
 public enum AppMotion {
@@ -43,10 +42,10 @@ public enum AppMotion {
 // MARK: - Typography
 public struct AppTypography {
     public static let titleExtraBold = Font.system(size: 34, weight: .heavy, design: .rounded)
-    public static let titleBold = Font.system(size: 28, weight: .bold, design: .rounded)
+    public static let titleBold = Font.system(size: 30, weight: .bold, design: .rounded)
     public static let headline = Font.system(size: 22, weight: .semibold, design: .rounded)
-    public static let body = Font.system(size: 17, weight: .regular, design: .default)
-    public static let captionMedium = Font.system(size: 13, weight: .medium, design: .default)
+    public static let body = Font.system(size: 17, weight: .regular, design: .rounded)
+    public static let captionMedium = Font.system(size: 13, weight: .medium, design: .rounded)
 
     public static let bodyLineSpacing: CGFloat = AppSpacing.sm
 }
@@ -95,7 +94,7 @@ public struct GlassCard<Content: View>: View {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                     .stroke(Color.white.opacity(0.2), lineWidth: 0.5)
             )
-            .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 5)
+            .shadow(color: Color.black.opacity(0.08), radius: 14, x: 0, y: 6)
     }
 }
 
@@ -116,7 +115,7 @@ public struct BigGlowingButton: ButtonStyle {
                 ),
                 in: RoundedRectangle(cornerRadius: AppRadius.lg, style: .continuous)
             )
-            .shadow(color: AppTheme.primary.opacity(0.4), radius: configuration.isPressed ? 5 : 15, x: 0, y: 5)
+            .shadow(color: AppTheme.primary.opacity(0.4), radius: configuration.isPressed ? 6 : 16, x: 0, y: 6)
             .scaleEffect(configuration.isPressed ? 0.95 : 1)
             .animation(AppMotion.pressSpring, value: configuration.isPressed)
     }

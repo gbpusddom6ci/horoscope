@@ -15,24 +15,34 @@ struct SplashView: View {
                 Spacer()
 
                 ZStack {
-                    // Outer spinning halo
                     Circle()
                         .stroke(
                             AngularGradient(
-                                colors: [MysticColors.mysticGold.opacity(0.1), MysticColors.mysticGold, MysticColors.mysticGold.opacity(0.1)],
+                                colors: [MysticColors.stardust.opacity(0.05), MysticColors.stardust.opacity(0.3), MysticColors.stardust.opacity(0.05)],
                                 center: .center,
                                 startAngle: .degrees(isAnimating ? 0 : 360),
                                 endAngle: .degrees(isAnimating ? 360 : 720)
                             ),
-                            lineWidth: 2
+                            lineWidth: 0.5
                         )
-                        .frame(width: 160, height: 160)
-                        
-                    // Inner spinning halo counter-clockwise
+                        .frame(width: 180, height: 180)
+
                     Circle()
                         .stroke(
                             AngularGradient(
-                                colors: [MysticColors.neonLavender.opacity(0.1), MysticColors.neonLavender, MysticColors.neonLavender.opacity(0.1)],
+                                colors: [MysticColors.mysticGold.opacity(0.08), MysticColors.mysticGold.opacity(0.9), MysticColors.mysticGold.opacity(0.08)],
+                                center: .center,
+                                startAngle: .degrees(isAnimating ? 0 : 360),
+                                endAngle: .degrees(isAnimating ? 360 : 720)
+                            ),
+                            lineWidth: 1.5
+                        )
+                        .frame(width: 160, height: 160)
+
+                    Circle()
+                        .stroke(
+                            AngularGradient(
+                                colors: [MysticColors.neonLavender.opacity(0.08), MysticColors.neonLavender.opacity(0.8), MysticColors.neonLavender.opacity(0.08)],
                                 center: .center,
                                 startAngle: .degrees(isAnimating ? 360 : 0),
                                 endAngle: .degrees(isAnimating ? 720 : 360)
@@ -45,26 +55,27 @@ struct SplashView: View {
                         .font(.system(size: 64, weight: .thin))
                         .foregroundStyle(
                             LinearGradient(
-                                colors: [MysticColors.mysticGold, MysticColors.mysticGold.opacity(0.6)],
+                                colors: [MysticColors.mysticGold, Color(hex: "F0D060"), MysticColors.mysticGold.opacity(0.7)],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )
                         )
-                        .shadow(color: MysticColors.mysticGold.opacity(isAnimating ? 0.6 : 0.2), radius: isAnimating ? 20 : 10)
+                        .shadow(color: MysticColors.mysticGold.opacity(isAnimating ? 0.6 : 0.2), radius: isAnimating ? 22 : 10)
+                        .shadow(color: MysticColors.mysticGold.opacity(isAnimating ? 0.2 : 0.05), radius: isAnimating ? 40 : 20)
                         .scaleEffect(isAnimating ? 1.05 : 0.95)
                 }
 
-                GlowingText("Mystic", font: MysticFonts.title(40), color: MysticColors.mysticGold, glowRadius: isAnimating ? 12 : 6)
+                GlowingText(String(localized: "app.brand"), font: MysticFonts.title(42), color: MysticColors.mysticGold, glowRadius: isAnimating ? 14 : 6)
                     .scaleEffect(isAnimating ? 1.02 : 0.98)
 
                 Spacer()
                 
                 VStack(spacing: MysticSpacing.md) {
                     ProgressView()
-                        .tint(MysticColors.neonLavender)
-                        .scaleEffect(1.2)
+                        .tint(MysticColors.stardust)
+                        .scaleEffect(1.1)
                     
-                    Text("Awakening the stars...")
+                    Text(String(localized: "splash.loading"))
                         .font(MysticFonts.caption(13))
                         .foregroundColor(MysticColors.textMuted)
                         .opacity(isAnimating ? 1 : 0.5)

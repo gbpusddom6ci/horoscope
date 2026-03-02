@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import FirebaseFirestore
+import os
 
 // MARK: - Firestore Service
 /// Firestore wrapper for reading/writing app data.
@@ -8,6 +9,7 @@ import FirebaseFirestore
 class FirestoreService {
     static let shared = FirestoreService()
     private let db = Firestore.firestore()
+    private let logger = Logger(subsystem: "rk.horoscope", category: "FirestoreService")
 
     private init() {}
 
@@ -76,7 +78,14 @@ class FirestoreService {
         query = query.order(by: "updatedAt", descending: true)
 
         let snapshot = try await query.getDocuments()
-        return snapshot.documents.compactMap { try? $0.data(as: ChatSession.self) }
+        return snapshot.documents.compactMap { doc in
+            do {
+                return try doc.data(as: ChatSession.self)
+            } catch {
+                logger.error("ChatSession decode failed for \(doc.documentID): \(error.localizedDescription)")
+                return nil
+            }
+        }
     }
 
     func deleteChatSession(userId: String, sessionId: String) async throws {
@@ -100,7 +109,14 @@ class FirestoreService {
             .order(by: "createdAt", descending: true)
             .getDocuments()
 
-        return snapshot.documents.compactMap { try? $0.data(as: DreamEntry.self) }
+        return snapshot.documents.compactMap { doc in
+            do {
+                return try doc.data(as: DreamEntry.self)
+            } catch {
+                logger.error("DreamEntry decode failed for \(doc.documentID): \(error.localizedDescription)")
+                return nil
+            }
+        }
     }
 
     func deleteDreamEntry(userId: String, entryId: String) async throws {
@@ -137,18 +153,34 @@ class FirestoreService {
             .delete()
     }
 
+    /// Removes all user-scoped app data and then deletes the root user document.
+    func purgeUserData(userId: String) async throws {
+        try await clearChatSessions(userId: userId)
+        try await clearDreamEntries(userId: userId)
+        try await deleteAllDocuments(in: chartsCollection(userId: userId))
+        try await usersCollection().document(userId).delete()
+    }
+
     // MARK: - Shared Helpers
 
     private func deleteAllDocuments(in collection: CollectionReference) async throws {
-        let snapshot = try await collection.getDocuments()
-        guard !snapshot.documents.isEmpty else {
-            return
-        }
+        let batchSize = 400
 
-        let batch = db.batch()
-        for doc in snapshot.documents {
-            batch.deleteDocument(doc.reference)
+        while true {
+            let snapshot = try await collection.limit(to: batchSize).getDocuments()
+            guard !snapshot.documents.isEmpty else {
+                return
+            }
+
+            let batch = db.batch()
+            for doc in snapshot.documents {
+                batch.deleteDocument(doc.reference)
+            }
+            try await batch.commit()
+
+            if snapshot.documents.count < batchSize {
+                return
+            }
         }
-        try await batch.commit()
     }
 }

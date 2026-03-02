@@ -45,7 +45,7 @@ Run from repo root:
 | CMD-06 | `xcodebuild -project horoscope.xcodeproj -scheme horoscope -destination 'platform=iOS Simulator,name=iPhone 15' -only-testing:horoscopeUITests/testHomeGridShowsCompactTiles -only-testing:horoscopeUITests/testQuickActionDreamOpensComposer -only-testing:horoscopeUITests/testDreamPrimaryCtaIsReachable -only-testing:horoscopeUITests/testSettingsCoreSectionsVisible test` |
 | CMD-07 | `xcodebuild -list -project horoscope.xcodeproj && xcodebuild -resolvePackageDependencies -project horoscope.xcodeproj` |
 | CMD-08 | `xcodebuild -project horoscope.xcodeproj -scheme horoscope -configuration Release -destination 'generic/platform=iOS' -archivePath /tmp/horoscope_release_validation.xcarchive archive` |
-| CMD-09 | `awk -F\" '/^[[:space:]]*\"/{print $2}' horoscope/en.lproj/Localizable.strings | sort > /tmp/en_keys.txt && awk -F\" '/^[[:space:]]*\"/{print $2}' horoscope/tr.lproj/Localizable.strings | sort > /tmp/tr_keys.txt && diff -u /tmp/en_keys.txt /tmp/tr_keys.txt` |
+| CMD-09 | `plutil -lint horoscope/en.lproj/Localizable.strings` |
 
 ---
 

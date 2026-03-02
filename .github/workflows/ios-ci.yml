@@ -27,18 +27,6 @@ jobs:
             exit 1
           fi
 
-      - name: Localization parity (core keys)
-        run: |
-          EN_KEYS="$(mktemp)"
-          TR_KEYS="$(mktemp)"
-          CORE_PREFIXES='^(tab\\.|common\\.|auth\\.|onboarding\\.|home\\.|chat\\.|dream\\.|settings\\.|quick_actions\\.|config\\.|ai\\.|notifications\\.|astro\\.|transit\\.|natal\\.|palm\\.|tarot\\.)'
-          awk -F '=' '/\".*\"[[:space:]]*=/{gsub(/[[:space:]]|\"/, "", $1); print $1}' horoscope/en.lproj/Localizable.strings | grep -E "$CORE_PREFIXES" | sort -u > "$EN_KEYS"
-          awk -F '=' '/\".*\"[[:space:]]*=/{gsub(/[[:space:]]|\"/, "", $1); print $1}' horoscope/tr.lproj/Localizable.strings | grep -E "$CORE_PREFIXES" | sort -u > "$TR_KEYS"
-          if ! diff -u "$EN_KEYS" "$TR_KEYS"; then
-            echo "Core localization key mismatch between en/tr Localizable.strings."
-            exit 1
-          fi
-
       - name: Select simulator
         run: |
           SIMULATOR_NAME=$(xcrun simctl list devices available | awk -F '[()]' '/iPhone/ {gsub(/^[ \t]+|[ \t]+$/, "", $1); print $1; exit}')

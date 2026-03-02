@@ -97,7 +97,13 @@ class AuthService {
                 .joined(separator: " ")
 
             // 7. Check if user document exists in Firestore
-            let doc = try? await firestoreService.fetchUserDocument(userId: fbUser.uid)
+            let doc: DocumentSnapshot?
+            do {
+                doc = try await firestoreService.fetchUserDocument(userId: fbUser.uid)
+            } catch {
+                logger.error("Firestore fetchUserDocument failed (Apple): \(error.localizedDescription)")
+                doc = nil
+            }
 
             var displayName: String
             var hasCompletedOnboarding = false
@@ -173,7 +179,13 @@ class AuthService {
             let fbUser = result.user
             
             // Check if user document exists in Firestore to get user metadata
-            let doc = try? await firestoreService.fetchUserDocument(userId: fbUser.uid)
+            let doc: DocumentSnapshot?
+            do {
+                doc = try await firestoreService.fetchUserDocument(userId: fbUser.uid)
+            } catch {
+                logger.error("Firestore fetchUserDocument failed (Email): \(error.localizedDescription)")
+                doc = nil
+            }
             let data = doc?.data()
 
             let displayName = data?["displayName"] as? String ?? email.components(separatedBy: "@").first ?? String(localized: "common.user")
@@ -276,6 +288,47 @@ class AuthService {
     }
 
     @MainActor
+    func deleteAccount(password: String? = nil) async throws {
+        guard let user = currentUser,
+              let firebaseUser = Auth.auth().currentUser else {
+            throw AuthServiceError.notAuthenticated
+        }
+
+        isLoading = true
+        errorMessage = nil
+        defer { isLoading = false }
+
+        do {
+            try await reauthenticateForSensitiveAction(firebaseUser: firebaseUser, password: password)
+            try await firestoreService.purgeUserData(userId: user.id)
+            try await firebaseUser.delete()
+
+            currentUser = nil
+            authState = .unauthenticated
+            clearSession()
+        } catch {
+            if let nsError = error as NSError?,
+               nsError.code == AuthErrorCode.requiresRecentLogin.rawValue {
+                do {
+                    try await reauthenticateForSensitiveAction(firebaseUser: firebaseUser, password: password)
+                    try await firestoreService.purgeUserData(userId: user.id)
+                    try await firebaseUser.delete()
+                    currentUser = nil
+                    authState = .unauthenticated
+                    clearSession()
+                    return
+                } catch {
+                    errorMessage = error.localizedDescription
+                    throw error
+                }
+            }
+
+            errorMessage = error.localizedDescription
+            throw error
+        }
+    }
+
+    @MainActor
     func completeOnboarding() async throws {
         guard var user = currentUser else {
             throw AuthServiceError.notAuthenticated
@@ -315,15 +368,19 @@ class AuthService {
         let userId = user.id
         Task.detached { [firestoreService] in
             do {
+                var birthDataPayload: [String: Any] = [
+                    "date": Timestamp(date: birthData.birthDate),
+                    "city": birthData.birthPlace,
+                    "latitude": birthData.latitude,
+                    "longitude": birthData.longitude,
+                    "timeZone": birthData.timeZoneIdentifier
+                ]
+                if let birthTime = birthData.birthTime {
+                    birthDataPayload["time"] = Timestamp(date: birthTime)
+                }
+
                 try await firestoreService.updateUserDocument(userId: userId, data: [
-                    "birthData": [
-                        "date": Timestamp(date: birthData.birthDate),
-                        "city": birthData.birthPlace,
-                        "latitude": birthData.latitude,
-                        "longitude": birthData.longitude,
-                        "timeZone": birthData.timeZoneIdentifier,
-                        "time": birthData.birthTime.map { Timestamp(date: $0) } as Any
-                    ]
+                    "birthData": birthDataPayload
                 ])
                 try? await firestoreService.deleteChartData(userId: userId, type: .natal)
             } catch {
@@ -435,7 +492,13 @@ class AuthService {
             return
         }
 
-        let doc = try? await firestoreService.fetchUserDocument(userId: firebaseUser.uid)
+        let doc: DocumentSnapshot?
+        do {
+            doc = try await firestoreService.fetchUserDocument(userId: firebaseUser.uid)
+        } catch {
+            logger.error("Firestore fetchUserDocument failed (restore): \(error.localizedDescription)")
+            doc = nil
+        }
         let data = doc?.data()
         let birthData = extractBirthData(from: data)
         let hasCompletedOnboarding = data?["hasCompletedOnboarding"] as? Bool ?? false
@@ -542,15 +605,68 @@ class AuthService {
     private func runLegacyMigrationIfNeeded(for userId: String) async {
         await legacyMigrationService.migrateUserDataIfNeeded(for: userId)
     }
+
+    @MainActor
+    private func reauthenticateForSensitiveAction(firebaseUser: User, password: String?) async throws {
+        let providerIDs = Set(firebaseUser.providerData.map(\.providerID))
+
+        if providerIDs.contains(EmailAuthProviderID) {
+            guard let email = firebaseUser.email, !email.isEmpty else {
+                throw AuthServiceError.deleteAccountReauthenticationRequired
+            }
+            guard let password, !password.isEmpty else {
+                throw AuthServiceError.deleteAccountPasswordRequired
+            }
+            let credential = EmailAuthProvider.credential(withEmail: email, password: password)
+            _ = try await firebaseUser.reauthenticate(with: credential)
+            return
+        }
+
+        if providerIDs.contains("apple.com") {
+            let appleCredential = try await appleSignInHelper.signIn()
+
+            guard let identityToken = appleCredential.identityToken,
+                  let tokenString = String(data: identityToken, encoding: .utf8),
+                  let nonce = appleSignInHelper.currentNonce else {
+                throw AuthServiceError.deleteAccountReauthenticationRequired
+            }
+
+            let credential = OAuthProvider.credential(
+                providerID: AuthProviderID.apple,
+                idToken: tokenString,
+                rawNonce: nonce
+            )
+            _ = try await firebaseUser.reauthenticate(with: credential)
+            return
+        }
+
+        if providerIDs.isEmpty {
+            throw AuthServiceError.deleteAccountFailed
+        }
+
+        throw AuthServiceError.deleteAccountUnsupportedProvider
+    }
 }
 
 enum AuthServiceError: LocalizedError {
     case notAuthenticated
+    case deleteAccountPasswordRequired
+    case deleteAccountReauthenticationRequired
+    case deleteAccountUnsupportedProvider
+    case deleteAccountFailed
 
     var errorDescription: String? {
         switch self {
         case .notAuthenticated:
             return String(localized: "auth.error.session_missing")
+        case .deleteAccountPasswordRequired:
+            return String(localized: "auth.error.delete_account_requires_password")
+        case .deleteAccountReauthenticationRequired:
+            return String(localized: "auth.error.delete_account_reauth_required")
+        case .deleteAccountUnsupportedProvider:
+            return String(localized: "auth.error.delete_account_unsupported_provider")
+        case .deleteAccountFailed:
+            return String(localized: "auth.error.delete_account_failed")
         }
     }
 }

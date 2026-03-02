@@ -31,28 +31,34 @@ struct AuthView: View {
                             .fill(
                                 RadialGradient(
                                     colors: [
-                                        MysticColors.mysticGold.opacity(0.3),
+                                        MysticColors.mysticGold.opacity(0.25),
+                                        MysticColors.mysticGold.opacity(0.05),
                                         Color.clear
                                     ],
                                     center: .center,
-                                    startRadius: 20,
-                                    endRadius: 80
+                                    startRadius: 15,
+                                    endRadius: 90
                                 )
                             )
-                            .frame(width: 160, height: 160)
+                            .frame(width: 170, height: 170)
 
                         Image(systemName: "moon.stars.fill")
                             .font(.system(size: 72))
                             .foregroundStyle(
-                                MysticGradients.goldShimmer
+                                LinearGradient(
+                                    colors: [MysticColors.mysticGold, Color(hex: "F0D060"), MysticColors.mysticGold.opacity(0.75)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
                             )
-                            .shadow(color: MysticColors.mysticGold.opacity(0.5), radius: 20)
+                            .shadow(color: MysticColors.mysticGold.opacity(0.5), radius: 22)
+                            .shadow(color: MysticColors.mysticGold.opacity(0.15), radius: 40)
                     }
                     .opacity(animateTitle ? 1 : 0)
                     .scaleEffect(animateTitle ? 1 : 0.5)
 
                     GlowingText(
-                        "Mystic",
+                        String(localized: "app.brand"),
                         font: MysticFonts.title(42),
                         color: MysticColors.mysticGold,
                         glowRadius: 12
@@ -116,22 +122,32 @@ struct AuthView: View {
                 }
             }
 
-            // Divider
-            HStack {
+            HStack(spacing: MysticSpacing.md) {
                 Rectangle()
-                    .fill(MysticColors.textMuted.opacity(0.3))
-                    .frame(height: 1)
+                    .fill(
+                        LinearGradient(
+                            colors: [Color.clear, MysticColors.textMuted.opacity(0.3)],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .frame(height: 0.5)
                 Text("auth.or")
                     .font(MysticFonts.caption(12))
                     .foregroundColor(MysticColors.textMuted)
                 Rectangle()
-                    .fill(MysticColors.textMuted.opacity(0.3))
-                    .frame(height: 1)
+                    .fill(
+                        LinearGradient(
+                            colors: [MysticColors.textMuted.opacity(0.3), Color.clear],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .frame(height: 0.5)
             }
 
-            // Email Sign In
             MysticButton(String(localized: "auth.email_signin"), icon: "envelope.fill", style: .secondary) {
-                withAnimation(.spring(response: 0.4)) {
+                withAnimation(.spring(response: MysticMotion.springResponse, dampingFraction: MysticMotion.springDamping)) {
                     showEmailAuth = true
                 }
             }
@@ -192,7 +208,7 @@ struct AuthView: View {
 
             // Toggle sign up / sign in
             Button {
-                withAnimation(.spring(response: 0.3)) {
+                withAnimation(.spring(response: MysticMotion.springResponse, dampingFraction: MysticMotion.springDamping)) {
                     isSignUp.toggle()
                 }
             } label: {
@@ -203,7 +219,7 @@ struct AuthView: View {
 
             // Back button
             Button {
-                withAnimation(.spring(response: 0.4)) {
+                withAnimation(.spring(response: MysticMotion.springResponse, dampingFraction: MysticMotion.springDamping)) {
                     showEmailAuth = false
                 }
             } label: {
@@ -259,12 +275,19 @@ struct MysticTextField: View {
             }
         }
         .padding(.horizontal, MysticSpacing.md)
-        .frame(height: 50)
+        .frame(height: 52)
         .background(MysticColors.inputBackground)
-        .clipShape(RoundedRectangle(cornerRadius: MysticRadius.md))
+        .clipShape(RoundedRectangle(cornerRadius: MysticRadius.md, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: MysticRadius.md)
-                .stroke(MysticColors.cardBorder, lineWidth: 1)
+            RoundedRectangle(cornerRadius: MysticRadius.md, style: .continuous)
+                .stroke(
+                    LinearGradient(
+                        colors: [MysticColors.cardBorder.opacity(1.2), MysticColors.cardBorder.opacity(0.5)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 0.6
+                )
         )
     }
 }

@@ -162,11 +162,24 @@ struct HomeView: View {
 
                 ZStack {
                     Circle()
-                        .fill(MysticColors.neonLavender.opacity(0.15))
-                        .frame(width: 48, height: 48)
+                        .fill(
+                            RadialGradient(
+                                colors: [MysticColors.neonLavender.opacity(0.18), MysticColors.neonLavender.opacity(0.05)],
+                                center: .center,
+                                startRadius: 0,
+                                endRadius: 26
+                            )
+                        )
+                        .frame(width: 50, height: 50)
                     Circle()
-                        .stroke(MysticColors.neonLavender.opacity(0.3), lineWidth: 1)
-                        .frame(width: 48, height: 48)
+                        .stroke(
+                            AngularGradient(
+                                colors: [MysticColors.neonLavender.opacity(0.4), MysticColors.stardust.opacity(0.2), MysticColors.celestialPink.opacity(0.3), MysticColors.neonLavender.opacity(0.4)],
+                                center: .center
+                            ),
+                            lineWidth: 1.2
+                        )
+                        .frame(width: 50, height: 50)
                     Image(systemName: "person.fill")
                         .font(.system(size: 20))
                         .foregroundColor(MysticColors.neonLavender)
@@ -250,6 +263,7 @@ struct HomeView: View {
                             .lineSpacing(4)
                     }
 
+                    // Placeholder energy values; replace with API/calculation when available.
                     HStack(spacing: MysticSpacing.md) {
                         EnergyBar(label: String(localized: "home.energy.love"), value: 0.7, color: MysticColors.celestialPink)
                         EnergyBar(label: String(localized: "home.energy.career"), value: 0.85, color: MysticColors.mysticGold)
@@ -489,6 +503,7 @@ struct HomeView: View {
 }
 
 private struct HomeQuickFeatureTile: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let id: String
     let icon: String
     let title: String
@@ -496,44 +511,71 @@ private struct HomeQuickFeatureTile: View {
     let color: Color
     let action: () -> Void
 
+    @State private var isPressed = false
+
     var body: some View {
         Button(action: action) {
             MysticCard(glowColor: color) {
-                VStack(alignment: .leading, spacing: MysticSpacing.xs) {
+                VStack(alignment: .leading, spacing: MysticSpacing.sm) {
                     HStack {
                         ZStack {
-                            Circle()
-                                .fill(color.opacity(0.18))
-                                .frame(width: 34, height: 34)
+                            RoundedRectangle(cornerRadius: MysticRadius.sm, style: .continuous)
+                                .fill(
+                                    LinearGradient(
+                                        colors: [color.opacity(0.25), color.opacity(0.1)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                                .frame(width: 38, height: 38)
                             Image(systemName: icon)
-                                .font(.system(size: 14, weight: .semibold))
+                                .font(.system(size: 16, weight: .semibold))
                                 .foregroundColor(color)
                         }
 
                         Spacer()
 
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(MysticColors.textMuted)
+                        Image(systemName: "arrow.up.right")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundColor(color.opacity(0.5))
+                            .padding(6)
+                            .background(color.opacity(0.08))
+                            .clipShape(Circle())
                     }
 
-                    Text(title)
-                        .font(MysticFonts.body(14))
-                        .fontWeight(.semibold)
-                        .foregroundColor(MysticColors.textPrimary)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.75)
+                    Spacer(minLength: 0)
 
-                    Text(subtitle)
-                        .font(MysticFonts.caption(11))
-                        .foregroundColor(MysticColors.textSecondary)
-                        .lineLimit(2)
-                        .frame(maxHeight: 30, alignment: .topLeading)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(title)
+                            .font(MysticFonts.body(15))
+                            .fontWeight(.semibold)
+                            .foregroundColor(MysticColors.textPrimary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.75)
+
+                        Text(subtitle)
+                            .font(MysticFonts.caption(11))
+                            .foregroundColor(MysticColors.textSecondary)
+                            .lineLimit(2)
+                            .frame(maxHeight: 30, alignment: .topLeading)
+                    }
                 }
-                .frame(maxWidth: .infinity, minHeight: 116, alignment: .topLeading)
+                .frame(maxWidth: .infinity, minHeight: 120, alignment: .topLeading)
             }
+            .scaleEffect(isPressed ? MysticEffects.cardPressedScale : 1.0)
         }
         .buttonStyle(.plain)
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in
+                    if reduceMotion { isPressed = true }
+                    else { withAnimation(.spring(response: MysticMotion.springResponse, dampingFraction: MysticMotion.springDamping)) { isPressed = true } }
+                }
+                .onEnded { _ in
+                    if reduceMotion { isPressed = false }
+                    else { withAnimation(.spring(response: MysticMotion.springResponse, dampingFraction: MysticMotion.springDamping)) { isPressed = false } }
+                }
+        )
         .accessibilityLabel(Text(title))
         .accessibilityHint(Text(String(localized: "home.explore.item.hint")))
         .accessibilityIdentifier(id)
@@ -549,33 +591,40 @@ struct EnergyBar: View {
     @State private var animatedValue: Double = 0
 
     var body: some View {
-        VStack(spacing: MysticSpacing.xs) {
+        VStack(spacing: MysticSpacing.xs + 2) {
             Text(label)
                 .font(MysticFonts.caption(11))
                 .foregroundColor(MysticColors.textMuted)
 
             GeometryReader { geometry in
                 ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(color.opacity(0.15))
-                        .frame(height: 6)
+                    Capsule()
+                        .fill(color.opacity(0.12))
+                        .frame(height: 7)
 
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(color)
-                        .frame(width: geometry.size.width * animatedValue, height: 6)
+                    Capsule()
+                        .fill(
+                            LinearGradient(
+                                colors: [color.opacity(0.7), color],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .frame(width: max(0, geometry.size.width * animatedValue), height: 7)
+                        .shadow(color: color.opacity(0.3), radius: 4, y: 1)
                 }
             }
-            .frame(height: 6)
+            .frame(height: 7)
 
             Text(verbatim: "\(Int(value * 100))%")
-                .font(MysticFonts.caption(10))
+                .font(MysticFonts.mono(11))
                 .foregroundColor(color)
         }
         .onAppear {
             if reduceMotion {
                 animatedValue = value
             } else {
-                withAnimation(.easeOut(duration: 1.0).delay(0.5)) {
+                withAnimation(.easeOut(duration: 1.2).delay(0.4)) {
                     animatedValue = value
                 }
             }
@@ -631,7 +680,7 @@ struct TransitCard: View {
         switch transit.severity {
         case .low: return MysticColors.auroraGreen
         case .medium: return MysticColors.mysticGold
-        case .high: return Color(hex: "ff9800")
+        case .high: return MysticColors.transitOrange
         case .critical: return MysticColors.celestialPink
         }
     }

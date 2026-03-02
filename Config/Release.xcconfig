@@ -2,6 +2,14 @@
 // Local secrets are loaded from gitignored file if present.
 #include? "Secrets.xcconfig"
 
-OPENROUTER_API_KEY = $(inherited)
-FREE_ASTRO_API_KEY = $(inherited)
+// Do not ship provider keys in the client binary for release.
+OPENROUTER_API_KEY =
+FREE_ASTRO_API_KEY =
 PREMIUM_PRODUCT_IDS = $(inherited)
+APS_ENVIRONMENT = production
+ALLOW_DIRECT_PROVIDER_CALLS = NO
+AI_PROXY_BASE_URL = $(inherited)
+ASTRO_PROXY_BASE_URL = $(inherited)
+OPENROUTER_MODEL = $(inherited)
+TERMS_OF_USE_URL = https://rkhoroscope.app/terms
+PRIVACY_POLICY_URL = https://rkhoroscope.app/privacy

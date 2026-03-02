@@ -1,8 +1,13 @@
 import SwiftUI
+import UIKit
 
 // MARK: - View Extensions
 
 extension View {
+    /// Disables horizontal bounce/scroll on the nearest parent UIScrollView.
+    func disableHorizontalScrollBounce() -> some View {
+        overlay(ScrollViewBounceFixView())
+    }
     /// Apply mystic card background
     func mysticCardStyle(glowColor: Color = MysticColors.neonLavender) -> some View {
         self
@@ -69,6 +74,43 @@ struct ShimmerModifier: ViewModifier {
         } else {
             content
         }
+    }
+}
+
+// MARK: - ScrollView Horizontal Bounce Fix
+private struct ScrollViewBounceFixView: UIViewRepresentable {
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView()
+        view.backgroundColor = .clear
+        return view
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {
+        DispatchQueue.main.async {
+            if let scrollView = uiView.enclosingUIScrollView()
+                ?? uiView.superview?.findUIScrollViewInHierarchy() {
+                scrollView.alwaysBounceHorizontal = false
+            }
+        }
+    }
+}
+
+private extension UIView {
+    func enclosingUIScrollView() -> UIScrollView? {
+        var v: UIView? = superview
+        while let current = v {
+            if let sv = current as? UIScrollView { return sv }
+            v = current.superview
+        }
+        return nil
+    }
+
+    func findUIScrollViewInHierarchy() -> UIScrollView? {
+        if let sv = self as? UIScrollView { return sv }
+        for subview in subviews {
+            if let found = subview.findUIScrollViewInHierarchy() { return found }
+        }
+        return nil
     }
 }
 

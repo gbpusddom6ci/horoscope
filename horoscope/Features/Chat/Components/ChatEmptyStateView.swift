@@ -11,7 +11,8 @@ struct ChatEmptyStateView: View {
             Image(systemName: "bubble.left.and.bubble.right.fill")
                 .font(.system(size: 48))
                 .foregroundStyle(MysticGradients.lavenderGlow)
-                .shadow(color: MysticColors.neonLavender.opacity(0.4), radius: 10)
+                .shadow(color: MysticColors.neonLavender.opacity(0.4), radius: 12)
+                .shadow(color: MysticColors.neonLavender.opacity(0.15), radius: 24)
 
             VStack(spacing: MysticSpacing.sm) {
                 Text("chat.empty.title")
@@ -40,9 +41,14 @@ struct ChatEmptyStateView: View {
             onSend()
         } label: {
             HStack(spacing: MysticSpacing.sm) {
-                Image(systemName: icon)
-                    .font(.system(size: 13))
-                    .foregroundColor(MysticColors.mysticGold)
+                ZStack {
+                    Circle()
+                        .fill(MysticColors.mysticGold.opacity(0.12))
+                        .frame(width: 28, height: 28)
+                    Image(systemName: icon)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(MysticColors.mysticGold)
+                }
                 Text(text)
                     .font(MysticFonts.caption(13))
                     .foregroundColor(MysticColors.textPrimary)
@@ -51,15 +57,22 @@ struct ChatEmptyStateView: View {
                 Spacer()
                 Image(systemName: "arrow.up.circle.fill")
                     .font(.system(size: 16))
-                    .foregroundColor(MysticColors.neonLavender.opacity(0.5))
+                    .foregroundColor(MysticColors.neonLavender.opacity(0.4))
             }
-            .padding(.horizontal, MysticSpacing.sm)
-            .padding(.vertical, 8)
+            .padding(.horizontal, MysticSpacing.sm + 2)
+            .padding(.vertical, 10)
             .background(MysticColors.cardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: MysticRadius.md))
+            .clipShape(RoundedRectangle(cornerRadius: MysticRadius.md, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: MysticRadius.md)
-                    .stroke(MysticColors.mysticGold.opacity(0.22), lineWidth: 1)
+                RoundedRectangle(cornerRadius: MysticRadius.md, style: .continuous)
+                    .stroke(
+                        LinearGradient(
+                            colors: [MysticColors.mysticGold.opacity(0.2), MysticColors.cardBorder.opacity(0.3)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 0.6
+                    )
             )
             .frame(minHeight: MysticAccessibility.minimumTapTarget)
         }

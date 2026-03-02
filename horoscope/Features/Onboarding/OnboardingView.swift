@@ -32,7 +32,7 @@ struct OnboardingView: View {
                         .tag(2)
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
-                .animation(reduceMotion ? nil : .spring(response: 0.4), value: viewModel.currentStep)
+                .animation(reduceMotion ? nil : .spring(response: MysticMotion.springResponse, dampingFraction: MysticMotion.springDamping), value: viewModel.currentStep)
 
                 if case .failed(let message) = viewModel.submissionState {
                     Text(message)
@@ -59,14 +59,24 @@ struct OnboardingView: View {
     private var progressBar: some View {
         HStack(spacing: MysticSpacing.sm) {
             ForEach(0..<3) { index in
-                RoundedRectangle(cornerRadius: 4)
+                Capsule()
                     .fill(
                         index <= viewModel.currentStep
-                            ? MysticColors.mysticGold
-                            : MysticColors.textMuted.opacity(0.3)
+                            ? AnyShapeStyle(
+                                LinearGradient(
+                                    colors: [MysticColors.mysticGold.opacity(0.8), MysticColors.mysticGold],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            : AnyShapeStyle(MysticColors.textMuted.opacity(0.2))
                     )
                     .frame(height: 4)
-                    .animation(reduceMotion ? nil : .spring(response: 0.3), value: viewModel.currentStep)
+                    .shadow(
+                        color: index <= viewModel.currentStep ? MysticColors.mysticGold.opacity(0.25) : Color.clear,
+                        radius: 4, y: 1
+                    )
+                    .animation(reduceMotion ? nil : .spring(response: MysticMotion.springResponse, dampingFraction: MysticMotion.springDamping), value: viewModel.currentStep)
             }
         }
         .padding(.horizontal, MysticSpacing.lg)
@@ -79,7 +89,7 @@ struct OnboardingView: View {
         HStack(spacing: MysticSpacing.md) {
             if viewModel.currentStep > 0 {
                 MysticButton(String(localized: "onboarding.navigation.back"), icon: "chevron.left", style: .ghost) {
-                    withAnimation(reduceMotion ? nil : .spring(response: 0.25)) {
+                    withAnimation(reduceMotion ? nil : .spring(response: MysticMotion.springResponse, dampingFraction: MysticMotion.springDamping)) {
                         viewModel.currentStep -= 1
                     }
                 }
@@ -89,7 +99,7 @@ struct OnboardingView: View {
 
             if viewModel.currentStep < 2 {
                 MysticButton(String(localized: "onboarding.navigation.next"), icon: "arrow.right", style: .primary) {
-                    withAnimation(reduceMotion ? nil : .spring(response: 0.25)) {
+                    withAnimation(reduceMotion ? nil : .spring(response: MysticMotion.springResponse, dampingFraction: MysticMotion.springDamping)) {
                         viewModel.currentStep += 1
                     }
                 }

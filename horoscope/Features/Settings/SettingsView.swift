@@ -9,6 +9,7 @@ struct SettingsView: View {
     @State private var showLanguageSettings = false
     @State private var showHelpCenter = false
     @State private var showPrivacyPolicy = false
+    @State private var showDeleteAccount = false
 
     private var hasPremiumAccess: Bool {
         (authService.currentUser?.isPremium ?? false) || premiumService.hasPremiumAccess
@@ -107,6 +108,10 @@ struct SettingsView: View {
         .sheet(isPresented: $showPrivacyPolicy) {
             PrivacyPolicyView()
         }
+        .sheet(isPresented: $showDeleteAccount) {
+            DeleteAccountSheet()
+                .environment(authService)
+        }
     }
 
     // MARK: - Sections
@@ -116,15 +121,34 @@ struct SettingsView: View {
             VStack(spacing: MysticSpacing.md) {
                 ZStack {
                     Circle()
-                        .fill(MysticColors.neonLavender.opacity(0.15))
-                        .frame(width: 76, height: 76)
+                        .fill(
+                            RadialGradient(
+                                colors: [MysticColors.neonLavender.opacity(0.15), MysticColors.neonLavender.opacity(0.03)],
+                                center: .center,
+                                startRadius: 0,
+                                endRadius: 42
+                            )
+                        )
+                        .frame(width: 80, height: 80)
                     Circle()
-                        .stroke(MysticColors.neonLavender.opacity(0.35), lineWidth: 1.5)
-                        .frame(width: 76, height: 76)
+                        .stroke(
+                            AngularGradient(
+                                colors: [
+                                    MysticColors.neonLavender.opacity(0.5),
+                                    MysticColors.stardust.opacity(0.3),
+                                    MysticColors.celestialPink.opacity(0.4),
+                                    MysticColors.nebulaBlue.opacity(0.3),
+                                    MysticColors.neonLavender.opacity(0.5)
+                                ],
+                                center: .center
+                            ),
+                            lineWidth: 1.5
+                        )
+                        .frame(width: 80, height: 80)
 
                     if let symbol = authService.currentUser?.birthData?.sunSign.symbol {
                         Text(symbol)
-                            .font(.system(size: 30))
+                            .font(.system(size: 32))
                     } else {
                         Image(systemName: "person.fill")
                             .font(.system(size: 26))
@@ -148,11 +172,15 @@ struct SettingsView: View {
                     Text(hasPremiumAccess ? String(localized: "settings.plan.premium") : String(localized: "settings.plan.free"))
                         .font(MysticFonts.caption(13))
                 }
-                .foregroundColor(MysticColors.mysticGold)
+                .foregroundStyle(MysticGradients.goldShimmer)
                 .padding(.horizontal, MysticSpacing.md)
                 .padding(.vertical, MysticSpacing.xs + 2)
-                .background(MysticColors.mysticGold.opacity(0.12))
+                .background(MysticColors.mysticGold.opacity(0.1))
                 .clipShape(Capsule())
+                .overlay(
+                    Capsule()
+                        .stroke(MysticColors.mysticGold.opacity(0.2), lineWidth: 0.5)
+                )
             }
         }
         .accessibilityIdentifier("settings.profile.header")
@@ -217,27 +245,60 @@ struct SettingsView: View {
     }
 
     private var dangerZone: some View {
-        Button {
-            authService.signOut()
-        } label: {
-            HStack(spacing: MysticSpacing.md) {
-                Image(systemName: "rectangle.portrait.and.arrow.right")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(MysticColors.celestialPink)
+        VStack(spacing: MysticSpacing.sm) {
+            Button {
+                authService.signOut()
+            } label: {
+                HStack(spacing: MysticSpacing.md) {
+                    Image(systemName: "rectangle.portrait.and.arrow.right")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundColor(MysticColors.celestialPink)
 
-                Text("settings.signout")
-                    .font(MysticFonts.body(15))
-                    .foregroundColor(MysticColors.celestialPink)
+                    Text("settings.signout")
+                        .font(MysticFonts.body(15))
+                        .foregroundColor(MysticColors.celestialPink)
 
-                Spacer()
+                    Spacer()
+                }
+                .padding(.horizontal, MysticSpacing.md)
+                .padding(.vertical, MysticSpacing.sm + 4)
+                .background(MysticColors.celestialPink.opacity(0.08))
+                .clipShape(RoundedRectangle(cornerRadius: MysticRadius.md, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: MysticRadius.md, style: .continuous)
+                        .stroke(MysticColors.celestialPink.opacity(0.15), lineWidth: 0.5)
+                )
             }
-            .padding(.horizontal, MysticSpacing.md)
-            .padding(.vertical, MysticSpacing.sm + 2)
-            .background(MysticColors.celestialPink.opacity(0.12))
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("settings.signout")
+
+            Button {
+                showDeleteAccount = true
+            } label: {
+                HStack(spacing: MysticSpacing.md) {
+                    Image(systemName: "trash.fill")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(MysticColors.celestialPink)
+
+                    Text("settings.delete_account")
+                        .font(MysticFonts.body(14))
+                        .foregroundColor(MysticColors.celestialPink)
+
+                    Spacer()
+                }
+                .padding(.horizontal, MysticSpacing.md)
+                .padding(.vertical, MysticSpacing.sm + 2)
+                .background(MysticColors.celestialPink.opacity(0.06))
+                .clipShape(RoundedRectangle(cornerRadius: MysticRadius.md, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: MysticRadius.md, style: .continuous)
+                        .stroke(MysticColors.celestialPink.opacity(0.2), lineWidth: 0.5)
+                )
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint(Text(String(localized: "settings.delete_account.hint")))
+            .accessibilityIdentifier("settings.delete_account")
         }
-        .buttonStyle(.plain)
-        .accessibilityIdentifier("settings.signout")
     }
 
     private func settingsSection(titleKey: LocalizedStringKey, rows: [SettingsMenuRowModel]) -> some View {
@@ -263,8 +324,18 @@ struct SettingsView: View {
                 HStack(spacing: MysticSpacing.md) {
                     ZStack {
                         Circle()
-                            .fill(row.tint.opacity(0.16))
-                            .frame(width: 34, height: 34)
+                            .fill(
+                                RadialGradient(
+                                    colors: [row.tint.opacity(0.22), row.tint.opacity(0.06)],
+                                    center: .center,
+                                    startRadius: 0,
+                                    endRadius: 20
+                                )
+                            )
+                            .frame(width: 36, height: 36)
+                        Circle()
+                            .stroke(row.tint.opacity(0.15), lineWidth: 0.5)
+                            .frame(width: 36, height: 36)
                         Image(systemName: row.icon)
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundColor(row.tint)
@@ -284,7 +355,7 @@ struct SettingsView: View {
 
                     Image(systemName: "chevron.right")
                         .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(MysticColors.textMuted)
+                        .foregroundColor(row.tint.opacity(0.5))
                 }
             }
         }

@@ -11,9 +11,9 @@ struct GlowingText: View {
 
     init(
         _ text: String,
-        font: Font = MysticFonts.title(28),
+        font: Font = MysticFonts.title(30),
         color: Color = MysticColors.mysticGold,
-        glowRadius: CGFloat = 8
+        glowRadius: CGFloat = 10
     ) {
         self.text = text
         self.font = font
@@ -24,9 +24,16 @@ struct GlowingText: View {
     var body: some View {
         Text(text)
             .font(font)
-            .foregroundColor(color)
-            .shadow(color: color.opacity(glowAnimation ? 0.6 : 0.2), radius: glowRadius)
-            .shadow(color: color.opacity(glowAnimation ? 0.3 : 0.1), radius: glowRadius * 2)
+            .foregroundStyle(
+                LinearGradient(
+                    colors: [color, color.opacity(0.85)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+            .shadow(color: color.opacity(glowAnimation ? 0.65 : 0.2), radius: glowRadius)
+            .shadow(color: color.opacity(glowAnimation ? 0.35 : 0.1), radius: glowRadius * 1.8)
+            .shadow(color: color.opacity(glowAnimation ? 0.15 : 0.05), radius: glowRadius * 3)
             .onAppear {
                 if reduceMotion {
                     glowAnimation = true
@@ -206,8 +213,8 @@ enum ZodiacSign: String, CaseIterable, Codable {
     ZStack {
         StarField()
         VStack(spacing: 20) {
-            GlowingText("✨ Mystic Guide", color: MysticColors.mysticGold)
-            GlowingText("The Stars Are Speaking", font: MysticFonts.mystic(24), color: MysticColors.neonLavender)
+            GlowingText(String(localized: "app.brand"), color: MysticColors.mysticGold)
+            GlowingText(String(localized: "splash.loading"), font: MysticFonts.mystic(24), color: MysticColors.neonLavender)
 
             HStack(spacing: 12) {
                 ForEach(ZodiacSign.allCases.prefix(6), id: \.self) { sign in

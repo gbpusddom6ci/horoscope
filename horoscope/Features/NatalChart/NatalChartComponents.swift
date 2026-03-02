@@ -173,6 +173,8 @@ struct PlanetDetailCard: View {
                         .font(MysticFonts.body(15))
                         .fontWeight(.semibold)
                         .foregroundColor(MysticColors.textPrimary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
 
                     if position.isRetrograde {
                         Text(verbatim: "℞")
@@ -205,6 +207,8 @@ struct PlanetDetailCard: View {
                     Text(dignity.localizedTitle)
                         .font(MysticFonts.caption(10))
                         .foregroundColor(dignity.color)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
                 }
             }
 
@@ -310,11 +314,14 @@ struct AspectCard: View {
                     Text(aspect.type.localizedDisplayName)
                         .font(MysticFonts.body(12))
                         .foregroundColor(accentColor)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
                     Text(String(format: String(localized: "natal.orb_format"), aspect.orb))
                         .font(MysticFonts.caption(10))
                         .foregroundColor(MysticColors.textMuted)
                 }
             }
+            .frame(minWidth: 0, maxWidth: .infinity)
         }
     }
 }
@@ -395,6 +402,8 @@ struct ElementModalityBreakdown: View {
             Text(name)
                 .font(MysticFonts.caption(10))
                 .foregroundColor(MysticColors.textMuted)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
         }
         .frame(maxWidth: .infinity)
     }
@@ -454,7 +463,7 @@ struct HouseCard: View {
                             .font(MysticFonts.body(14))
                             .fontWeight(.semibold)
                             .foregroundColor(MysticColors.textPrimary)
-                        Text("·")
+                        Text(String(localized: "common.separator.dot"))
                             .foregroundColor(MysticColors.textMuted)
                         Text(cusp.sign.symbol)
                             .font(.system(size: 14))

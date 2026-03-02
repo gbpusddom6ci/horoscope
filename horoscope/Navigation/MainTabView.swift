@@ -116,25 +116,37 @@ struct MainTabView: View {
         .background(
             ZStack {
                 Rectangle()
-                    .fill(MysticColors.voidBlack.opacity(0.85))
+                    .fill(MysticColors.voidBlack.opacity(0.92))
 
                 Rectangle()
-                    .fill(MysticGradients.cardGlass)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(0.06),
+                                Color.white.opacity(0.02),
+                                Color.white.opacity(0.01)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
 
                 VStack {
                     Rectangle()
                         .fill(
                             LinearGradient(
                                 colors: [
-                                    MysticColors.neonLavender.opacity(0.3),
-                                    MysticColors.mysticGold.opacity(0.1),
-                                    MysticColors.neonLavender.opacity(0.3)
+                                    MysticColors.neonLavender.opacity(0.25),
+                                    MysticColors.nebulaBlue.opacity(0.12),
+                                    MysticColors.mysticGold.opacity(0.15),
+                                    MysticColors.celestialPink.opacity(0.12),
+                                    MysticColors.neonLavender.opacity(0.25)
                                 ],
                                 startPoint: .leading,
                                 endPoint: .trailing
                             )
                         )
-                        .frame(height: 1)
+                        .frame(height: 0.5)
                     Spacer()
                 }
             }
@@ -154,7 +166,7 @@ struct MainTabView: View {
                 return
             }
 
-            withAnimation(reduceMotion ? nil : .spring(response: 0.3)) {
+            withAnimation(reduceMotion ? nil : .spring(response: MysticMotion.springResponse, dampingFraction: MysticMotion.springDamping)) {
                 selectedTab = tab
             }
         } label: {
@@ -162,11 +174,18 @@ struct MainTabView: View {
                 ZStack {
                     if selectedTab == tab {
                         Circle()
-                            .fill(tab.color.opacity(0.15))
+                            .fill(
+                                RadialGradient(
+                                    colors: [tab.color.opacity(0.2), tab.color.opacity(0.05)],
+                                    center: .center,
+                                    startRadius: 0,
+                                    endRadius: 22
+                                )
+                            )
                             .frame(width: MysticLayout.tabBarIconFrame, height: MysticLayout.tabBarIconFrame)
 
                         Circle()
-                            .stroke(tab.color.opacity(0.3), lineWidth: 1)
+                            .stroke(tab.color.opacity(0.25), lineWidth: 0.8)
                             .frame(width: MysticLayout.tabBarIconFrame, height: MysticLayout.tabBarIconFrame)
                     }
 
@@ -211,7 +230,7 @@ struct MainTabView: View {
                 return
             }
 
-            withAnimation(reduceMotion ? nil : .spring(response: 0.3)) {
+            withAnimation(reduceMotion ? nil : .spring(response: MysticMotion.springResponse, dampingFraction: MysticMotion.springDamping)) {
                 selectedTab = .chat
             }
         } label: {
@@ -223,11 +242,20 @@ struct MainTabView: View {
                 Circle()
                     .stroke(
                         selectedTab == .chat
-                            ? MysticColors.auroraGreen.opacity(0.6)
-                            : MysticColors.mysticGold.opacity(0.55),
-                        lineWidth: 1.2
+                            ? MysticColors.auroraGreen.opacity(0.5)
+                            : MysticColors.mysticGold.opacity(0.45),
+                        lineWidth: 1
                     )
                     .frame(width: MysticLayout.floatingQuickActionSize, height: MysticLayout.floatingQuickActionSize)
+
+                Circle()
+                    .stroke(
+                        selectedTab == .chat
+                            ? MysticColors.auroraGreen.opacity(0.15)
+                            : MysticColors.mysticGold.opacity(0.15),
+                        lineWidth: 0.5
+                    )
+                    .frame(width: MysticLayout.floatingQuickActionSize + 6, height: MysticLayout.floatingQuickActionSize + 6)
 
                 Image(systemName: selectedTab == .chat ? "bubble.left.and.bubble.right.fill" : "bolt.fill")
                     .font(.system(size: 22, weight: .semibold))
@@ -235,11 +263,11 @@ struct MainTabView: View {
             }
             .shadow(
                 color: selectedTab == .chat
-                    ? MysticColors.auroraGreen.opacity(0.22)
-                    : MysticColors.mysticGold.opacity(0.28),
-                radius: 12,
+                    ? MysticColors.auroraGreen.opacity(0.25)
+                    : MysticColors.mysticGold.opacity(0.3),
+                radius: 14,
                 x: 0,
-                y: 4
+                y: 5
             )
             .frame(
                 minWidth: MysticLayout.floatingQuickActionSize,

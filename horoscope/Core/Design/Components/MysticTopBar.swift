@@ -15,23 +15,39 @@ struct MysticTopBar<Trailing: View>: View {
     }
 
     var body: some View {
-        HStack(spacing: MysticSpacing.sm) {
-            title
-                .font(MysticFonts.heading(18))
-                .foregroundColor(MysticColors.textPrimary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-                .accessibilityAddTraits(.isHeader)
+        VStack(spacing: 0) {
+            HStack(spacing: MysticSpacing.sm) {
+                title
+                    .font(MysticFonts.heading(20))
+                    .foregroundColor(MysticColors.textPrimary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                    .accessibilityAddTraits(.isHeader)
 
-            Spacer(minLength: MysticSpacing.sm)
+                Spacer(minLength: MysticSpacing.sm)
 
-            trailing
-                .frame(minWidth: MysticAccessibility.minimumTapTarget, minHeight: MysticAccessibility.minimumTapTarget)
+                trailing
+                    .frame(minWidth: MysticAccessibility.minimumTapTarget, minHeight: MysticAccessibility.minimumTapTarget)
+            }
+            .padding(.horizontal, MysticLayout.topBarHorizontalPadding)
+            .padding(.top, MysticLayout.topBarVerticalPadding)
+            .padding(.bottom, MysticLayout.topBarBottomPadding)
+            .frame(minHeight: MysticLayout.topBarMinimumHeight, alignment: .center)
+
+            Rectangle()
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            MysticColors.neonLavender.opacity(0.15),
+                            MysticColors.mysticGold.opacity(0.08),
+                            MysticColors.neonLavender.opacity(0.15)
+                        ],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .frame(height: 0.5)
         }
-        .padding(.horizontal, MysticLayout.topBarHorizontalPadding)
-        .padding(.top, MysticLayout.topBarVerticalPadding)
-        .padding(.bottom, MysticLayout.topBarBottomPadding)
-        .frame(minHeight: MysticLayout.topBarMinimumHeight, alignment: .center)
     }
 }
 

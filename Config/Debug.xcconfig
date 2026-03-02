@@ -5,3 +5,10 @@
 OPENROUTER_API_KEY = $(inherited)
 FREE_ASTRO_API_KEY = $(inherited)
 PREMIUM_PRODUCT_IDS = $(inherited)
+APS_ENVIRONMENT = development
+ALLOW_DIRECT_PROVIDER_CALLS = YES
+AI_PROXY_BASE_URL = $(inherited)
+ASTRO_PROXY_BASE_URL = $(inherited)
+OPENROUTER_MODEL = $(inherited)
+TERMS_OF_USE_URL = https://rkhoroscope.app/terms
+PRIVACY_POLICY_URL = https://rkhoroscope.app/privacy

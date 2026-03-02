@@ -1,4 +1,5 @@
 import SwiftUI
+import os
 
 struct NatalChartView: View {
     @Environment(AuthService.self) private var authService
@@ -16,6 +17,7 @@ struct NatalChartView: View {
 
     private let engine = AstrologyEngine.shared
     private let aiService = AIService.shared
+    private let logger = Logger(subsystem: "rk.horoscope", category: "NatalChart")
 
     enum ChartTab: CaseIterable {
         case planets
@@ -139,7 +141,10 @@ struct NatalChartView: View {
 
                     Color.clear.frame(height: max(72, chromeMetrics.contentBottomReservedSpace))
                 }
+                .frame(minWidth: 0, maxWidth: .infinity, alignment: .top)
             }
+            .scrollBounceBehavior(.basedOnSize)
+            .disableHorizontalScrollBounce()
             .onAppear {
                 scrollProxy = proxy
             }
@@ -267,7 +272,11 @@ struct NatalChartView: View {
             }
 
             let calculatedChart = await engine.calculateNatalChartAsync(birthData: birthData)
-            try? await FirestoreService.shared.saveChartData(calculatedChart, userId: user.id)
+            do {
+                try await FirestoreService.shared.saveChartData(calculatedChart, userId: user.id)
+            } catch {
+                logger.error("Chart save failed: \(error.localizedDescription)")
+            }
 
             await MainActor.run {
                 chartData = calculatedChart

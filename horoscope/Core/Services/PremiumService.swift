@@ -96,7 +96,11 @@ final class PremiumService {
         var active: Set<String> = []
 
         for await entitlement in Transaction.currentEntitlements {
-            guard let transaction = try? checkVerified(entitlement) else {
+            let transaction: Transaction
+            do {
+                transaction = try checkVerified(entitlement)
+            } catch {
+                logger.error("Entitlement verification failed: \(error.localizedDescription, privacy: .public)")
                 continue
             }
 
@@ -113,7 +117,11 @@ final class PremiumService {
             guard let self else { return }
 
             for await update in Transaction.updates {
-                guard let transaction = try? self.checkVerified(update) else {
+                let transaction: Transaction
+                do {
+                    transaction = try self.checkVerified(update)
+                } catch {
+                    self.logger.error("Transaction update verification failed: \(error.localizedDescription, privacy: .public)")
                     continue
                 }
 

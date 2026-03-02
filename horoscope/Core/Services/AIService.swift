@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import os
+import FirebaseAuth
 
 // MARK: - OpenRouter API Models
 struct OpenRouterRequest: Codable {
@@ -21,12 +22,25 @@ struct OpenRouterChoice: Codable {
     let message: OpenRouterMessage?
 }
 
+private struct AIProxyRequest: Codable {
+    let kind: String
+    let model: String
+    let systemInstruction: String?
+    let prompt: String?
+    let messages: [OpenRouterMessage]?
+    let imageBase64JPEG: String?
+}
+
+private struct AIProxyResponse: Codable {
+    let content: String
+}
+
 // MARK: - AI Service
 /// Gemini API wrapper for AI-powered interpretations.
 @Observable
 class AIService {
     static let shared = AIService()
-    private let openRouterModel = "google/gemini-3-flash-preview"
+    private var openRouterModel: String { Secrets.openRouterModel }
 
     var isGenerating: Bool = false
     private let logger = Logger(subsystem: "rk.horoscope", category: "AIService")
@@ -64,6 +78,20 @@ class AIService {
 
     // MARK: - Core API Call
     private func generateContent(prompt: String, systemInstruction: String? = nil) async throws -> String {
+        if Secrets.aiProxyBaseURL != nil {
+            return try await proxyGenerateContent(
+                kind: "text",
+                prompt: prompt,
+                systemInstruction: systemInstruction,
+                messages: nil,
+                imageData: nil
+            )
+        }
+
+        guard Secrets.allowDirectProviderCalls else {
+            throw ConfigurationError.missingSecret("AI_PROXY_BASE_URL")
+        }
+
         guard let url = URL(string: "https://openrouter.ai/api/v1/chat/completions") else {
             throw URLError(.badURL)
         }
@@ -110,6 +138,20 @@ class AIService {
         systemInstruction: String? = nil,
         imageData: Data
     ) async throws -> String {
+        if Secrets.aiProxyBaseURL != nil {
+            return try await proxyGenerateContent(
+                kind: "multimodal",
+                prompt: prompt,
+                systemInstruction: systemInstruction,
+                messages: nil,
+                imageData: imageData
+            )
+        }
+
+        guard Secrets.allowDirectProviderCalls else {
+            throw ConfigurationError.missingSecret("AI_PROXY_BASE_URL")
+        }
+
         guard let url = URL(string: "https://openrouter.ai/api/v1/chat/completions") else {
             throw URLError(.badURL)
         }
@@ -291,6 +333,30 @@ class AIService {
         
         systemPrompt += " Current conversation context: \(context.localizedDisplayName)."
 
+        var orMessages: [OpenRouterMessage] = [
+            OpenRouterMessage(role: "system", content: systemPrompt)
+        ]
+
+        // Add conversation history (skip system messages, limit to last 20 for token efficiency)
+        let recentMessages = messages.suffix(20)
+        for msg in recentMessages where msg.role != .system {
+            orMessages.append(OpenRouterMessage(role: msg.role.rawValue, content: msg.content))
+        }
+
+        if Secrets.aiProxyBaseURL != nil {
+            return try await proxyGenerateContent(
+                kind: "chat",
+                prompt: nil,
+                systemInstruction: nil,
+                messages: orMessages,
+                imageData: nil
+            )
+        }
+
+        guard Secrets.allowDirectProviderCalls else {
+            throw ConfigurationError.missingSecret("AI_PROXY_BASE_URL")
+        }
+
         // Send full conversation history for multi-turn context
         guard let url = URL(string: "https://openrouter.ai/api/v1/chat/completions") else {
             throw URLError(.badURL)
@@ -306,17 +372,6 @@ class AIService {
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Mystic Astrology", forHTTPHeaderField: "X-Title")
-        
-        // Build message array with system prompt + full history
-        var orMessages: [OpenRouterMessage] = [
-            OpenRouterMessage(role: "system", content: systemPrompt)
-        ]
-        
-        // Add conversation history (skip system messages, limit to last 20 for token efficiency)
-        let recentMessages = messages.suffix(20)
-        for msg in recentMessages where msg.role != .system {
-            orMessages.append(OpenRouterMessage(role: msg.role.rawValue, content: msg.content))
-        }
         
         let reqBody = OpenRouterRequest(
             model: openRouterModel,
@@ -336,10 +391,53 @@ class AIService {
         
         return text
     }
+
+    private func proxyGenerateContent(
+        kind: String,
+        prompt: String?,
+        systemInstruction: String?,
+        messages: [OpenRouterMessage]?,
+        imageData: Data?
+    ) async throws -> String {
+        guard let proxyURL = Secrets.aiProxyBaseURL else {
+            throw ConfigurationError.missingSecret("AI_PROXY_BASE_URL")
+        }
+        guard let firebaseUser = Auth.auth().currentUser else {
+            throw AIServiceError.unauthenticated
+        }
+
+        let idToken = try await firebaseUser.getIDToken()
+
+        let payload = AIProxyRequest(
+            kind: kind,
+            model: openRouterModel,
+            systemInstruction: systemInstruction,
+            prompt: prompt,
+            messages: messages,
+            imageBase64JPEG: imageData?.base64EncodedString()
+        )
+
+        var request = URLRequest(url: proxyURL)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(idToken)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(payload)
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try validateOpenRouterResponse(data: data, response: response, requestLabel: "AI proxy request")
+
+        let proxyResponse = try JSONDecoder().decode(AIProxyResponse.self, from: data)
+        let trimmed = proxyResponse.content.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            throw AIServiceError.emptyResponse
+        }
+        return trimmed
+    }
 }
 
 enum AIServiceError: LocalizedError {
     case missingPalmImage
+    case unauthenticated
     case unauthorized
     case rateLimited
     case upstreamUnavailable
@@ -351,6 +449,8 @@ enum AIServiceError: LocalizedError {
         switch self {
         case .missingPalmImage:
             return String(localized: "ai.error.missing_palm_image")
+        case .unauthenticated:
+            return String(localized: "auth.error.session_missing")
         case .unauthorized:
             return String(localized: "ai.error.unauthorized")
         case .rateLimited:

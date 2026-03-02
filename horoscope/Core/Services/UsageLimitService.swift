@@ -10,12 +10,12 @@ final class UsageLimitService {
     var authService: AuthService?
     private let defaults = UserDefaults.standard
 
-    // Keys
-    private let lastResetDateKey = "UsageLimitService_LastResetDate"
-    private let chatMessageCountKey = "UsageLimitService_ChatMessageCount"
-    private let palmReadingCountKey = "UsageLimitService_PalmReadingCount"
-    private let natalInterpretationCountKey = "UsageLimitService_NatalInterpretationCount"
-    private let dreamInterpretationCountKey = "UsageLimitService_DreamInterpretationCount"
+    // Base keys (scoped per user identifier)
+    private let lastResetDateKeyBase = "UsageLimitService_LastResetDate"
+    private let chatMessageCountKeyBase = "UsageLimitService_ChatMessageCount"
+    private let palmReadingCountKeyBase = "UsageLimitService_PalmReadingCount"
+    private let natalInterpretationCountKeyBase = "UsageLimitService_NatalInterpretationCount"
+    private let dreamInterpretationCountKeyBase = "UsageLimitService_DreamInterpretationCount"
 
     // Limits
     private let chatMessageLimit = 3
@@ -37,11 +37,18 @@ final class UsageLimitService {
         loadCounts()
     }
 
+    func refreshForCurrentUser() {
+        checkAndResetDailyLimits()
+        loadCounts()
+        showPaywall = false
+    }
+
     // MARK: - Core Logic
 
     private func checkAndResetDailyLimits() {
         let calendar = Calendar.current
         let today = Date()
+        let lastResetDateKey = scopedKey(lastResetDateKeyBase)
 
         if let lastReset = defaults.object(forKey: lastResetDateKey) as? Date {
             if !calendar.isDate(today, inSameDayAs: lastReset) {
@@ -53,18 +60,24 @@ final class UsageLimitService {
     }
 
     private func resetCounts(_ date: Date) {
-        defaults.set(date, forKey: lastResetDateKey)
-        defaults.set(0, forKey: chatMessageCountKey)
-        defaults.set(0, forKey: palmReadingCountKey)
-        defaults.set(0, forKey: natalInterpretationCountKey)
-        defaults.set(0, forKey: dreamInterpretationCountKey)
+        defaults.set(date, forKey: scopedKey(lastResetDateKeyBase))
+        defaults.set(0, forKey: scopedKey(chatMessageCountKeyBase))
+        defaults.set(0, forKey: scopedKey(palmReadingCountKeyBase))
+        defaults.set(0, forKey: scopedKey(natalInterpretationCountKeyBase))
+        defaults.set(0, forKey: scopedKey(dreamInterpretationCountKeyBase))
     }
 
     private func loadCounts() {
-        chatMessageCount = defaults.integer(forKey: chatMessageCountKey)
-        palmReadingCount = defaults.integer(forKey: palmReadingCountKey)
-        natalInterpretationCount = defaults.integer(forKey: natalInterpretationCountKey)
-        dreamInterpretationCount = defaults.integer(forKey: dreamInterpretationCountKey)
+        chatMessageCount = defaults.integer(forKey: scopedKey(chatMessageCountKeyBase))
+        palmReadingCount = defaults.integer(forKey: scopedKey(palmReadingCountKeyBase))
+        natalInterpretationCount = defaults.integer(forKey: scopedKey(natalInterpretationCountKeyBase))
+        dreamInterpretationCount = defaults.integer(forKey: scopedKey(dreamInterpretationCountKeyBase))
+    }
+
+    private func scopedKey(_ base: String) -> String {
+        let userId = authService?.currentUser?.id.trimmingCharacters(in: .whitespacesAndNewlines)
+        let scope = userId.flatMap { $0.isEmpty ? nil : $0 } ?? "anonymous"
+        return "\(base)_\(scope)"
     }
 
     private var hasPremium: Bool {
@@ -106,16 +119,16 @@ final class UsageLimitService {
         switch action {
         case .chatMessage:
             chatMessageCount += 1
-            defaults.set(chatMessageCount, forKey: chatMessageCountKey)
+            defaults.set(chatMessageCount, forKey: scopedKey(chatMessageCountKeyBase))
         case .palmReading:
             palmReadingCount += 1
-            defaults.set(palmReadingCount, forKey: palmReadingCountKey)
+            defaults.set(palmReadingCount, forKey: scopedKey(palmReadingCountKeyBase))
         case .natalInterpretation:
             natalInterpretationCount += 1
-            defaults.set(natalInterpretationCount, forKey: natalInterpretationCountKey)
+            defaults.set(natalInterpretationCount, forKey: scopedKey(natalInterpretationCountKeyBase))
         case .dreamInterpretation:
             dreamInterpretationCount += 1
-            defaults.set(dreamInterpretationCount, forKey: dreamInterpretationCountKey)
+            defaults.set(dreamInterpretationCount, forKey: scopedKey(dreamInterpretationCountKeyBase))
         }
     }
 }

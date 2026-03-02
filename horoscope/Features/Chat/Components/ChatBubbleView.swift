@@ -51,10 +51,16 @@ struct ChatBubbleView: View {
                         )
                         .stroke(
                             isUser
-                                ? MysticColors.mysticGold.opacity(0.2)
-                                : MysticColors.cardBorder.opacity(0.5),
-                            lineWidth: 1
+                                ? MysticColors.mysticGold.opacity(0.25)
+                                : MysticColors.cardBorder.opacity(0.4),
+                            lineWidth: 0.6
                         )
+                    )
+                    .shadow(
+                        color: isUser
+                            ? MysticColors.mysticGold.opacity(0.08)
+                            : MysticColors.neonLavender.opacity(0.05),
+                        radius: 8, y: 3
                     )
                     .contextMenu {
                         Button {

@@ -15,7 +15,7 @@ enum MysticButtonSize {
     var height: CGFloat {
         switch self {
         case .regular:
-            return 52
+            return 54
         case .compact:
             return MysticAccessibility.minimumTapTarget
         }
@@ -102,14 +102,14 @@ struct MysticButton: View {
             .frame(maxWidth: .infinity)
             .frame(height: size.height)
             .background(backgroundView)
-            .clipShape(RoundedRectangle(cornerRadius: MysticRadius.lg))
+            .clipShape(RoundedRectangle(cornerRadius: MysticRadius.lg, style: .continuous))
             .overlay(borderOverlay)
             .shadow(
-                color: glowColor.opacity(glowAnimation ? 0.4 : 0.1),
+                color: glowColor.opacity(glowAnimation ? 0.4 : 0.12),
                 radius: glowAnimation ? MysticEffects.buttonGlowRadiusActive : MysticEffects.buttonGlowRadiusRest
             )
             .scaleEffect((isPressed && !reduceMotion && canInteract) ? MysticEffects.buttonPressedScale : 1.0)
-            .opacity(canInteract ? 1 : 0.62)
+            .opacity(canInteract ? 1 : 0.55)
         }
         .buttonStyle(.plain)
         .disabled(!canInteract)
@@ -120,7 +120,7 @@ struct MysticButton: View {
                     if reduceMotion {
                         isPressed = true
                     } else {
-                        withAnimation(.easeInOut(duration: MysticMotion.quickPressDuration)) { isPressed = true }
+                        withAnimation(.spring(response: MysticMotion.springResponse, dampingFraction: MysticMotion.springDamping)) { isPressed = true }
                     }
                 }
                 .onEnded { _ in
@@ -128,7 +128,7 @@ struct MysticButton: View {
                     if reduceMotion {
                         isPressed = false
                     } else {
-                        withAnimation(.easeInOut(duration: MysticMotion.quickPressDuration)) { isPressed = false }
+                        withAnimation(.spring(response: MysticMotion.springResponse, dampingFraction: MysticMotion.springDamping)) { isPressed = false }
                     }
                 }
         )
@@ -164,17 +164,38 @@ struct MysticButton: View {
     private var borderOverlay: some View {
         switch style {
         case .primary:
-            RoundedRectangle(cornerRadius: MysticRadius.lg)
-                .stroke(MysticColors.mysticGold.opacity(0.5), lineWidth: 1)
+            RoundedRectangle(cornerRadius: MysticRadius.lg, style: .continuous)
+                .stroke(
+                    LinearGradient(
+                        colors: [MysticColors.mysticGold.opacity(0.6), MysticColors.mysticGold.opacity(0.2)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 0.8
+                )
         case .secondary:
-            RoundedRectangle(cornerRadius: MysticRadius.lg)
-                .stroke(MysticColors.neonLavender.opacity(0.4), lineWidth: 1.5)
+            RoundedRectangle(cornerRadius: MysticRadius.lg, style: .continuous)
+                .stroke(
+                    LinearGradient(
+                        colors: [MysticColors.neonLavender.opacity(0.5), MysticColors.neonLavender.opacity(0.15)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1
+                )
         case .ghost:
-            RoundedRectangle(cornerRadius: MysticRadius.lg)
-                .stroke(MysticColors.cardBorder, lineWidth: 1)
+            RoundedRectangle(cornerRadius: MysticRadius.lg, style: .continuous)
+                .stroke(MysticColors.cardBorder, lineWidth: 0.8)
         case .danger:
-            RoundedRectangle(cornerRadius: MysticRadius.lg)
-                .stroke(MysticColors.celestialPink.opacity(0.4), lineWidth: 1)
+            RoundedRectangle(cornerRadius: MysticRadius.lg, style: .continuous)
+                .stroke(
+                    LinearGradient(
+                        colors: [MysticColors.celestialPink.opacity(0.5), MysticColors.celestialPink.opacity(0.15)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 0.8
+                )
         }
     }
 
@@ -227,12 +248,29 @@ struct AppleSignInButton: View {
             .foregroundColor(.white)
             .frame(maxWidth: .infinity)
             .frame(height: MysticButtonSize.regular.height)
-            .background(Color.white.opacity(0.1))
-            .clipShape(RoundedRectangle(cornerRadius: MysticRadius.lg))
-            .overlay(
-                RoundedRectangle(cornerRadius: MysticRadius.lg)
-                    .stroke(Color.white.opacity(0.3), lineWidth: 1)
+            .background(
+                ZStack {
+                    Color.white.opacity(0.08)
+                    LinearGradient(
+                        colors: [Color.white.opacity(0.06), Color.white.opacity(0.02)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                }
             )
+            .clipShape(RoundedRectangle(cornerRadius: MysticRadius.lg, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: MysticRadius.lg, style: .continuous)
+                    .stroke(
+                        LinearGradient(
+                            colors: [Color.white.opacity(0.35), Color.white.opacity(0.1)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 0.8
+                    )
+            )
+            .shadow(color: Color.white.opacity(0.06), radius: 10, y: 4)
             .scaleEffect((isPressed && !reduceMotion) ? MysticEffects.buttonPressedScale : 1.0)
         }
         .buttonStyle(.plain)

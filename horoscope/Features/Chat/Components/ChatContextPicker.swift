@@ -58,10 +58,14 @@ struct ChatContextPicker: View {
                 Capsule()
                     .stroke(
                         chatContext == context
-                            ? MysticColors.mysticGold.opacity(0.5)
+                            ? MysticColors.mysticGold.opacity(0.4)
                             : MysticColors.cardBorder,
-                        lineWidth: 1
+                        lineWidth: 0.8
                     )
+            )
+            .shadow(
+                color: chatContext == context ? MysticColors.mysticGold.opacity(0.15) : Color.clear,
+                radius: 6, y: 2
             )
         }
         .buttonStyle(.plain)
@@ -95,10 +99,14 @@ struct ChatContextPicker: View {
                 Capsule()
                     .stroke(
                         isAdditionalContextSelected
-                            ? MysticColors.mysticGold.opacity(0.5)
+                            ? MysticColors.mysticGold.opacity(0.4)
                             : MysticColors.cardBorder,
-                        lineWidth: 1
+                        lineWidth: 0.8
                     )
+            )
+            .shadow(
+                color: isAdditionalContextSelected ? MysticColors.mysticGold.opacity(0.15) : Color.clear,
+                radius: 6, y: 2
             )
         }
         .buttonStyle(.plain)

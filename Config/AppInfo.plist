@@ -20,6 +20,12 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>FREE_ASTRO_API_KEY</key>
 	<string>$(FREE_ASTRO_API_KEY)</string>
+	<key>AI_PROXY_BASE_URL</key>
+	<string>$(AI_PROXY_BASE_URL)</string>
+	<key>ASTRO_PROXY_BASE_URL</key>
+	<string>$(ASTRO_PROXY_BASE_URL)</string>
+	<key>ALLOW_DIRECT_PROVIDER_CALLS</key>
+	<string>$(ALLOW_DIRECT_PROVIDER_CALLS)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
@@ -28,8 +34,14 @@
 	<string>El falı analizi için fotoğraf seçimi gerekiyor.</string>
 	<key>OPENROUTER_API_KEY</key>
 	<string>$(OPENROUTER_API_KEY)</string>
+	<key>OPENROUTER_MODEL</key>
+	<string>$(OPENROUTER_MODEL)</string>
 	<key>PREMIUM_PRODUCT_IDS</key>
 	<string>$(PREMIUM_PRODUCT_IDS)</string>
+	<key>TERMS_OF_USE_URL</key>
+	<string>$(TERMS_OF_USE_URL)</string>
+	<key>PRIVACY_POLICY_URL</key>
+	<string>$(PRIVACY_POLICY_URL)</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -39,6 +51,10 @@
 	</dict>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UILaunchScreen</key>

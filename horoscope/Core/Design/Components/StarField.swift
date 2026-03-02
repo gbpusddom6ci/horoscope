@@ -141,15 +141,18 @@ struct StarField: View {
                                 with: .color(MysticColors.starWhite)
                             )
 
-                            if star.size > 2 {
+                            if star.size > 1.8 {
                                 let glowRect = rect.insetBy(
-                                    dx: -star.size * 0.5,
-                                    dy: -star.size * 0.5
+                                    dx: -star.size * 0.6,
+                                    dy: -star.size * 0.6
                                 )
-                                context.opacity = opacity * 0.28
+                                context.opacity = opacity * 0.32
+                                let glowColor = star.size > 2.5
+                                    ? MysticColors.stardust
+                                    : MysticColors.neonLavender
                                 context.fill(
                                     Circle().path(in: glowRect),
-                                    with: .color(MysticColors.neonLavender)
+                                    with: .color(glowColor)
                                 )
                             }
                         }
@@ -188,6 +191,38 @@ struct StarField: View {
                     .frame(width: 300, height: 300)
                     .offset(x: 120, y: 300)
                     .blur(radius: 40)
+
+                Ellipse()
+                    .fill(
+                        RadialGradient(
+                            colors: [
+                                MysticColors.nebulaBlue.opacity(0.04 * mode.nebulaOpacity),
+                                Color.clear
+                            ],
+                            center: .center,
+                            startRadius: 0,
+                            endRadius: 180
+                        )
+                    )
+                    .frame(width: 350, height: 250)
+                    .offset(x: 60, y: -50)
+                    .blur(radius: 50)
+
+                Ellipse()
+                    .fill(
+                        RadialGradient(
+                            colors: [
+                                MysticColors.mysticGold.opacity(0.025 * mode.nebulaOpacity),
+                                Color.clear
+                            ],
+                            center: .center,
+                            startRadius: 0,
+                            endRadius: 120
+                        )
+                    )
+                    .frame(width: 240, height: 180)
+                    .offset(x: -100, y: 150)
+                    .blur(radius: 35)
             }
             .onAppear {
                 if stars.isEmpty {

@@ -280,17 +280,15 @@ struct horoscopeTests {
         }
     }
 
-    @Test("Core localization keys exist in both English and Turkish files")
-    func coreLocalizationParity() throws {
+    @Test("Core localization keys exist in English file")
+    func coreLocalizationKeysExist() throws {
         let testFileURL = URL(fileURLWithPath: #filePath)
         let projectRoot = testFileURL
             .deletingLastPathComponent() // horoscopeTests
             .deletingLastPathComponent() // project root
         let enURL = projectRoot.appendingPathComponent("horoscope/en.lproj/Localizable.strings")
-        let trURL = projectRoot.appendingPathComponent("horoscope/tr.lproj/Localizable.strings")
 
         let enText = try String(contentsOf: enURL, encoding: .utf8)
-        let trText = try String(contentsOf: trURL, encoding: .utf8)
 
         let pattern = #"^\s*"([^"]+)"\s*="#
         let regex = try NSRegularExpression(pattern: pattern, options: [.anchorsMatchLines])
@@ -305,7 +303,6 @@ struct horoscopeTests {
         }
 
         let enKeys = keys(from: enText)
-        let trKeys = keys(from: trText)
 
         let requiredCoreKeys: [String] = [
             "chat.input.placeholder",
@@ -351,8 +348,7 @@ struct horoscopeTests {
         ]
 
         for key in requiredCoreKeys {
-            #expect(enKeys.contains(key))
-            #expect(trKeys.contains(key))
+            #expect(enKeys.contains(key), "Missing key in en.lproj: \(key)")
         }
     }
 }

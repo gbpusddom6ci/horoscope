@@ -24,7 +24,7 @@ service cloud.firestore {
       allow read: if isOwner(userId);
       allow create: if isOwner(userId);
       allow update: if isOwner(userId) && validBirthData(request.resource.data);
-      allow delete: if false;
+      allow delete: if isOwner(userId);
 
       match /chatSessions/{sessionId} {
         allow read, delete: if isOwner(userId)
@@ -47,8 +47,7 @@ service cloud.firestore {
       }
 
       match /charts/{chartType} {
-        allow read, create, update: if isOwner(userId);
-        allow delete: if false;
+        allow read, create, update, delete: if isOwner(userId);
       }
     }
   }

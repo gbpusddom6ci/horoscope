@@ -1,5 +1,6 @@
 import Foundation
 import os
+import FirebaseAuth
 
 // MARK: - FreeAstroAPI Response Models
 private struct AstroAPIResponse: Codable {
@@ -39,6 +40,18 @@ private struct AstroAPIAspect: Codable {
     let is_major: Bool?
 }
 
+private struct AstroProxyRequest: Codable {
+    let year: Int
+    let month: Int
+    let day: Int
+    let hour: Int
+    let minute: Int
+    let city: String
+    let latitude: Double
+    let longitude: Double
+    let timeZone: String
+}
+
 // MARK: - Astrology Calculation Engine
 /// Uses FreeAstroAPI (Swiss Ephemeris backend) for accurate calculations.
 /// Falls back to local PlanetaryCalculator if API is unavailable.
@@ -72,6 +85,14 @@ class AstrologyEngine {
     // MARK: - API Integration
 
     private func fetchNatalChartFromAPI(birthData: BirthData) async throws -> ChartData {
+        if let proxyURL = Secrets.astroProxyBaseURL {
+            return try await fetchNatalChartFromProxy(birthData: birthData, proxyURL: proxyURL)
+        }
+
+        guard Secrets.allowDirectProviderCalls else {
+            throw ConfigurationError.missingSecret("ASTRO_PROXY_BASE_URL")
+        }
+
         let apiKey = Secrets.freeAstroAPIKey
         guard !apiKey.isEmpty else {
             throw ConfigurationError.missingSecret("FREE_ASTRO_API_KEY")
@@ -113,6 +134,52 @@ class AstrologyEngine {
         guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
             let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
             logger.error("AstroAPI request failed with status \(statusCode)")
+            throw URLError(.badServerResponse)
+        }
+
+        let apiResponse = try JSONDecoder().decode(AstroAPIResponse.self, from: data)
+        return convertAPIResponse(apiResponse, birthData: birthData)
+    }
+
+    private func fetchNatalChartFromProxy(birthData: BirthData, proxyURL: URL) async throws -> ChartData {
+        guard let firebaseUser = Auth.auth().currentUser else {
+            throw ConfigurationError.missingSecret("AUTH_SESSION")
+        }
+        let idToken = try await firebaseUser.getIDToken()
+
+        let calendar = Calendar.current
+        let dateComponents = calendar.dateComponents([.year, .month, .day], from: birthData.birthDate)
+        var hour = 12
+        var minute = 0
+        if let birthTime = birthData.birthTime {
+            let timeComponents = calendar.dateComponents([.hour, .minute], from: birthTime)
+            hour = timeComponents.hour ?? 12
+            minute = timeComponents.minute ?? 0
+        }
+
+        let body = AstroProxyRequest(
+            year: dateComponents.year ?? 2000,
+            month: dateComponents.month ?? 1,
+            day: dateComponents.day ?? 1,
+            hour: hour,
+            minute: minute,
+            city: birthData.birthPlace,
+            latitude: birthData.latitude,
+            longitude: birthData.longitude,
+            timeZone: birthData.timeZoneIdentifier
+        )
+
+        var request = URLRequest(url: proxyURL)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(idToken)", forHTTPHeaderField: "Authorization")
+        request.httpBody = try JSONEncoder().encode(body)
+        request.timeoutInterval = 10
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse, (200..<300).contains(httpResponse.statusCode) else {
+            let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
+            logger.error("Astro proxy request failed with status \(statusCode)")
             throw URLError(.badServerResponse)
         }
 
@@ -361,7 +428,7 @@ class AstrologyEngine {
 
     private func julianDay(from date: Date, time: Date?) -> Double {
         let calendar = Calendar.current
-        var components = calendar.dateComponents(in: TimeZone(identifier: "UTC")!, from: date)
+        var components = calendar.dateComponents(in: TimeZone(identifier: "UTC") ?? .current, from: date)
         if let time = time {
             let tc = calendar.dateComponents([.hour, .minute], from: time)
             components.hour = tc.hour

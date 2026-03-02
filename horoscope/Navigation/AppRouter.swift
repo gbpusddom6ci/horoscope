@@ -55,7 +55,11 @@ struct AppRouter: View {
         .preferredColorScheme(.dark)
         .onAppear {
             usageLimitService.authService = authService
+            usageLimitService.refreshForCurrentUser()
             sanitizeLanguageSelection()
+        }
+        .onChange(of: authService.currentUser?.id) { _, _ in
+            usageLimitService.refreshForCurrentUser()
         }
         .onChange(of: selectedLanguage) { _, _ in
             sanitizeLanguageSelection()

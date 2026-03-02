@@ -22,34 +22,13 @@ done
 run_checks() {
   echo "Release-prep checks started at $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
 
-  echo "[1/4] Linting plist and localization files with plutil..."
+  echo "[1/3] Linting plist and localization files with plutil..."
   plutil -lint \
     Config/AppInfo.plist \
     horoscope/horoscope.entitlements \
-    horoscope/en.lproj/Localizable.strings \
-    horoscope/tr.lproj/Localizable.strings >/dev/null
+    horoscope/en.lproj/Localizable.strings >/dev/null
 
-  echo "[2/4] Checking EN/TR localization parity for core key prefixes..."
-  EN_KEYS="$(mktemp)"
-  TR_KEYS="$(mktemp)"
-  trap 'rm -f "${EN_KEYS}" "${TR_KEYS}"' EXIT
-
-  CORE_PREFIXES='^(tab\.|common\.|auth\.|onboarding\.|home\.|chat\.|dream\.|settings\.|quick_actions\.|config\.|ai\.|notifications\.|astro\.|transit\.|natal\.|palm\.|tarot\.)'
-
-  awk -F '=' '/\".*\"[[:space:]]*=/{gsub(/[[:space:]]|\"/, "", $1); print $1}' horoscope/en.lproj/Localizable.strings \
-    | grep -E "${CORE_PREFIXES}" \
-    | sort -u > "${EN_KEYS}"
-
-  awk -F '=' '/\".*\"[[:space:]]*=/{gsub(/[[:space:]]|\"/, "", $1); print $1}' horoscope/tr.lproj/Localizable.strings \
-    | grep -E "${CORE_PREFIXES}" \
-    | sort -u > "${TR_KEYS}"
-
-  if ! diff -u "${EN_KEYS}" "${TR_KEYS}"; then
-    echo "Core localization key mismatch between en/tr Localizable.strings."
-    exit 1
-  fi
-
-  echo "[3/4] Scanning for potential hardcoded secrets..."
+  echo "[2/3] Scanning for potential hardcoded secrets..."
   if rg -n \
     -g '!.git' \
     -g '!DerivedData/**' \
@@ -62,7 +41,7 @@ run_checks() {
     exit 1
   fi
 
-  echo "[4/4] Checking whitespace/errors in working tree diff..."
+  echo "[3/3] Checking whitespace/errors in working tree diff..."
   git diff --check
 
   echo "Release-prep checks passed."

@@ -35,14 +35,14 @@ struct ChatInputBar: View {
                         .accessibilityIdentifier("chat.input.field")
                 }
                 .background(MysticColors.inputBackground)
-                .clipShape(RoundedRectangle(cornerRadius: 22))
+                .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 22)
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
                         .stroke(
                             isLoading
-                                ? MysticColors.neonLavender.opacity(0.6)
-                                : (canSend ? MysticColors.mysticGold.opacity(0.5) : MysticColors.cardBorder.opacity(0.3)),
-                            lineWidth: 1
+                                ? MysticColors.neonLavender.opacity(0.5)
+                                : (canSend ? MysticColors.mysticGold.opacity(0.4) : MysticColors.cardBorder.opacity(0.25)),
+                            lineWidth: 0.8
                         )
                 )
                 .animation(.easeInOut(duration: 0.15), value: canSend)
@@ -54,14 +54,21 @@ struct ChatInputBar: View {
                     ZStack {
                         if isLoading {
                             Circle()
-                                .fill(MysticColors.neonLavender.opacity(0.25))
+                                .fill(
+                                    RadialGradient(
+                                        colors: [MysticColors.neonLavender.opacity(0.3), MysticColors.neonLavender.opacity(0.1)],
+                                        center: .center,
+                                        startRadius: 0,
+                                        endRadius: 22
+                                    )
+                                )
                                 .frame(width: 42, height: 42)
 
                             ProgressView()
-                                .tint(MysticColors.neonLavender)
+                                .tint(MysticColors.stardust)
                         } else {
                             Circle()
-                                .fill(canSend ? MysticColors.mysticGold : MysticColors.textMuted.opacity(0.15))
+                                .fill(canSend ? AnyShapeStyle(MysticGradients.goldShimmer) : AnyShapeStyle(MysticColors.textMuted.opacity(0.12)))
                                 .frame(width: 42, height: 42)
 
                             Image(systemName: "arrow.up")
@@ -91,9 +98,15 @@ struct ChatInputBar: View {
         }
         .background(
             ZStack {
-                MysticColors.voidBlack
+                MysticColors.voidBlack.opacity(0.95)
                 Rectangle()
-                    .fill(MysticGradients.cardGlass)
+                    .fill(
+                        LinearGradient(
+                            colors: [Color.white.opacity(0.04), Color.white.opacity(0.01)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
             }
             .ignoresSafeArea(.container, edges: .bottom)
         )

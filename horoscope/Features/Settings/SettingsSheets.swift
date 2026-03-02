@@ -1,8 +1,10 @@
 import SwiftUI
 import StoreKit
+import FirebaseAuth
 
 struct PaywallView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
     @Environment(AuthService.self) private var authService
     @Environment(PremiumService.self) private var premiumService
 
@@ -10,6 +12,14 @@ struct PaywallView: View {
 
     private var hasPremium: Bool {
         premiumService.hasPremiumAccess || authService.currentUser?.isPremium == true
+    }
+
+    private var termsURL: URL? {
+        Secrets.termsOfUseURL
+    }
+
+    private var privacyURL: URL? {
+        Secrets.privacyPolicyURL
     }
 
     var body: some View {
@@ -117,6 +127,33 @@ struct PaywallView: View {
                         }
                         .padding(.horizontal, MysticSpacing.md)
 
+                        VStack(spacing: MysticSpacing.xs) {
+                            Text("settings.paywall.legal.auto_renew")
+                                .font(MysticFonts.caption(11))
+                                .foregroundColor(MysticColors.textMuted)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, MysticSpacing.md)
+
+                            HStack(spacing: MysticSpacing.xs) {
+                                Button(String(localized: "settings.paywall.legal.terms")) {
+                                    guard let termsURL else { return }
+                                    openURL(termsURL)
+                                }
+                                .disabled(termsURL == nil)
+
+                                Text("settings.paywall.legal.separator")
+                                    .foregroundColor(MysticColors.textMuted)
+
+                                Button(String(localized: "settings.paywall.legal.privacy")) {
+                                    guard let privacyURL else { return }
+                                    openURL(privacyURL)
+                                }
+                                .disabled(privacyURL == nil)
+                            }
+                            .font(MysticFonts.caption(12))
+                            .foregroundColor(MysticColors.neonLavender)
+                        }
+
                         Color.clear.frame(height: 20)
                     }
                     .padding(.top, MysticSpacing.md)
@@ -150,6 +187,129 @@ struct PaywallView: View {
                 await premiumService.refreshEntitlements()
                 await MainActor.run {
                     authService.updatePremiumStatus(premiumService.hasPremiumAccess)
+                    dismiss()
+                }
+            } catch {
+                await MainActor.run {
+                    errorMessage = error.localizedDescription
+                }
+            }
+        }
+    }
+}
+
+struct DeleteAccountSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(AuthService.self) private var authService
+
+    @State private var confirmText = ""
+    @State private var password = ""
+    @State private var errorMessage: String?
+
+    private let requiredConfirmationWord = "DELETE"
+
+    private var requiresPassword: Bool {
+        guard let currentUser = Auth.auth().currentUser else { return false }
+        return currentUser.providerData.contains(where: { $0.providerID == EmailAuthProviderID })
+    }
+
+    private var canDelete: Bool {
+        let hasConfirmed = confirmText.trimmingCharacters(in: .whitespacesAndNewlines).uppercased() == requiredConfirmationWord
+        if !hasConfirmed {
+            return false
+        }
+        if requiresPassword {
+            return !password.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }
+        return true
+    }
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                MysticColors.voidBlack.ignoresSafeArea()
+                StarField(starCount: 25, mode: .modal)
+
+                ScrollView {
+                    VStack(spacing: MysticSpacing.md) {
+                        MysticCard(glowColor: MysticColors.celestialPink) {
+                            VStack(alignment: .leading, spacing: MysticSpacing.sm) {
+                                Text("settings.delete_account.warning")
+                                    .font(MysticFonts.body(14))
+                                    .foregroundColor(MysticColors.textSecondary)
+                                    .lineSpacing(3)
+
+                                Text("settings.delete_account.confirm_help")
+                                    .font(MysticFonts.caption(12))
+                                    .foregroundColor(MysticColors.textMuted)
+                            }
+                        }
+
+                        MysticTextField(
+                            String(localized: "settings.delete_account.confirm_placeholder"),
+                            text: $confirmText
+                        )
+                        .accessibilityIdentifier("settings.delete_account.confirm")
+
+                        if requiresPassword {
+                            MysticTextField(
+                                String(localized: "settings.delete_account.password"),
+                                text: $password,
+                                icon: "lock.fill",
+                                isSecure: true
+                            )
+                            .accessibilityHint(Text(String(localized: "settings.delete_account.password_hint")))
+                            .accessibilityIdentifier("settings.delete_account.password")
+                        }
+
+                        if let errorMessage {
+                            Text(errorMessage)
+                                .font(MysticFonts.caption(12))
+                                .foregroundColor(MysticColors.celestialPink)
+                                .multilineTextAlignment(.leading)
+                        }
+
+                        MysticButton(
+                            String(localized: "settings.delete_account.action"),
+                            icon: "trash.fill",
+                            style: .danger,
+                            isLoading: authService.isLoading
+                        ) {
+                            deleteAccount()
+                        }
+                        .disabled(!canDelete || authService.isLoading)
+
+                        MysticButton(String(localized: "settings.delete_account.cancel"), style: .secondary) {
+                            dismiss()
+                        }
+                        .disabled(authService.isLoading)
+                    }
+                    .padding(MysticSpacing.md)
+                }
+            }
+            .navigationTitle(Text("settings.delete_account.title"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarColorScheme(.dark, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(String(localized: "common.close")) {
+                        dismiss()
+                    }
+                    .foregroundColor(MysticColors.neonLavender)
+                    .disabled(authService.isLoading)
+                }
+            }
+        }
+    }
+
+    private func deleteAccount() {
+        errorMessage = nil
+
+        Task {
+            do {
+                let passwordValue = requiresPassword ? password : nil
+                try await authService.deleteAccount(password: passwordValue)
+                await MainActor.run {
                     dismiss()
                 }
             } catch {
@@ -248,7 +408,8 @@ struct LanguageSettingsView: View {
     @AppStorage("selected_language") private var selectedLanguage = "en"
 
     private let languages: [(code: String, title: String, enabled: Bool)] = [
-        ("en", "English", true)
+        ("en", "English", true),
+        ("tr", "Turkish", true)
     ]
 
     var body: some View {
@@ -342,12 +503,12 @@ struct HelpCenterView: View {
                         }
                         
                         // Developer Crashlytics Test Button
-                        #if canImport(FirebaseCrashlytics)
+                        #if DEBUG && canImport(FirebaseCrashlytics)
                         Button("Developer: Force Crash") {
                             fatalError("Crashlytics Test Crash")
                         }
                         .font(MysticFonts.caption(12))
-                        .foregroundColor(.red.opacity(0.8))
+                        .foregroundColor(MysticColors.celestialPink.opacity(0.8))
                         .frame(maxWidth: .infinity, alignment: .center)
                         .padding(.top, MysticSpacing.lg)
                         #endif
