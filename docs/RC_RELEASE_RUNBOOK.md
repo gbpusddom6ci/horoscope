@@ -41,6 +41,7 @@ cd /Users/malware/.openclaw/workspace-release-ops/project
 
 export RC_ROOT=/tmp/horoscope_rc_release
 export RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)"
+export SIMULATOR_NAME="$(xcrun simctl list devices available | awk -F '[()]' '/iPhone/ {gsub(/^[ \t]+|[ \t]+$/, "", $1); print $1; exit}')"
 
 RUN_ARCHIVE=1 \
 SINGLE_SIMULATOR_MODE=1 \
@@ -53,7 +54,7 @@ ARTIFACT_ROOT="${RC_ROOT}" \
 RUN_ID="${RUN_ID}" \
 PROJECT=horoscope.xcodeproj \
 SCHEME=horoscope \
-SIMULATOR_NAME='iPhone 15' \
+SIMULATOR_NAME="${SIMULATOR_NAME}" \
 CLONED_SOURCE_PACKAGES_DIR_PATH="${RC_ROOT}/${RUN_ID}/SourcePackages" \
 ./scripts/local_xcode_validation.sh
 
@@ -103,10 +104,11 @@ export RC_ROOT=/tmp/horoscope_rc_release
 export RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)"
 export RC_DIR="${RC_ROOT}/${RUN_ID}"
 mkdir -p "${RC_DIR}"
+export SIMULATOR_NAME="$(xcrun simctl list devices available | awk -F '[()]' '/iPhone/ {gsub(/^[ \t]+|[ \t]+$/, "", $1); print $1; exit}')"
 
 export PROJECT=horoscope.xcodeproj
 export SCHEME=horoscope
-export DESTINATION='platform=iOS Simulator,name=iPhone 15'
+export DESTINATION="platform=iOS Simulator,name=${SIMULATOR_NAME}"
 export CLONED_SOURCE_PACKAGES_DIR_PATH="${RC_DIR}/SourcePackages"
 
 RC_PREFLIGHT_ARTIFACT_PATH="${RC_DIR}/00_preflight.log" \

@@ -118,7 +118,36 @@ for required_command in xcodebuild tee mkdir date; do
   require_command "${required_command}"
 done
 
+resolve_simulator_destination() {
+  local simulator_prefix="platform=iOS Simulator,name="
+  if [[ "${DESTINATION}" != "${simulator_prefix}"* ]]; then
+    return 0
+  fi
+
+  if ! command -v xcrun >/dev/null 2>&1; then
+    return 0
+  fi
+
+  local requested_name="${DESTINATION#${simulator_prefix}}"
+  local available_names
+  available_names="$(xcrun simctl list devices available | awk -F '[()]' '/iPhone/ {gsub(/^[ \t]+|[ \t]+$/, "", $1); print $1}')"
+
+  if [[ -z "${available_names}" ]]; then
+    return 0
+  fi
+
+  if printf '%s\n' "${available_names}" | grep -Fxq "${requested_name}"; then
+    return 0
+  fi
+
+  local fallback_name
+  fallback_name="$(printf '%s\n' "${available_names}" | head -n 1)"
+  echo "Requested simulator '${requested_name}' is not available; falling back to '${fallback_name}'."
+  DESTINATION="${simulator_prefix}${fallback_name}"
+}
+
 validate_inputs
+resolve_simulator_destination
 mkdir -p "${ARTIFACT_DIR}"
 mkdir -p "${CLONED_SOURCE_PACKAGES_DIR_PATH}"
 

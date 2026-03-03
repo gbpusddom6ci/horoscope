@@ -14,7 +14,8 @@ Run from repo root (`/Users/malware/horoscope/horoscope`):
 RELEASE_PREP_ARTIFACT_PATH=/tmp/release_prep_checks_latest.log ./scripts/release_prep_checks.sh
 xcodebuild -list -project horoscope.xcodeproj
 xcodebuild -resolvePackageDependencies -project horoscope.xcodeproj
-xcodebuild -project horoscope.xcodeproj -scheme horoscope -destination 'platform=iOS Simulator,name=iPhone 15' test
+SIMULATOR_NAME=$(xcrun simctl list devices available | awk -F '[()]' '/iPhone/ {gsub(/^[ \t]+|[ \t]+$/, "", $1); print $1; exit}')
+xcodebuild -project horoscope.xcodeproj -scheme horoscope -destination "platform=iOS Simulator,name=${SIMULATOR_NAME}" test
 xcodebuild -project horoscope.xcodeproj -scheme horoscope -configuration Release -destination 'generic/platform=iOS' -archivePath /tmp/horoscope_release_validation.xcarchive archive
 ```
 
@@ -41,7 +42,7 @@ RUN_ARCHIVE=1 ./scripts/local_xcode_validation.sh
      - `rm -rf ~/Library/Caches/org.swift.swiftpm`
    - Re-run step 3.
 4. Simulator `test` fails before tests start
-   - Ensure the destination device exists/boots (`iPhone 15`).
+   - Ensure an available iPhone simulator exists/boots (`xcrun simctl list devices available`).
    - Re-run step 4 with an available simulator name if needed.
 5. Tests run but fail
    - Triage regression vs flaky infra using `.xcresult`.

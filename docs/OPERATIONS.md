@@ -45,7 +45,8 @@
 2. In local Xcode environment (outside sandbox), run:
    - `xcodebuild -list -project horoscope.xcodeproj`
    - `xcodebuild -resolvePackageDependencies -project horoscope.xcodeproj`
-   - `xcodebuild -project horoscope.xcodeproj -scheme horoscope -destination 'platform=iOS Simulator,name=iPhone 15' test`
+   - `SIMULATOR_NAME=$(xcrun simctl list devices available | awk -F '[()]' '/iPhone/ {gsub(/^[ \t]+|[ \t]+$/, "", $1); print $1; exit}')`
+   - `xcodebuild -project horoscope.xcodeproj -scheme horoscope -destination "platform=iOS Simulator,name=${SIMULATOR_NAME}" test`
 3. In Xcode, create a Release archive (`Any iOS Device`) and validate organizer checks.
 4. Perform manual smoke pass in both EN and TR:
    - Auth/onboarding
@@ -63,7 +64,8 @@
    - `RELEASE_PREP_ARTIFACT_PATH=/tmp/release_prep_checks_latest.log ./scripts/release_prep_checks.sh`
    - `xcodebuild -list -project horoscope.xcodeproj`
    - `xcodebuild -resolvePackageDependencies -project horoscope.xcodeproj`
-   - `xcodebuild -project horoscope.xcodeproj -scheme horoscope -destination 'platform=iOS Simulator,name=iPhone 15' test`
+   - `SIMULATOR_NAME=$(xcrun simctl list devices available | awk -F '[()]' '/iPhone/ {gsub(/^[ \t]+|[ \t]+$/, "", $1); print $1; exit}')`
+   - `xcodebuild -project horoscope.xcodeproj -scheme horoscope -destination "platform=iOS Simulator,name=${SIMULATOR_NAME}" test`
 3. Share the saved `release_prep_checks_latest.log` with handoff notes for quick verification context.
 4. In Xcode Organizer:
    - Archive with Release config.
