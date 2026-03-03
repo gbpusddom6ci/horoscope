@@ -101,56 +101,63 @@ struct MainTabView: View {
     }
 
     private func customTabBar(bottomSafeArea: CGFloat) -> some View {
-        HStack(spacing: 0) {
-            tabButton(.home)
-            tabButton(.chart)
+        let editorialTabBarHeight: CGFloat = 68
 
-            Spacer(minLength: MysticLayout.floatingQuickActionSize + (MysticSpacing.md * 2))
-
-            tabButton(.dream)
-            tabButton(.profile)
-        }
-        .padding(.horizontal, MysticLayout.screenHorizontalPadding)
-        .padding(.top, MysticLayout.tabBarVisualTopPadding)
-        .padding(.bottom, MysticLayout.tabBarBottomPadding(bottomSafeArea: bottomSafeArea))
-        .background(
-            ZStack {
-                Rectangle()
-                    .fill(MysticColors.voidBlack.opacity(0.92))
-
-                Rectangle()
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Color.white.opacity(0.06),
-                                Color.white.opacity(0.02),
-                                Color.white.opacity(0.01)
-                            ],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
+        return ZStack {
+            Capsule()
+                .fill(MysticSurfaces.tabBarBase)
+            Capsule()
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            MysticSurfaces.tabBarHighlight,
+                            Color.white.opacity(0.015)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
                     )
+                )
+            Capsule()
+                .stroke(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.2),
+                            MysticColors.neonLavender.opacity(0.14),
+                            MysticColors.mysticGold.opacity(0.16),
+                            Color.white.opacity(0.08)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1
+                )
 
-                VStack {
-                    Rectangle()
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    MysticColors.neonLavender.opacity(0.25),
-                                    MysticColors.nebulaBlue.opacity(0.12),
-                                    MysticColors.mysticGold.opacity(0.15),
-                                    MysticColors.celestialPink.opacity(0.12),
-                                    MysticColors.neonLavender.opacity(0.25)
-                                ],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-                        .frame(height: 0.5)
-                    Spacer()
-                }
+            HStack(spacing: 0) {
+                tabButton(.home)
+                tabButton(.chart)
+
+                Spacer(minLength: MysticLayout.floatingQuickActionSize + (MysticSpacing.md * 2))
+
+                tabButton(.dream)
+                tabButton(.profile)
             }
-            .ignoresSafeArea(.container, edges: .bottom)
+            .padding(.horizontal, MysticSpacing.md)
+            .padding(.vertical, 8)
+        }
+        .frame(height: editorialTabBarHeight)
+        .padding(.horizontal, MysticLayout.screenHorizontalPadding)
+        .padding(.top, 6)
+        .padding(.bottom, 4 + MysticLayout.tabBarBottomPadding(bottomSafeArea: bottomSafeArea))
+        .shadow(
+            color: MysticColors.neonLavender.opacity(0.12),
+            radius: MysticElevation.floatingShadowRadius,
+            x: 0,
+            y: MysticElevation.floatingShadowYOffset
+        )
+        .background(
+            Rectangle()
+                .fill(MysticColors.voidBlack.opacity(0.8))
+                .ignoresSafeArea(.container, edges: .bottom)
         )
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("main.tab_bar")
@@ -170,45 +177,29 @@ struct MainTabView: View {
                 selectedTab = tab
             }
         } label: {
-            VStack(spacing: MysticSpacing.xs) {
+            VStack(spacing: 5) {
                 ZStack {
-                    if selectedTab == tab {
-                        Circle()
-                            .fill(
-                                RadialGradient(
-                                    colors: [tab.color.opacity(0.2), tab.color.opacity(0.05)],
-                                    center: .center,
-                                    startRadius: 0,
-                                    endRadius: 22
-                                )
-                            )
-                            .frame(width: MysticLayout.tabBarIconFrame, height: MysticLayout.tabBarIconFrame)
-
-                        Circle()
-                            .stroke(tab.color.opacity(0.25), lineWidth: 0.8)
-                            .frame(width: MysticLayout.tabBarIconFrame, height: MysticLayout.tabBarIconFrame)
-                    }
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(selectedTab == tab ? tab.color.opacity(0.18) : Color.clear)
+                        .frame(width: 40, height: 32)
 
                     if reduceMotion {
                         Image(systemName: selectedTab == tab ? tab.iconFilled : tab.icon)
-                            .font(.system(size: 20, weight: selectedTab == tab ? .semibold : .regular))
+                            .font(.system(size: 18, weight: selectedTab == tab ? .semibold : .regular))
                             .foregroundColor(selectedTab == tab ? tab.color : MysticColors.textMuted)
                     } else {
                         Image(systemName: selectedTab == tab ? tab.iconFilled : tab.icon)
-                            .font(.system(size: 20, weight: selectedTab == tab ? .semibold : .regular))
+                            .font(.system(size: 18, weight: selectedTab == tab ? .semibold : .regular))
                             .foregroundColor(selectedTab == tab ? tab.color : MysticColors.textMuted)
                             .symbolEffect(.bounce, value: selectedTab == tab)
                     }
                 }
-                .frame(height: MysticLayout.tabBarIconFrame)
 
-                if selectedTab == tab {
-                    Text(tab.title)
-                        .font(MysticFonts.caption(10))
-                        .foregroundColor(tab.color)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.7)
-                }
+                Text(tab.title)
+                    .font(MysticFonts.caption(10))
+                    .foregroundColor(selectedTab == tab ? tab.color : MysticColors.textMuted.opacity(0.78))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
             }
             .frame(maxWidth: .infinity, minHeight: MysticAccessibility.minimumTapTarget)
         }
@@ -242,20 +233,20 @@ struct MainTabView: View {
                 Circle()
                     .stroke(
                         selectedTab == .chat
-                            ? MysticColors.auroraGreen.opacity(0.5)
-                            : MysticColors.mysticGold.opacity(0.45),
-                        lineWidth: 1
+                            ? Color.white.opacity(0.45)
+                            : Color.white.opacity(0.35),
+                        lineWidth: 1.1
                     )
                     .frame(width: MysticLayout.floatingQuickActionSize, height: MysticLayout.floatingQuickActionSize)
 
                 Circle()
                     .stroke(
                         selectedTab == .chat
-                            ? MysticColors.auroraGreen.opacity(0.15)
-                            : MysticColors.mysticGold.opacity(0.15),
-                        lineWidth: 0.5
+                            ? MysticColors.auroraGreen.opacity(0.2)
+                            : MysticColors.mysticGold.opacity(0.2),
+                        lineWidth: 0.7
                     )
-                    .frame(width: MysticLayout.floatingQuickActionSize + 6, height: MysticLayout.floatingQuickActionSize + 6)
+                    .frame(width: MysticLayout.floatingQuickActionSize + 8, height: MysticLayout.floatingQuickActionSize + 8)
 
                 Image(systemName: selectedTab == .chat ? "bubble.left.and.bubble.right.fill" : "bolt.fill")
                     .font(.system(size: 22, weight: .semibold))
@@ -265,9 +256,9 @@ struct MainTabView: View {
                 color: selectedTab == .chat
                     ? MysticColors.auroraGreen.opacity(0.25)
                     : MysticColors.mysticGold.opacity(0.3),
-                radius: 14,
+                radius: MysticElevation.floatingShadowRadius,
                 x: 0,
-                y: 5
+                y: MysticElevation.floatingShadowYOffset
             )
             .frame(
                 minWidth: MysticLayout.floatingQuickActionSize,
@@ -515,13 +506,17 @@ private struct QuickActionsSheet: View {
             StarField(starCount: 25)
 
             VStack(alignment: .leading, spacing: MysticSpacing.md) {
-                Text("quick_actions.title")
-                    .font(MysticFonts.heading(20))
-                    .foregroundColor(MysticColors.textPrimary)
+                MysticCard(glowColor: MysticColors.mysticGold.opacity(0.85)) {
+                    VStack(alignment: .leading, spacing: MysticSpacing.xs) {
+                        Text("quick_actions.title")
+                            .font(MysticTypographyRoles.section)
+                            .foregroundColor(MysticColors.textPrimary)
 
-                Text("quick_actions.subtitle")
-                    .font(MysticFonts.body(14))
-                    .foregroundColor(MysticColors.textSecondary)
+                        Text("quick_actions.subtitle")
+                            .font(MysticTypographyRoles.cardBody)
+                            .foregroundColor(MysticColors.textSecondary)
+                    }
+                }
 
                 ForEach(QuickAction.allCases, id: \.self) { action in
                     Button {
@@ -536,10 +531,10 @@ private struct QuickActionsSheet: View {
 
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(action.title)
-                                        .font(MysticFonts.body(15))
+                                        .font(MysticTypographyRoles.cardBody.weight(.semibold))
                                         .foregroundColor(MysticColors.textPrimary)
                                     Text(action.subtitle)
-                                        .font(MysticFonts.caption(12))
+                                        .font(MysticTypographyRoles.metadata)
                                         .foregroundColor(MysticColors.textMuted)
                                 }
 

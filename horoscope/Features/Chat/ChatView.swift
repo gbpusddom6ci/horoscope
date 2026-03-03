@@ -113,8 +113,11 @@ struct ChatView: View {
                 showSessionHistory = true
             } label: {
                 Image(systemName: "clock.arrow.circlepath")
-                    .font(.system(size: 17))
+                    .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(MysticColors.textSecondary)
+                    .frame(width: 34, height: 34)
+                    .background(MysticColors.textSecondary.opacity(0.12))
+                    .clipShape(Circle())
             }
             .accessibilityLabel(Text(String(localized: "chat.session.history")))
             .accessibilityIdentifier("chat.history")
@@ -123,8 +126,11 @@ struct ChatView: View {
                 viewModel.startNewChat()
             } label: {
                 Image(systemName: "plus.bubble.fill")
-                    .font(.system(size: 18))
+                    .font(.system(size: 16))
                     .foregroundColor(MysticColors.neonLavender)
+                    .frame(width: 34, height: 34)
+                    .background(MysticColors.neonLavender.opacity(0.12))
+                    .clipShape(Circle())
             }
             .accessibilityLabel(Text(String(localized: "chat.new_chat")))
             .accessibilityHint(Text(String(localized: "chat.new_chat.hint")))
@@ -135,6 +141,9 @@ struct ChatView: View {
     private var mainScrollView: some View {
         VStack(spacing: 0) {
             contextPickerBar
+            chatEditorialHeader
+                .padding(.horizontal, MysticSpacing.md)
+                .padding(.bottom, MysticSpacing.sm)
 
             if let syncError = ChatService.shared.lastErrorMessage {
                 syncErrorBanner(syncError)
@@ -184,6 +193,31 @@ struct ChatView: View {
                 .scrollDismissesKeyboard(.interactively)
                 .onAppear { scrollProxy = proxy }
             }
+        }
+    }
+
+    private var chatEditorialHeader: some View {
+        MysticCard(glowColor: viewModel.chatContext.themeColor.opacity(0.85)) {
+            HStack(alignment: .center, spacing: MysticSpacing.sm) {
+                Image(systemName: viewModel.chatContext.iconName)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(viewModel.chatContext.themeColor)
+                    .frame(width: 30, height: 30)
+                    .background(viewModel.chatContext.themeColor.opacity(0.12))
+                    .clipShape(RoundedRectangle(cornerRadius: MysticRadius.sm, style: .continuous))
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(verbatim: "Arcane Dialogue")
+                        .font(MysticTypographyRoles.cardTitle)
+                        .foregroundColor(MysticColors.textPrimary)
+                    Text(viewModel.chatContext.localizedPromptHint)
+                        .font(MysticTypographyRoles.metadata)
+                        .foregroundColor(MysticColors.textSecondary)
+                        .lineLimit(2)
+                }
+                Spacer(minLength: 0)
+            }
+            .frame(minHeight: MysticAccessibility.minimumTapTarget)
         }
     }
 

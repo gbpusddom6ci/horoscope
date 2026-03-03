@@ -146,11 +146,19 @@ struct DreamJournalView: View {
         .overlay(alignment: .bottom) {
             if !dreams.isEmpty {
                 VStack(spacing: 0) {
-                    MysticButton(String(localized: "dream.new"), icon: "plus.circle.fill", style: .primary) {
-                        showNewDreamSheet = true
+                    HStack(spacing: MysticSpacing.sm) {
+                        Text(verbatim: "Capture tonight's symbol before it fades.")
+                            .font(MysticTypographyRoles.metadata)
+                            .foregroundColor(MysticColors.textSecondary)
+                            .lineLimit(2)
+                        Spacer(minLength: 0)
+                        MysticButton(String(localized: "dream.new"), icon: "plus.circle.fill", style: .primary, size: .compact) {
+                            showNewDreamSheet = true
+                        }
+                        .frame(maxWidth: 180)
+                        .accessibilityHint(Text(String(localized: "dream.quick_add.hint")))
+                        .accessibilityIdentifier("dream.new_dock_cta")
                     }
-                    .accessibilityHint(Text(String(localized: "dream.quick_add.hint")))
-                    .accessibilityIdentifier("dream.new_dock_cta")
                     .padding(.horizontal, MysticLayout.screenHorizontalPadding)
                     .padding(.top, MysticSpacing.sm)
                     .padding(.bottom, MysticSpacing.sm)
@@ -158,7 +166,7 @@ struct DreamJournalView: View {
                 .padding(.bottom, chromeMetrics.tabBarVisible ? chromeMetrics.tabBarHeight : 0)
                 .background(
                     Rectangle()
-                        .fill(MysticColors.voidBlack.opacity(0.92))
+                        .fill(MysticSurfaces.tabBarBase)
                         .overlay(
                             Rectangle().fill(
                                 LinearGradient(
@@ -202,29 +210,35 @@ struct DreamJournalView: View {
 
     private var compactHeaderCard: some View {
         MysticCard(glowColor: MysticColors.celestialPink.opacity(0.7)) {
-            HStack(spacing: MysticSpacing.md) {
-                Image(systemName: "moon.zzz.fill")
-                    .font(.system(size: 18))
-                    .foregroundColor(MysticColors.celestialPink)
+            VStack(spacing: MysticSpacing.sm) {
+                HStack(spacing: MysticSpacing.md) {
+                    Image(systemName: "moon.zzz.fill")
+                        .font(.system(size: 18))
+                        .foregroundColor(MysticColors.celestialPink)
 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("dream.compact.title")
-                        .font(MysticFonts.body(14))
-                        .foregroundColor(MysticColors.textPrimary)
-                    Text("dream.compact.subtitle")
-                        .font(MysticFonts.caption(12))
-                        .foregroundColor(MysticColors.textSecondary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("dream.compact.title")
+                            .font(MysticTypographyRoles.cardBody.weight(.semibold))
+                            .foregroundColor(MysticColors.textPrimary)
+                        Text("dream.compact.subtitle")
+                            .font(MysticTypographyRoles.metadata)
+                            .foregroundColor(MysticColors.textSecondary)
+                    }
+
+                    Spacer()
+
+                    Text(verbatim: "\(dreams.count) \(String(localized: "dream.count_suffix"))")
+                        .font(MysticTypographyRoles.metadata)
+                        .foregroundColor(MysticColors.textMuted)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(MysticColors.inputBackground)
+                        .clipShape(Capsule())
                 }
 
-                Spacer()
-
-                Text(verbatim: "\(dreams.count) \(String(localized: "dream.count_suffix"))")
-                    .font(MysticFonts.caption(12))
-                    .foregroundColor(MysticColors.textMuted)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(MysticColors.inputBackground)
-                    .clipShape(Capsule())
+                MysticButton("Write now", icon: "plus.circle.fill", style: .secondary, size: .compact) {
+                    showNewDreamSheet = true
+                }
             }
         }
     }

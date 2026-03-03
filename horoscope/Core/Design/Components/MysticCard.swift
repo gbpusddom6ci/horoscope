@@ -21,7 +21,7 @@ struct MysticCard<Content: View>: View {
             .background(
                 ZStack {
                     RoundedRectangle(cornerRadius: MysticRadius.lg)
-                        .fill(MysticColors.cardBackground)
+                        .fill(MysticSurfaces.cardBase)
 
                     RoundedRectangle(cornerRadius: MysticRadius.lg)
                         .fill(MysticGradients.cardGlass)
@@ -30,7 +30,8 @@ struct MysticCard<Content: View>: View {
                         .fill(
                             RadialGradient(
                                 colors: [
-                                    glowColor.opacity(0.06),
+                                    glowColor.opacity(0.08),
+                                    MysticSurfaces.cardTintOverlay,
                                     Color.clear
                                 ],
                                 center: .topLeading,
@@ -46,22 +47,22 @@ struct MysticCard<Content: View>: View {
                     .stroke(
                         LinearGradient(
                             colors: [
-                                glowColor.opacity(0.35),
-                                glowColor.opacity(0.08),
-                                Color.white.opacity(0.04),
-                                glowColor.opacity(0.2)
+                                Color.white.opacity(0.18),
+                                glowColor.opacity(0.18),
+                                glowColor.opacity(0.06),
+                                Color.white.opacity(0.06)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         ),
-                        lineWidth: 0.8
+                        lineWidth: 0.9
                     )
             )
             .shadow(
                 color: glowColor.opacity(0.1),
-                radius: MysticEffects.cardShadowRadius,
+                radius: MysticElevation.cardShadowRadius,
                 x: 0,
-                y: MysticEffects.cardShadowYOffset
+                y: MysticElevation.cardShadowYOffset
             )
     }
 }
@@ -101,11 +102,11 @@ struct MysticStateCard: View {
                     .tint(MysticColors.neonLavender)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(messageKey)
-                        .font(MysticFonts.body(14))
+                        .font(MysticTypographyRoles.cardBody)
                         .foregroundColor(MysticColors.textPrimary)
                     if let detailKey {
                         Text(detailKey)
-                            .font(MysticFonts.caption(12))
+                            .font(MysticTypographyRoles.metadata)
                             .foregroundColor(MysticColors.textMuted)
                     }
                 }
@@ -120,13 +121,13 @@ struct MysticStateCard: View {
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(MysticColors.textMuted)
                     Text(titleKey)
-                        .font(MysticFonts.heading(16))
+                        .font(MysticTypographyRoles.cardTitle)
                         .foregroundColor(MysticColors.textPrimary)
                 }
 
                 if let detailKey {
                     Text(detailKey)
-                        .font(MysticFonts.body(14))
+                        .font(MysticTypographyRoles.cardBody)
                         .foregroundColor(MysticColors.textSecondary)
                         .lineSpacing(MysticEffects.compactTextLineSpacing)
                 }
@@ -145,7 +146,7 @@ struct MysticStateCard: View {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .foregroundColor(MysticColors.celestialPink)
                     Text(message)
-                        .font(MysticFonts.body(14))
+                        .font(MysticTypographyRoles.cardBody)
                         .foregroundColor(MysticColors.celestialPink)
                     Spacer(minLength: 0)
                 }
@@ -166,7 +167,7 @@ struct MysticStateCard: View {
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundColor(MysticColors.auroraGreen)
                 Text(messageKey)
-                    .font(MysticFonts.body(14))
+                    .font(MysticTypographyRoles.cardBody)
                     .foregroundColor(MysticColors.textPrimary)
                 Spacer(minLength: 0)
             }

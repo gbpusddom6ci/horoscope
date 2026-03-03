@@ -24,6 +24,16 @@ struct ChatContextPicker: View {
             .padding(.vertical, MysticSpacing.sm)
         }
         .frame(minHeight: 58)
+        .background(
+            LinearGradient(
+                colors: [
+                    MysticColors.neonLavender.opacity(0.06),
+                    Color.clear
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        )
         .sheet(isPresented: $showMoreContexts) {
             moreContextsSheet
                 .presentationDetents([.medium])
@@ -33,16 +43,16 @@ struct ChatContextPicker: View {
 
     private func contextChip(_ context: ChatContext) -> some View {
         let title = titleForContext(context)
-        let icon = iconForContext(context)
+        let icon = context.iconName
 
         return Button {
             chatContext = context
         } label: {
             HStack(spacing: MysticSpacing.xs) {
                 Image(systemName: icon)
-                    .font(.system(size: 12))
+                    .font(.system(size: 11, weight: .semibold))
                 Text(title)
-                    .font(MysticFonts.caption(12))
+                    .font(MysticTypographyRoles.metadata)
             }
             .padding(.horizontal, MysticSpacing.sm)
             .padding(.vertical, 8)
@@ -50,21 +60,27 @@ struct ChatContextPicker: View {
             .foregroundColor(chatContext == context ? MysticColors.voidBlack : MysticColors.textSecondary)
             .background(
                 chatContext == context
-                    ? AnyShapeStyle(MysticGradients.goldShimmer)
-                    : AnyShapeStyle(MysticColors.cardBackground)
+                    ? AnyShapeStyle(
+                        LinearGradient(
+                            colors: [context.themeColor.opacity(0.85), MysticColors.mysticGold.opacity(0.8)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    : AnyShapeStyle(MysticColors.cardBackground.opacity(0.88))
             )
             .clipShape(Capsule())
             .overlay(
                 Capsule()
                     .stroke(
                         chatContext == context
-                            ? MysticColors.mysticGold.opacity(0.4)
+                            ? Color.white.opacity(0.35)
                             : MysticColors.cardBorder,
                         lineWidth: 0.8
                     )
             )
             .shadow(
-                color: chatContext == context ? MysticColors.mysticGold.opacity(0.15) : Color.clear,
+                color: chatContext == context ? context.themeColor.opacity(0.2) : Color.clear,
                 radius: 6, y: 2
             )
         }
@@ -134,18 +150,18 @@ struct ChatContextPicker: View {
                             HStack(spacing: MysticSpacing.md) {
                                 Image(systemName: iconForContext(context))
                                     .font(.system(size: 16))
-                                    .foregroundColor(chatContext == context ? MysticColors.mysticGold : MysticColors.textSecondary)
+                                    .foregroundColor(chatContext == context ? context.themeColor : MysticColors.textSecondary)
                                     .frame(width: 24)
 
                                 Text(titleForContext(context))
-                                    .font(MysticFonts.body(15))
+                                    .font(MysticTypographyRoles.cardBody)
                                     .foregroundColor(MysticColors.textPrimary)
 
                                 Spacer()
 
                                 if chatContext == context {
                                     Image(systemName: "checkmark.circle.fill")
-                                        .foregroundColor(MysticColors.mysticGold)
+                                        .foregroundColor(context.themeColor)
                                 }
                             }
                             .frame(minHeight: MysticAccessibility.minimumTapTarget)
@@ -182,21 +198,6 @@ struct ChatContextPicker: View {
     }
 
     private func iconForContext(_ context: ChatContext) -> String {
-        switch context {
-        case .general:
-            return "sparkles"
-        case .natal:
-            return "moon.stars"
-        case .transit:
-            return "arrow.triangle.2.circlepath"
-        case .dream:
-            return "moon.zzz"
-        case .palmReading:
-            return "hand.raised"
-        case .tarot:
-            return "suit.diamond"
-        case .coffee:
-            return "cup.and.saucer"
-        }
+        context.iconName
     }
 }

@@ -102,11 +102,12 @@ struct MysticButton: View {
             .frame(maxWidth: .infinity)
             .frame(height: size.height)
             .background(backgroundView)
-            .clipShape(RoundedRectangle(cornerRadius: MysticRadius.lg, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: MysticRadius.xl, style: .continuous))
             .overlay(borderOverlay)
             .shadow(
                 color: glowColor.opacity(glowAnimation ? 0.4 : 0.12),
-                radius: glowAnimation ? MysticEffects.buttonGlowRadiusActive : MysticEffects.buttonGlowRadiusRest
+                radius: glowAnimation ? MysticEffects.buttonGlowRadiusActive : MysticElevation.buttonShadowRadius,
+                y: MysticElevation.buttonShadowYOffset
             )
             .scaleEffect((isPressed && !reduceMotion && canInteract) ? MysticEffects.buttonPressedScale : 1.0)
             .opacity(canInteract ? 1 : 0.55)
@@ -152,7 +153,15 @@ struct MysticButton: View {
         case .primary:
             MysticGradients.goldShimmer
         case .secondary:
-            MysticColors.neonLavender.opacity(0.15)
+            LinearGradient(
+                colors: [
+                    MysticColors.neonLavender.opacity(0.22),
+                    MysticColors.neonLavender.opacity(0.12),
+                    MysticColors.celestialPink.opacity(0.08)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
         case .ghost:
             Color.clear
         case .danger:
@@ -164,30 +173,30 @@ struct MysticButton: View {
     private var borderOverlay: some View {
         switch style {
         case .primary:
-            RoundedRectangle(cornerRadius: MysticRadius.lg, style: .continuous)
+            RoundedRectangle(cornerRadius: MysticRadius.xl, style: .continuous)
                 .stroke(
                     LinearGradient(
-                        colors: [MysticColors.mysticGold.opacity(0.6), MysticColors.mysticGold.opacity(0.2)],
+                        colors: [Color.white.opacity(0.35), MysticColors.mysticGold.opacity(0.25)],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     ),
                     lineWidth: 0.8
                 )
         case .secondary:
-            RoundedRectangle(cornerRadius: MysticRadius.lg, style: .continuous)
+            RoundedRectangle(cornerRadius: MysticRadius.xl, style: .continuous)
                 .stroke(
                     LinearGradient(
-                        colors: [MysticColors.neonLavender.opacity(0.5), MysticColors.neonLavender.opacity(0.15)],
+                        colors: [Color.white.opacity(0.25), MysticColors.neonLavender.opacity(0.2)],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     ),
                     lineWidth: 1
                 )
         case .ghost:
-            RoundedRectangle(cornerRadius: MysticRadius.lg, style: .continuous)
+            RoundedRectangle(cornerRadius: MysticRadius.xl, style: .continuous)
                 .stroke(MysticColors.cardBorder, lineWidth: 0.8)
         case .danger:
-            RoundedRectangle(cornerRadius: MysticRadius.lg, style: .continuous)
+            RoundedRectangle(cornerRadius: MysticRadius.xl, style: .continuous)
                 .stroke(
                     LinearGradient(
                         colors: [MysticColors.celestialPink.opacity(0.5), MysticColors.celestialPink.opacity(0.15)],

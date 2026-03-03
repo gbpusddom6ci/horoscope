@@ -4,6 +4,7 @@ import os
 struct NatalChartView: View {
     @Environment(AuthService.self) private var authService
     @Environment(\.mainChromeMetrics) private var chromeMetrics
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var chartData: ChartData?
     @State private var interpretation: String?
     @State private var interpretationErrorMessage: String?
@@ -14,6 +15,7 @@ struct NatalChartView: View {
     @State private var selectedTab: ChartTab = .planets
     @State private var scrollProxy: ScrollViewProxy?
     @State private var activeInterpretationRequestID: UUID?
+    @State private var showAdvancedSummary = false
 
     private let engine = AstrologyEngine.shared
     private let aiService = AIService.shared
@@ -112,20 +114,7 @@ struct NatalChartView: View {
                         .padding(.horizontal, MysticSpacing.md)
                         .fadeInOnAppear(delay: 0.05)
 
-                    // Dominant Planet
-                    DominantPlanetCard(chart: chart)
-                        .padding(.horizontal, MysticSpacing.md)
-                        .fadeInOnAppear(delay: 0.08)
-
-                    // Element & Modality
-                    ElementModalityBreakdown(positions: chart.planetPositions)
-                        .padding(.horizontal, MysticSpacing.md)
-                        .fadeInOnAppear(delay: 0.1)
-
-                    // Chart Patterns
-                    ChartPatternCard(chart: chart)
-                        .padding(.horizontal, MysticSpacing.md)
-                        .fadeInOnAppear(delay: 0.12)
+                    editorialOverviewToggle
 
                     // Tab Picker + Content
                     NatalTabPicker(selectedTab: $selectedTab)
@@ -134,6 +123,20 @@ struct NatalChartView: View {
                         
                     NatalTabContentView(selectedTab: selectedTab, chart: chart, expandedPlanet: $expandedPlanet)
                         .padding(.horizontal, MysticSpacing.md)
+
+                    if showAdvancedSummary {
+                        DominantPlanetCard(chart: chart)
+                            .padding(.horizontal, MysticSpacing.md)
+                            .transition(.opacity)
+
+                        ElementModalityBreakdown(positions: chart.planetPositions)
+                            .padding(.horizontal, MysticSpacing.md)
+                            .transition(.opacity)
+
+                        ChartPatternCard(chart: chart)
+                            .padding(.horizontal, MysticSpacing.md)
+                            .transition(.opacity)
+                    }
 
                     // AI Interpretation
                     interpretationSection
@@ -149,6 +152,35 @@ struct NatalChartView: View {
                 scrollProxy = proxy
             }
         }
+    }
+
+    private var editorialOverviewToggle: some View {
+        MysticCard(glowColor: MysticColors.neonLavender.opacity(0.85)) {
+            HStack(spacing: MysticSpacing.md) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(verbatim: "Chart Signatures")
+                        .font(MysticTypographyRoles.cardTitle)
+                        .foregroundColor(MysticColors.textPrimary)
+                    Text(verbatim: "Dominant planet, element balance, and pattern analysis.")
+                        .font(MysticTypographyRoles.metadata)
+                        .foregroundColor(MysticColors.textSecondary)
+                }
+
+                Spacer()
+
+                Button(showAdvancedSummary ? "Hide" : "Show") {
+                    withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) {
+                        showAdvancedSummary.toggle()
+                    }
+                }
+                .buttonStyle(.plain)
+                .font(MysticTypographyRoles.metadata.weight(.semibold))
+                .foregroundColor(MysticColors.neonLavender)
+                .frame(minHeight: MysticAccessibility.minimumTapTarget)
+            }
+        }
+        .padding(.horizontal, MysticSpacing.md)
+        .fadeInOnAppear(delay: 0.08)
     }
 
     // MARK: - AI Interpretation
@@ -330,5 +362,4 @@ struct NatalChartView: View {
         return hasError && !isLoading
     }
 }
-
 

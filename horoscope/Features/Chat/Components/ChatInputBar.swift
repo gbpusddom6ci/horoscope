@@ -34,7 +34,7 @@ struct ChatInputBar: View {
                         }
                         .accessibilityIdentifier("chat.input.field")
                 }
-                .background(MysticColors.inputBackground)
+                .background(MysticSurfaces.inputField)
                 .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 22, style: .continuous)
@@ -56,7 +56,7 @@ struct ChatInputBar: View {
                             Circle()
                                 .fill(
                                     RadialGradient(
-                                        colors: [MysticColors.neonLavender.opacity(0.3), MysticColors.neonLavender.opacity(0.1)],
+                                        colors: [MysticColors.neonLavender.opacity(0.3), MysticColors.neonLavender.opacity(0.08)],
                                         center: .center,
                                         startRadius: 0,
                                         endRadius: 22
@@ -68,8 +68,16 @@ struct ChatInputBar: View {
                                 .tint(MysticColors.stardust)
                         } else {
                             Circle()
-                                .fill(canSend ? AnyShapeStyle(MysticGradients.goldShimmer) : AnyShapeStyle(MysticColors.textMuted.opacity(0.12)))
+                                .fill(
+                                    canSend
+                                        ? AnyShapeStyle(MysticGradients.goldShimmer)
+                                        : AnyShapeStyle(MysticColors.textMuted.opacity(0.12))
+                                )
                                 .frame(width: 42, height: 42)
+                                .overlay(
+                                    Circle()
+                                        .stroke(Color.white.opacity(canSend ? 0.3 : 0.08), lineWidth: 0.8)
+                                )
 
                             Image(systemName: "arrow.up")
                                 .font(.system(size: 18, weight: .bold))
@@ -91,7 +99,7 @@ struct ChatInputBar: View {
 
             if let inlineStatusMessage {
                 Text(inlineStatusMessage)
-                    .font(MysticFonts.caption(12))
+                    .font(MysticTypographyRoles.metadata)
                     .foregroundColor(MysticColors.auroraGreen)
                     .padding(.bottom, 6)
             }

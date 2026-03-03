@@ -26,13 +26,13 @@ struct ChatBubbleView: View {
                 Text(message.content)
                     .font(MysticFonts.body(15))
                     .foregroundColor(isUser ? MysticColors.voidBlack : MysticColors.textPrimary)
-                    .lineSpacing(4)
+                    .lineSpacing(5)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 10)
                     .background(
                         isUser
                             ? AnyShapeStyle(MysticGradients.goldShimmer)
-                            : AnyShapeStyle(MysticColors.cardBackground)
+                            : AnyShapeStyle(MysticSurfaces.cardBase)
                     )
                     .clipShape(
                         UnevenRoundedRectangle(
@@ -51,16 +51,16 @@ struct ChatBubbleView: View {
                         )
                         .stroke(
                             isUser
-                                ? MysticColors.mysticGold.opacity(0.25)
-                                : MysticColors.cardBorder.opacity(0.4),
-                            lineWidth: 0.6
+                                ? Color.white.opacity(0.35)
+                                : MysticColors.cardBorder.opacity(0.55),
+                            lineWidth: 0.7
                         )
                     )
                     .shadow(
                         color: isUser
                             ? MysticColors.mysticGold.opacity(0.08)
                             : MysticColors.neonLavender.opacity(0.05),
-                        radius: 8, y: 3
+                        radius: 10, y: 4
                     )
                     .contextMenu {
                         Button {

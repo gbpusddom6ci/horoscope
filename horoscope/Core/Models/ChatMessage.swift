@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 // MARK: - Chat Message
 struct ChatMessage: Codable, Identifiable {
@@ -55,6 +56,65 @@ enum ChatContext: String, Codable {
             return String(localized: "chat.context.tarot")
         case .coffee:
             return String(localized: "chat.context.coffee")
+        }
+    }
+}
+
+extension ChatContext {
+    var iconName: String {
+        switch self {
+        case .general:
+            return "sparkles"
+        case .natal:
+            return "moon.stars"
+        case .transit:
+            return "arrow.triangle.2.circlepath"
+        case .dream:
+            return "moon.zzz"
+        case .palmReading:
+            return "hand.raised"
+        case .tarot:
+            return "suit.diamond"
+        case .coffee:
+            return "cup.and.saucer"
+        }
+    }
+
+    var themeColor: Color {
+        switch self {
+        case .general:
+            return MysticColors.mysticGold
+        case .natal:
+            return MysticColors.neonLavender
+        case .transit:
+            return MysticColors.auroraGreen
+        case .dream:
+            return MysticColors.celestialPink
+        case .palmReading:
+            return MysticColors.neonLavender
+        case .tarot:
+            return MysticColors.mysticGold
+        case .coffee:
+            return MysticColors.auroraGreen
+        }
+    }
+
+    var localizedPromptHint: String {
+        switch self {
+        case .general:
+            return "Ask anything about your day, relationships, or energy."
+        case .natal:
+            return "Explore your chart placements and personality signatures."
+        case .transit:
+            return "Check what current planetary motion means for you now."
+        case .dream:
+            return "Bring a dream and decode symbols with mystical context."
+        case .palmReading:
+            return "Get intuitive clues about your palm reading symbols."
+        case .tarot:
+            return "Pull cards and ask for interpretation with practical guidance."
+        case .coffee:
+            return "Interpret coffee symbols and emotional patterns."
         }
     }
 }

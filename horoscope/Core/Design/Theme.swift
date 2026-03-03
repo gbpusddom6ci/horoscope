@@ -3,31 +3,61 @@ import SwiftUI
 // MARK: - Color Palette
 enum MysticColors {
     // Primary
-    static let deepPurple = Color(hex: "0F0728")
-    static let cosmicBlue = Color(hex: "0A1A3A")
-    static let midnightTeal = Color(hex: "071428")
-    static let voidBlack = Color(hex: "050312")
+    static let deepPurple = Color(hex: "100825")
+    static let cosmicBlue = Color(hex: "111B39")
+    static let midnightTeal = Color(hex: "0A1426")
+    static let voidBlack = Color(hex: "05030F")
 
     // Accent
-    static let mysticGold = Color(hex: "D4A843")
-    static let neonLavender = Color(hex: "A78BFA")
-    static let auroraGreen = Color(hex: "34D399")
-    static let celestialPink = Color(hex: "F472B6")
-    static let starWhite = Color(hex: "E2DFEF")
-    static let nebulaBlue = Color(hex: "60A5FA")
-    static let stardust = Color(hex: "C4B5FD")
-    static let transitOrange = Color(hex: "FF9800")
+    static let mysticGold = Color(hex: "D4B06A")
+    static let neonLavender = Color(hex: "B197FF")
+    static let auroraGreen = Color(hex: "6AE1C1")
+    static let celestialPink = Color(hex: "E788B4")
+    static let starWhite = Color(hex: "ECE7F8")
+    static let nebulaBlue = Color(hex: "7BA5E8")
+    static let stardust = Color(hex: "D7C9FF")
+    static let transitOrange = Color(hex: "FFA94D")
 
     // Surface
-    static let cardBackground = Color(hex: "130D30").opacity(0.65)
-    static let cardBorder = Color(hex: "A78BFA").opacity(0.15)
-    static let inputBackground = Color(hex: "0A0620").opacity(0.85)
-    static let elevatedSurface = Color(hex: "1A1245").opacity(0.5)
+    static let cardBackground = Color(hex: "120B24").opacity(0.78)
+    static let cardBorder = Color(hex: "B89EEA").opacity(0.2)
+    static let inputBackground = Color(hex: "0D0920").opacity(0.9)
+    static let elevatedSurface = Color(hex: "1A1234").opacity(0.72)
 
     // Text
-    static let textPrimary = Color(hex: "F0ECFF")
-    static let textSecondary = Color(hex: "A89EC8")
-    static let textMuted = Color(hex: "635A80")
+    static let textPrimary = Color(hex: "F4F0FF")
+    static let textSecondary = Color(hex: "BCB2D6")
+    static let textMuted = Color(hex: "7A6F97")
+}
+
+// MARK: - Arcane Editorial Tokens
+enum MysticSurfaces {
+    static let canvas = MysticColors.voidBlack
+    static let cardBase = Color(hex: "110A22").opacity(0.84)
+    static let cardGlassOverlay = Color.white.opacity(0.05)
+    static let cardTintOverlay = Color(hex: "A88FF3").opacity(0.1)
+    static let topBarBase = Color(hex: "0A0618").opacity(0.9)
+    static let tabBarBase = Color(hex: "090514").opacity(0.93)
+    static let tabBarHighlight = Color.white.opacity(0.06)
+    static let separator = Color.white.opacity(0.1)
+    static let inputField = Color(hex: "0D081C").opacity(0.94)
+}
+
+enum MysticTypographyRoles {
+    static let hero = MysticFonts.title(34)
+    static let section = MysticFonts.heading(20)
+    static let cardTitle = MysticFonts.heading(17)
+    static let cardBody = MysticFonts.body(14)
+    static let metadata = MysticFonts.caption(12)
+}
+
+enum MysticElevation {
+    static let cardShadowRadius: CGFloat = 18
+    static let cardShadowYOffset: CGFloat = 8
+    static let buttonShadowRadius: CGFloat = 14
+    static let buttonShadowYOffset: CGFloat = 6
+    static let floatingShadowRadius: CGFloat = 20
+    static let floatingShadowYOffset: CGFloat = 8
 }
 
 // MARK: - Gradients
@@ -35,9 +65,9 @@ enum MysticGradients {
     static let cosmicBackground = LinearGradient(
         colors: [
             MysticColors.voidBlack,
-            Color(hex: "0B0522"),
-            MysticColors.deepPurple,
-            Color(hex: "0D1535"),
+            Color(hex: "100722"),
+            Color(hex: "190F34"),
+            Color(hex: "142248"),
             MysticColors.cosmicBlue,
             MysticColors.midnightTeal
         ],
@@ -47,10 +77,10 @@ enum MysticGradients {
 
     static let goldShimmer = LinearGradient(
         colors: [
-            Color(hex: "D4A843"),
-            Color(hex: "F0D060"),
-            Color(hex: "E8C34A"),
-            Color(hex: "D4A843")
+            Color(hex: "B98E4D"),
+            Color(hex: "E5C17C"),
+            Color(hex: "F2D89A"),
+            Color(hex: "C39A5B")
         ],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
@@ -80,9 +110,9 @@ enum MysticGradients {
 
     static let cardGlass = LinearGradient(
         colors: [
-            Color.white.opacity(0.10),
-            Color.white.opacity(0.04),
-            Color.white.opacity(0.02)
+            Color.white.opacity(0.09),
+            Color.white.opacity(0.03),
+            Color.white.opacity(0.01)
         ],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
@@ -101,7 +131,7 @@ enum MysticGradients {
     static let cosmicRose = LinearGradient(
         colors: [
             MysticColors.celestialPink,
-            Color(hex: "C084FC"),
+            Color(hex: "BE95F5"),
             MysticColors.neonLavender
         ],
         startPoint: .topLeading,
@@ -112,11 +142,11 @@ enum MysticGradients {
 // MARK: - Typography
 enum MysticFonts {
     static func title(_ size: CGFloat = 30) -> Font {
-        .system(size: size, weight: .bold, design: .rounded)
+        .system(size: size, weight: .bold, design: .serif)
     }
 
     static func heading(_ size: CGFloat = 22) -> Font {
-        .system(size: size, weight: .semibold, design: .rounded)
+        .system(size: size, weight: .semibold, design: .serif)
     }
 
     static func body(_ size: CGFloat = 16) -> Font {

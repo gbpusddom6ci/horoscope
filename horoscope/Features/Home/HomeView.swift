@@ -38,8 +38,16 @@ struct HomeView: View {
         birthData != nil && firstValueChecked && !hasCompletedFirstValue
     }
 
+    private var transitSpotlight: TransitEvent? {
+        currentTransits.first
+    }
+
+    private var remainingTransits: [TransitEvent] {
+        Array(currentTransits.dropFirst())
+    }
+
     private var visibleTransits: [TransitEvent] {
-        showAllTransits ? currentTransits : Array(currentTransits.prefix(2))
+        showAllTransits ? remainingTransits : Array(remainingTransits.prefix(2))
     }
 
     var body: some View {
@@ -70,26 +78,34 @@ struct HomeView: View {
                             greetingSection
                                 .fadeInOnAppear(delay: 0)
 
+                            dailyFocusCard
+                                .fadeInOnAppear(delay: 0.05)
+
                             if shouldShowFirstValueActions {
                                 firstValueActionCard
-                                    .fadeInOnAppear(delay: 0.05)
+                                    .fadeInOnAppear(delay: 0.1)
                             }
 
                             dailyEnergyCard
-                                .fadeInOnAppear(delay: 0.1)
+                                .fadeInOnAppear(delay: 0.15)
 
-                            if let birthData, let chart = natalChart {
-                                quickStatsSection(birthData: birthData, chart: chart)
-                                    .fadeInOnAppear(delay: 0.15)
-                            }
-
-                            if !currentTransits.isEmpty {
-                                transitSection
+                            if let spotlight = transitSpotlight {
+                                transitSpotlightCard(transit: spotlight)
                                     .fadeInOnAppear(delay: 0.2)
                             }
 
                             featureGridSection
                                 .fadeInOnAppear(delay: 0.25)
+
+                            if let birthData, let chart = natalChart {
+                                quickStatsSection(birthData: birthData, chart: chart)
+                                    .fadeInOnAppear(delay: 0.3)
+                            }
+
+                            if !remainingTransits.isEmpty {
+                                transitSection
+                                    .fadeInOnAppear(delay: 0.35)
+                            }
 
                             Color.clear.frame(height: max(90, chromeMetrics.contentBottomReservedSpace))
                         }
@@ -153,7 +169,7 @@ struct HomeView: View {
                             ZodiacSymbol(sign, size: 28, color: sign.elementColor)
                         }
                         Text(authService.currentUser?.displayName ?? String(localized: "common.user"))
-                            .font(MysticFonts.title(28))
+                            .font(MysticTypographyRoles.hero)
                             .foregroundColor(MysticColors.textPrimary)
                     }
                 }
@@ -183,6 +199,53 @@ struct HomeView: View {
                     Image(systemName: "person.fill")
                         .font(.system(size: 20))
                         .foregroundColor(MysticColors.neonLavender)
+                }
+            }
+        }
+    }
+
+    // MARK: - Daily Focus
+
+    private var dailyFocusCard: some View {
+        MysticCard(glowColor: MysticColors.neonLavender) {
+            VStack(alignment: .leading, spacing: MysticSpacing.md) {
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(verbatim: "Daily Focus")
+                            .font(MysticTypographyRoles.section)
+                            .foregroundColor(MysticColors.textPrimary)
+
+                        Text(Date().formatted(as: "d MMMM, EEEE"))
+                            .font(MysticTypographyRoles.metadata)
+                            .foregroundColor(MysticColors.textMuted)
+                    }
+
+                    Spacer()
+
+                    Image(systemName: "moon.stars.fill")
+                        .font(.system(size: 20))
+                        .foregroundColor(MysticColors.neonLavender)
+                        .padding(9)
+                        .background(MysticColors.neonLavender.opacity(0.16))
+                        .clipShape(RoundedRectangle(cornerRadius: MysticRadius.md, style: .continuous))
+                }
+
+                Text(dailyFocusMessage)
+                    .font(MysticTypographyRoles.cardBody)
+                    .foregroundColor(MysticColors.textSecondary)
+                    .lineSpacing(4)
+
+                HStack(spacing: MysticSpacing.sm) {
+                    MysticButton("Ask the Oracle", icon: "bubble.left.and.bubble.right.fill", style: .secondary, size: .compact) {
+                        AppNavigation.switchToTab(.chat)
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                            AppNavigation.openChat(context: .general, prompt: String(localized: "home.first_value.chat_prompt"))
+                        }
+                    }
+
+                    MysticButton("Tarot Draw", icon: "suit.diamond.fill", style: .ghost, size: .compact) {
+                        showTarot = true
+                    }
                 }
             }
         }
@@ -275,6 +338,39 @@ struct HomeView: View {
         }
     }
 
+    // MARK: - Transit Spotlight
+
+    private func transitSpotlightCard(transit: TransitEvent) -> some View {
+        MysticCard(glowColor: MysticColors.celestialPink) {
+            VStack(alignment: .leading, spacing: MysticSpacing.sm) {
+                HStack(spacing: MysticSpacing.xs) {
+                    Image(systemName: "scope")
+                        .foregroundColor(MysticColors.celestialPink)
+                    Text(verbatim: "Transit Spotlight")
+                        .font(MysticTypographyRoles.cardTitle)
+                        .foregroundColor(MysticColors.textPrimary)
+                    Spacer()
+                    Text(transit.severity.localizedDisplayName)
+                        .font(MysticTypographyRoles.metadata)
+                        .foregroundColor(MysticColors.celestialPink)
+                }
+
+                Text(verbatim: "\(transit.transitPlanet.symbol) \(transit.aspectType.symbol) \(transit.natalPlanet.symbol)")
+                    .font(MysticTypographyRoles.section)
+                    .foregroundColor(MysticColors.textPrimary)
+
+                Text(transit.description)
+                    .font(MysticTypographyRoles.cardBody)
+                    .foregroundColor(MysticColors.textSecondary)
+                    .lineSpacing(3)
+
+                Text(String(format: String(localized: "home.transit.exact_date"), transit.exactDate.formatted(as: "d MMM yyyy")))
+                    .font(MysticTypographyRoles.metadata)
+                    .foregroundColor(MysticColors.textMuted)
+            }
+        }
+    }
+
     // MARK: - Natal Summary
 
     private func quickStatsSection(birthData: BirthData, chart: ChartData) -> some View {
@@ -340,13 +436,13 @@ struct HomeView: View {
     private var transitSection: some View {
         VStack(alignment: .leading, spacing: MysticSpacing.sm) {
             HStack {
-                Text("home.transits.title")
-                    .font(MysticFonts.heading(18))
+                Text(verbatim: "Transit Queue")
+                    .font(MysticTypographyRoles.section)
                     .foregroundColor(MysticColors.textPrimary)
 
                 Spacer()
 
-                Text(verbatim: "\(currentTransits.count)")
+                Text(verbatim: "\(remainingTransits.count)")
                     .font(MysticFonts.caption(13))
                     .foregroundColor(MysticColors.mysticGold)
                     .padding(.horizontal, 10)
@@ -359,7 +455,7 @@ struct HomeView: View {
                 TransitCard(transit: transit)
             }
 
-            if currentTransits.count > 2 {
+            if remainingTransits.count > 2 {
                 Button(showAllTransits ? String(localized: "home.transits.show_less") : String(localized: "home.transits.show_all")) {
                     withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) {
                         showAllTransits.toggle()
@@ -377,8 +473,8 @@ struct HomeView: View {
 
     private var featureGridSection: some View {
         VStack(alignment: .leading, spacing: MysticSpacing.sm) {
-            Text("home.explore.title")
-                .font(MysticFonts.heading(18))
+            Text(verbatim: "Quick Rituals")
+                .font(MysticTypographyRoles.section)
                 .foregroundColor(MysticColors.textPrimary)
 
             LazyVGrid(columns: featureColumns, spacing: MysticSpacing.sm) {
@@ -439,6 +535,13 @@ struct HomeView: View {
         default:
             return String(localized: "home.greeting.night")
         }
+    }
+
+    private var dailyFocusMessage: String {
+        if let sign = sunSign {
+            return "\(sign.symbol) \(sign.localizedDisplayName): Stay patient and intentional today. A short ritual can unlock clarity."
+        }
+        return "Breathe, ground your energy, and choose one intentional action before noon."
     }
 
     private func sectionToggleButton(isExpanded: Binding<Bool>) -> some View {
@@ -519,15 +622,15 @@ private struct HomeQuickFeatureTile: View {
                 VStack(alignment: .leading, spacing: MysticSpacing.sm) {
                     HStack {
                         ZStack {
-                            RoundedRectangle(cornerRadius: MysticRadius.sm, style: .continuous)
+                            RoundedRectangle(cornerRadius: MysticRadius.md, style: .continuous)
                                 .fill(
                                     LinearGradient(
-                                        colors: [color.opacity(0.25), color.opacity(0.1)],
+                                        colors: [color.opacity(0.28), color.opacity(0.12)],
                                         startPoint: .topLeading,
                                         endPoint: .bottomTrailing
                                     )
                                 )
-                                .frame(width: 38, height: 38)
+                                .frame(width: 40, height: 40)
                             Image(systemName: icon)
                                 .font(.system(size: 16, weight: .semibold))
                                 .foregroundColor(color)
@@ -547,14 +650,14 @@ private struct HomeQuickFeatureTile: View {
 
                     VStack(alignment: .leading, spacing: 3) {
                         Text(title)
-                            .font(MysticFonts.body(15))
+                            .font(MysticTypographyRoles.cardTitle)
                             .fontWeight(.semibold)
                             .foregroundColor(MysticColors.textPrimary)
                             .lineLimit(1)
                             .minimumScaleFactor(0.75)
 
                         Text(subtitle)
-                            .font(MysticFonts.caption(11))
+                            .font(MysticTypographyRoles.metadata)
                             .foregroundColor(MysticColors.textSecondary)
                             .lineLimit(2)
                             .frame(maxHeight: 30, alignment: .topLeading)

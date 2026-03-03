@@ -21,8 +21,11 @@ struct SettingsView: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: MysticSpacing.lg) {
-                    profileHeader
+                    editorialIntro
                         .fadeInOnAppear(delay: 0)
+
+                    profileHeader
+                        .fadeInOnAppear(delay: 0.05)
 
                     settingsSection(
                         titleKey: "settings.section.quick",
@@ -53,10 +56,10 @@ struct SettingsView: View {
                             )
                         ]
                     )
-                    .fadeInOnAppear(delay: 0.1)
+                    .fadeInOnAppear(delay: 0.15)
 
                     accountSection
-                        .fadeInOnAppear(delay: 0.15)
+                        .fadeInOnAppear(delay: 0.2)
 
                     settingsSection(
                         titleKey: "settings.section.support",
@@ -79,10 +82,10 @@ struct SettingsView: View {
                             )
                         ]
                     )
-                    .fadeInOnAppear(delay: 0.2)
+                    .fadeInOnAppear(delay: 0.25)
 
                     dangerZone
-                        .fadeInOnAppear(delay: 0.25)
+                        .fadeInOnAppear(delay: 0.3)
 
                     Color.clear.frame(height: 120)
                 }
@@ -115,6 +118,26 @@ struct SettingsView: View {
     }
 
     // MARK: - Sections
+
+    private var editorialIntro: some View {
+        MysticCard(glowColor: MysticColors.neonLavender.opacity(0.8)) {
+            HStack(spacing: MysticSpacing.md) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(verbatim: "Profile Atelier")
+                        .font(MysticTypographyRoles.section)
+                        .foregroundColor(MysticColors.textPrimary)
+                    Text(verbatim: "Manage your rituals, privacy, and subscription in one place.")
+                        .font(MysticTypographyRoles.cardBody)
+                        .foregroundColor(MysticColors.textSecondary)
+                        .lineSpacing(3)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "slider.horizontal.3")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(MysticColors.neonLavender)
+            }
+        }
+    }
 
     private var profileHeader: some View {
         MysticCard(glowColor: MysticColors.neonLavender) {
@@ -323,7 +346,7 @@ struct SettingsView: View {
             MysticCard(glowColor: row.tint.opacity(0.5)) {
                 HStack(spacing: MysticSpacing.md) {
                     ZStack {
-                        Circle()
+                        RoundedRectangle(cornerRadius: MysticRadius.md, style: .continuous)
                             .fill(
                                 RadialGradient(
                                     colors: [row.tint.opacity(0.22), row.tint.opacity(0.06)],
@@ -333,7 +356,7 @@ struct SettingsView: View {
                                 )
                             )
                             .frame(width: 36, height: 36)
-                        Circle()
+                        RoundedRectangle(cornerRadius: MysticRadius.md, style: .continuous)
                             .stroke(row.tint.opacity(0.15), lineWidth: 0.5)
                             .frame(width: 36, height: 36)
                         Image(systemName: row.icon)
@@ -343,10 +366,10 @@ struct SettingsView: View {
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text(row.title)
-                            .font(MysticFonts.body(14))
+                            .font(MysticTypographyRoles.cardBody.weight(.semibold))
                             .foregroundColor(MysticColors.textPrimary)
                         Text(row.subtitle)
-                            .font(MysticFonts.caption(12))
+                            .font(MysticTypographyRoles.metadata)
                             .foregroundColor(MysticColors.textSecondary)
                             .lineLimit(2)
                     }

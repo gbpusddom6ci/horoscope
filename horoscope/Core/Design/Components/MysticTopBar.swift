@@ -18,7 +18,7 @@ struct MysticTopBar<Trailing: View>: View {
         VStack(spacing: 0) {
             HStack(spacing: MysticSpacing.sm) {
                 title
-                    .font(MysticFonts.heading(20))
+                    .font(MysticTypographyRoles.section)
                     .foregroundColor(MysticColors.textPrimary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
@@ -33,14 +33,24 @@ struct MysticTopBar<Trailing: View>: View {
             .padding(.top, MysticLayout.topBarVerticalPadding)
             .padding(.bottom, MysticLayout.topBarBottomPadding)
             .frame(minHeight: MysticLayout.topBarMinimumHeight, alignment: .center)
+            .background(
+                ZStack {
+                    MysticSurfaces.topBarBase
+                    LinearGradient(
+                        colors: [Color.white.opacity(0.06), Color.clear],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                }
+            )
 
             Rectangle()
                 .fill(
                     LinearGradient(
                         colors: [
-                            MysticColors.neonLavender.opacity(0.15),
-                            MysticColors.mysticGold.opacity(0.08),
-                            MysticColors.neonLavender.opacity(0.15)
+                            MysticColors.mysticGold.opacity(0.2),
+                            MysticColors.neonLavender.opacity(0.08),
+                            MysticColors.mysticGold.opacity(0.2)
                         ],
                         startPoint: .leading,
                         endPoint: .trailing
