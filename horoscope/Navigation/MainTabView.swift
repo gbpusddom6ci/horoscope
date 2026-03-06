@@ -5,94 +5,62 @@ import UIKit
 struct MainTabView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(UsageLimitService.self) private var usageLimitService
-    @AppStorage("selected_main_tab_v1") private var selectedTabRawValue = AppTab.home.rawValue
-    @State private var selectedTab: AppTab = .home
-    @State private var showQuickActions = false
+
+    @AppStorage("selected_main_destination_v3") private var selectedDestinationRawValue = AppDestination.home.rawValue
+    @State private var selectedDestination: AppDestination = .home
     @State private var isKeyboardVisible = false
 
-    init() {
-        UITabBar.appearance().isHidden = true
-    }
+    private let legacySelectionKey = "selected_main_destination_v2"
+    private let isUITestAuthenticated = ProcessInfo.processInfo.arguments.contains("UITEST_AUTHENTICATED")
 
     var body: some View {
         GeometryReader { proxy in
             let bottomSafeArea = proxy.safeAreaInsets.bottom
-            let tabBarHeight = MysticLayout.tabBarHeight(bottomSafeArea: bottomSafeArea)
+            let dockHeight = AuroraDockMetrics.height(bottomSafeArea: bottomSafeArea)
             let chromeMetrics = MainChromeMetrics(
                 tabBarVisible: !isKeyboardVisible,
-                tabBarHeight: !isKeyboardVisible ? tabBarHeight : 0,
-                floatingQuickActionSize: !isKeyboardVisible ? MysticLayout.floatingQuickActionSize : 0,
+                tabBarHeight: !isKeyboardVisible ? dockHeight : 0,
+                floatingQuickActionSize: 0,
                 bottomSafeAreaInset: bottomSafeArea
             )
 
-            TabView(selection: $selectedTab) {
-                HomeView()
-                    .tag(AppTab.home)
-                NatalChartView()
-                    .tag(AppTab.chart)
-                ChatView()
-                    .tag(AppTab.chat)
-                DreamJournalView()
-                    .tag(AppTab.dream)
-                SettingsView()
-                    .tag(AppTab.profile)
+            ZStack {
+                currentDestinationView
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .transition(.opacity)
             }
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 if !isKeyboardVisible {
-                    customTabBar(bottomSafeArea: bottomSafeArea)
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
-                }
-            }
-            .overlay(alignment: .bottom) {
-                if !isKeyboardVisible {
-                    floatingChatButton
-                        .padding(.bottom, tabBarHeight - MysticLayout.floatingQuickActionLift)
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                    AuroraDock(
+                        selectedDestination: $selectedDestination,
+                        bottomSafeArea: bottomSafeArea
+                    )
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
             .environment(\.mainChromeMetrics, chromeMetrics)
             .onAppear {
-                let restoredTab = AppTab(rawValue: selectedTabRawValue) ?? .home
-                selectedTab = restoredTab
-                if selectedTabRawValue != restoredTab.rawValue {
-                    selectedTabRawValue = restoredTab.rawValue
-                }
+                restoreSelectedDestination()
             }
-            .onChange(of: selectedTabRawValue) { _, newRawValue in
-                let restoredTab = AppTab(rawValue: newRawValue) ?? .home
-                if selectedTab != restoredTab {
-                    selectedTab = restoredTab
-                }
-                if newRawValue != restoredTab.rawValue {
-                    selectedTabRawValue = restoredTab.rawValue
-                }
-            }
-            .onChange(of: selectedTab) { _, newValue in
-                selectedTabRawValue = newValue.rawValue
+            .onChange(of: selectedDestination) { _, newValue in
+                selectedDestinationRawValue = newValue.rawValue
             }
             .onReceive(NotificationCenter.default.publisher(for: .switchToMainTab)) { notification in
-                guard let tab = notification.object as? AppTab else { return }
-                switchToTab(tab)
-            }
-            .onReceive(NotificationCenter.default.publisher(for: .openQuickActionsSheet)) { _ in
-                showQuickActions = true
+                if let destination = notification.object as? AppDestination {
+                    switchToDestination(destination)
+                } else if let legacyTab = notification.object as? AppTab {
+                    handleLegacyTabSwitch(legacyTab)
+                }
             }
             .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
-                withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) {
+                withAnimation(reduceMotion ? nil : AuroraMotion.transition) {
                     isKeyboardVisible = true
                 }
             }
             .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
-                withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) {
+                withAnimation(reduceMotion ? nil : AuroraMotion.transition) {
                     isKeyboardVisible = false
                 }
-            }
-            .sheet(isPresented: $showQuickActions) {
-                QuickActionsSheet { action in
-                    runQuickAction(action)
-                }
-                .presentationDetents([.medium])
-                .presentationDragIndicator(.visible)
             }
             .sheet(isPresented: Bindable(usageLimitService).showPaywall) {
                 PaywallView()
@@ -100,219 +68,229 @@ struct MainTabView: View {
         }
     }
 
-    private func customTabBar(bottomSafeArea: CGFloat) -> some View {
-        let editorialTabBarHeight: CGFloat = 68
+    @ViewBuilder
+    private var currentDestinationView: some View {
+        switch selectedDestination {
+        case .tarot:
+            TarotView(showsCloseButton: false)
+        case .oracle:
+            OracleView()
+        case .home:
+            SanctumView()
+        case .dreams:
+            JournalView()
+        case .profile:
+            ProfileView()
+        }
+    }
 
-        return ZStack {
-            Capsule()
-                .fill(MysticSurfaces.tabBarBase)
-            Capsule()
+    private func restoreSelectedDestination() {
+        if isUITestAuthenticated {
+            selectedDestination = .home
+            selectedDestinationRawValue = AppDestination.home.rawValue
+            return
+        }
+
+        if let restored = AppDestination(rawValue: selectedDestinationRawValue) {
+            selectedDestination = restored
+            return
+        }
+
+        let legacyRawValue = UserDefaults.standard.string(forKey: legacySelectionKey)
+        let migrated = AppDestination.migrated(fromLegacyRawValue: legacyRawValue) ?? .home
+        selectedDestination = migrated
+        selectedDestinationRawValue = migrated.rawValue
+    }
+
+    private func handleLegacyTabSwitch(_ legacyTab: AppTab) {
+        if legacyTab == .chart {
+            AppNavigation.openAtlas()
+            return
+        }
+
+        switchToDestination(legacyTab.destination)
+    }
+
+    private func switchToDestination(_ destination: AppDestination) {
+        if selectedDestination == destination {
+            AppNavigation.scrollToTop(for: destination)
+            return
+        }
+
+        withAnimation(reduceMotion ? nil : AuroraMotion.spring) {
+            selectedDestination = destination
+        }
+    }
+}
+
+private enum AuroraDockMetrics {
+    static let sideButtonSize: CGFloat = 52
+    static let centerButtonSize: CGFloat = 78
+    static let orbLift: CGFloat = 24
+    static let surfaceHeight: CGFloat = 88
+    static let centerSlotWidth: CGFloat = 98
+
+    static func height(bottomSafeArea: CGFloat) -> CGFloat {
+        surfaceHeight + orbLift + max(bottomSafeArea, 10)
+    }
+}
+
+private struct AuroraDock: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Binding var selectedDestination: AppDestination
+    let bottomSafeArea: CGFloat
+
+    var body: some View {
+        ZStack(alignment: .top) {
+            RoundedRectangle(cornerRadius: 34, style: .continuous)
                 .fill(
                     LinearGradient(
                         colors: [
-                            MysticSurfaces.tabBarHighlight,
-                            Color.white.opacity(0.015)
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-            Capsule()
-                .stroke(
-                    LinearGradient(
-                        colors: [
-                            Color.white.opacity(0.2),
-                            MysticColors.neonLavender.opacity(0.14),
-                            MysticColors.mysticGold.opacity(0.16),
-                            Color.white.opacity(0.08)
+                            AuroraColors.surfaceElevated.opacity(0.98),
+                            AuroraColors.cardBase.opacity(0.96),
+                            AuroraColors.obsidian.opacity(0.95)
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 1
+                    )
                 )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 34, style: .continuous)
+                        .fill(AuroraGradients.cardWash(accent: selectedDestination.accent))
+                        .opacity(0.45)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 34, style: .continuous)
+                        .stroke(
+                            LinearGradient(
+                                colors: [
+                                    Color.white.opacity(0.12),
+                                    selectedDestination.accent.opacity(0.22),
+                                    Color.white.opacity(0.03)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1
+                        )
+                )
+                .frame(height: AuroraDockMetrics.surfaceHeight)
+                .shadow(color: AuroraColors.dockShadow, radius: 28, x: 0, y: 18)
 
             HStack(spacing: 0) {
-                tabButton(.home)
-                tabButton(.chart)
-
-                Spacer(minLength: MysticLayout.floatingQuickActionSize + (MysticSpacing.md * 2))
-
-                tabButton(.dream)
-                tabButton(.profile)
+                dockButton(for: .tarot)
+                dockButton(for: .oracle)
+                Color.clear
+                    .frame(width: AuroraDockMetrics.centerSlotWidth)
+                dockButton(for: .dreams)
+                dockButton(for: .profile)
             }
-            .padding(.horizontal, MysticSpacing.md)
-            .padding(.vertical, 8)
+            .frame(height: AuroraDockMetrics.surfaceHeight)
+            .padding(.horizontal, AuroraSpacing.md)
+
+            homeButton
+                .offset(y: -AuroraDockMetrics.orbLift)
         }
-        .frame(height: editorialTabBarHeight)
-        .padding(.horizontal, MysticLayout.screenHorizontalPadding)
-        .padding(.top, 6)
-        .padding(.bottom, 4 + MysticLayout.tabBarBottomPadding(bottomSafeArea: bottomSafeArea))
-        .shadow(
-            color: MysticColors.neonLavender.opacity(0.12),
-            radius: MysticElevation.floatingShadowRadius,
-            x: 0,
-            y: MysticElevation.floatingShadowYOffset
-        )
+        .padding(.horizontal, AuroraSpacing.md)
+        .padding(.top, AuroraDockMetrics.orbLift)
+        .padding(.bottom, max(bottomSafeArea, 10))
         .background(
-            Rectangle()
-                .fill(MysticColors.voidBlack.opacity(0.8))
-                .ignoresSafeArea(.container, edges: .bottom)
+            LinearGradient(
+                colors: [Color.clear, AuroraColors.obsidian.opacity(0.84)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea(.container, edges: .bottom)
         )
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("main.tab_bar")
     }
 
-    private func tabButton(_ tab: AppTab) -> some View {
-        Button {
-            let impact = UIImpactFeedbackGenerator(style: .light)
-            impact.impactOccurred()
+    private func dockButton(for destination: AppDestination) -> some View {
+        let isSelected = selectedDestination == destination
 
-            if selectedTab == tab {
-                AppNavigation.scrollToTop(for: tab)
-                return
-            }
-
-            withAnimation(reduceMotion ? nil : .spring(response: MysticMotion.springResponse, dampingFraction: MysticMotion.springDamping)) {
-                selectedTab = tab
-            }
-        } label: {
-            VStack(spacing: 5) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(selectedTab == tab ? tab.color.opacity(0.18) : Color.clear)
-                        .frame(width: 40, height: 32)
-
-                    if reduceMotion {
-                        Image(systemName: selectedTab == tab ? tab.iconFilled : tab.icon)
-                            .font(.system(size: 18, weight: selectedTab == tab ? .semibold : .regular))
-                            .foregroundColor(selectedTab == tab ? tab.color : MysticColors.textMuted)
-                    } else {
-                        Image(systemName: selectedTab == tab ? tab.iconFilled : tab.icon)
-                            .font(.system(size: 18, weight: selectedTab == tab ? .semibold : .regular))
-                            .foregroundColor(selectedTab == tab ? tab.color : MysticColors.textMuted)
-                            .symbolEffect(.bounce, value: selectedTab == tab)
-                    }
-                }
-
-                Text(tab.title)
-                    .font(MysticFonts.caption(10))
-                    .foregroundColor(selectedTab == tab ? tab.color : MysticColors.textMuted.opacity(0.78))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-            }
-            .frame(maxWidth: .infinity, minHeight: MysticAccessibility.minimumTapTarget)
-        }
-        .buttonStyle(.plain)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(tab.title))
-        .accessibilityHint(Text(String(localized: "tab.switch.hint")))
-        .accessibilityValue(Text(selectedTab == tab ? String(localized: "common.accessibility.selected") : String(localized: "common.accessibility.unselected")))
-        .accessibilityIdentifier("tab.\(tab.rawValue)")
-    }
-
-    private var floatingChatButton: some View {
-        Button {
-            let impact = UIImpactFeedbackGenerator(style: .medium)
-            impact.impactOccurred()
-
-            if selectedTab == .chat {
-                AppNavigation.scrollToTop(for: .chat)
-                return
-            }
-
-            withAnimation(reduceMotion ? nil : .spring(response: MysticMotion.springResponse, dampingFraction: MysticMotion.springDamping)) {
-                selectedTab = .chat
-            }
+        return Button {
+            select(destination)
         } label: {
             ZStack {
                 Circle()
-                    .fill(selectedTab == .chat ? MysticGradients.auroraShift : MysticGradients.goldShimmer)
-                    .frame(width: MysticLayout.floatingQuickActionSize, height: MysticLayout.floatingQuickActionSize)
+                    .fill(destination.accent.opacity(isSelected ? 0.18 : 0.03))
+                    .frame(width: isSelected ? 42 : 38, height: isSelected ? 42 : 38)
+
+                if isSelected {
+                    Circle()
+                        .stroke(destination.accent.opacity(0.35), lineWidth: 1)
+                        .frame(width: 46, height: 46)
+                }
+
+                AuroraGlyph(
+                    kind: destination.glyphKind,
+                    color: isSelected ? destination.accent : AuroraColors.textMuted.opacity(0.92),
+                    lineWidth: isSelected ? 2 : 1.7
+                )
+                .frame(width: 22, height: 22)
+            }
+            .frame(width: AuroraDockMetrics.sideButtonSize, height: AuroraDockMetrics.surfaceHeight)
+            .shadow(color: isSelected ? destination.accent.opacity(0.2) : .clear, radius: 12, x: 0, y: 8)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(destination.title))
+        .accessibilityHint(Text(String(localized: "tab.switch.hint")))
+        .accessibilityIdentifier(destination.dockAccessibilityIdentifier)
+    }
+
+    private var homeButton: some View {
+        let isSelected = selectedDestination == .home
+
+        return Button {
+            select(.home)
+        } label: {
+            ZStack {
+                Circle()
+                    .fill(isSelected ? AnyShapeStyle(AuroraGradients.primaryCTA) : AnyShapeStyle(AuroraGradients.auroraVeil))
+                    .frame(width: AuroraDockMetrics.centerButtonSize, height: AuroraDockMetrics.centerButtonSize)
 
                 Circle()
-                    .stroke(
-                        selectedTab == .chat
-                            ? Color.white.opacity(0.45)
-                            : Color.white.opacity(0.35),
-                        lineWidth: 1.1
-                    )
-                    .frame(width: MysticLayout.floatingQuickActionSize, height: MysticLayout.floatingQuickActionSize)
+                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                    .frame(width: AuroraDockMetrics.centerButtonSize, height: AuroraDockMetrics.centerButtonSize)
 
                 Circle()
-                    .stroke(
-                        selectedTab == .chat
-                            ? MysticColors.auroraGreen.opacity(0.2)
-                            : MysticColors.mysticGold.opacity(0.2),
-                        lineWidth: 0.7
-                    )
-                    .frame(width: MysticLayout.floatingQuickActionSize + 8, height: MysticLayout.floatingQuickActionSize + 8)
+                    .stroke(AuroraColors.auroraViolet.opacity(0.12), lineWidth: 1)
+                    .frame(width: AuroraDockMetrics.centerButtonSize + 16, height: AuroraDockMetrics.centerButtonSize + 16)
 
-                Image(systemName: selectedTab == .chat ? "bubble.left.and.bubble.right.fill" : "bolt.fill")
-                    .font(.system(size: 22, weight: .semibold))
-                    .foregroundColor(MysticColors.voidBlack)
+                AuroraGlyph(
+                    kind: .saturn,
+                    color: AuroraColors.obsidian.opacity(0.9),
+                    lineWidth: 2.2
+                )
+                .frame(width: 30, height: 30)
             }
             .shadow(
-                color: selectedTab == .chat
-                    ? MysticColors.auroraGreen.opacity(0.25)
-                    : MysticColors.mysticGold.opacity(0.3),
-                radius: MysticElevation.floatingShadowRadius,
+                color: isSelected
+                    ? AuroraColors.auroraMint.opacity(0.28)
+                    : AuroraColors.auroraViolet.opacity(0.18),
+                radius: 24,
                 x: 0,
-                y: MysticElevation.floatingShadowYOffset
-            )
-            .frame(
-                minWidth: MysticLayout.floatingQuickActionSize,
-                minHeight: MysticLayout.floatingQuickActionSize
+                y: 16
             )
         }
         .buttonStyle(.plain)
-        .simultaneousGesture(
-            LongPressGesture(minimumDuration: 0.45)
-                .onEnded { _ in
-                    showQuickActions = true
-                }
-        )
-        .accessibilityLabel(Text(String(localized: "tab.chat")))
-        .accessibilityHint(Text(String(localized: "tab.chat.fab.hint")))
-        .accessibilityValue(Text(selectedTab == .chat ? String(localized: "common.accessibility.selected") : String(localized: "common.accessibility.unselected")))
-        .accessibilityIdentifier("quick_actions.button")
+        .accessibilityLabel(Text(AppDestination.home.title))
+        .accessibilityHint(Text(String(localized: "tab.switch.hint")))
+        .accessibilityIdentifier(AppDestination.home.dockAccessibilityIdentifier)
     }
 
-    private func switchToTab(_ tab: AppTab) {
-        if selectedTab == tab {
-            AppNavigation.scrollToTop(for: tab)
+    private func select(_ destination: AppDestination) {
+        let impact = UIImpactFeedbackGenerator(style: .light)
+        impact.impactOccurred()
+
+        if selectedDestination == destination {
+            AppNavigation.scrollToTop(for: destination)
             return
         }
 
-        withAnimation(reduceMotion ? nil : .spring(response: 0.3)) {
-            selectedTab = tab
-        }
-    }
-
-    private func runQuickAction(_ action: QuickAction) {
-        showQuickActions = false
-
-        switch action {
-        case .newChat:
-            AppNavigation.switchToTab(.chat)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                AppNavigation.openChat(context: .general)
-            }
-        case .newDream:
-            AppNavigation.switchToTab(.dream)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                AppNavigation.openDreamComposer()
-            }
-        case .openTarot:
-            AppNavigation.switchToTab(.home)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                AppNavigation.openTarotQuickAction()
-            }
-        case .openPalm:
-            AppNavigation.switchToTab(.home)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                AppNavigation.openPalmQuickAction()
-            }
+        withAnimation(reduceMotion ? nil : AuroraMotion.spring) {
+            selectedDestination = destination
         }
     }
 }
@@ -325,6 +303,7 @@ extension Notification.Name {
     static let openTarotQuickAction = Notification.Name("openTarotQuickAction")
     static let openPalmQuickAction = Notification.Name("openPalmQuickAction")
     static let openQuickActionsSheet = Notification.Name("openQuickActionsSheet")
+    static let openAtlasExperience = Notification.Name("openAtlasExperience")
     static let scrollToTop = Notification.Name("scrollToTop")
 }
 
@@ -338,13 +317,27 @@ enum AppNavigation {
     private static var pendingDreamComposer = false
     private static var pendingTarotQuickAction = false
     private static var pendingPalmQuickAction = false
+    private static var pendingAtlasExperience = false
+
+    static func switchToDestination(_ destination: AppDestination) {
+        NotificationCenter.default.post(name: .switchToMainTab, object: destination)
+    }
 
     static func switchToTab(_ tab: AppTab) {
-        NotificationCenter.default.post(name: .switchToMainTab, object: tab)
+        switch tab {
+        case .chart:
+            openAtlas()
+        default:
+            switchToDestination(tab.destination)
+        }
+    }
+
+    static func scrollToTop(for destination: AppDestination) {
+        NotificationCenter.default.post(name: .scrollToTop, object: destination)
     }
 
     static func scrollToTop(for tab: AppTab) {
-        NotificationCenter.default.post(name: .scrollToTop, object: tab)
+        scrollToTop(for: tab.destination)
     }
 
     static func openChat(context: ChatContext, prompt: String? = nil) {
@@ -354,6 +347,8 @@ enum AppNavigation {
         if let prompt {
             payload[AppNavigationPayload.prompt] = prompt
         }
+
+        switchToDestination(.oracle)
         NotificationCenter.default.post(name: .openChatQuickAction, object: nil, userInfo: payload)
     }
 
@@ -364,6 +359,7 @@ enum AppNavigation {
 
     static func openDreamComposer() {
         pendingDreamComposer = true
+        switchToDestination(.dreams)
         NotificationCenter.default.post(name: .openDreamComposer, object: nil)
     }
 
@@ -374,6 +370,7 @@ enum AppNavigation {
 
     static func openTarotQuickAction() {
         pendingTarotQuickAction = true
+        switchToDestination(.tarot)
         NotificationCenter.default.post(name: .openTarotQuickAction, object: nil)
     }
 
@@ -384,6 +381,7 @@ enum AppNavigation {
 
     static func openPalmQuickAction() {
         pendingPalmQuickAction = true
+        switchToDestination(.oracle)
         NotificationCenter.default.post(name: .openPalmQuickAction, object: nil)
     }
 
@@ -392,8 +390,115 @@ enum AppNavigation {
         return pendingPalmQuickAction
     }
 
+    static func openAtlas() {
+        pendingAtlasExperience = true
+        switchToDestination(.home)
+        NotificationCenter.default.post(name: .openAtlasExperience, object: nil)
+    }
+
+    static func consumePendingAtlasExperience() -> Bool {
+        defer { pendingAtlasExperience = false }
+        return pendingAtlasExperience
+    }
+
     static func openQuickActionsSheet() {
-        NotificationCenter.default.post(name: .openQuickActionsSheet, object: nil)
+        switchToDestination(.oracle)
+    }
+}
+
+enum AppDestination: String, CaseIterable {
+    case tarot
+    case oracle
+    case home
+    case dreams
+    case profile
+
+    static func migrated(fromLegacyRawValue rawValue: String?) -> AppDestination? {
+        guard let rawValue else { return nil }
+        switch rawValue {
+        case "sanctum":
+            return .home
+        case "atlas":
+            return .home
+        case "oracle":
+            return .oracle
+        case "journal":
+            return .dreams
+        case "profile":
+            return .profile
+        case "tarot":
+            return .tarot
+        case "home":
+            return .home
+        case "dreams":
+            return .dreams
+        default:
+            return AppDestination(rawValue: rawValue)
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .tarot:
+            return String(localized: "tab.aurora.tarot")
+        case .oracle:
+            return String(localized: "tab.aurora.oracle")
+        case .home:
+            return String(localized: "tab.aurora.home")
+        case .dreams:
+            return String(localized: "tab.aurora.dreams")
+        case .profile:
+            return String(localized: "tab.aurora.profile")
+        }
+    }
+
+    var shortTitle: String {
+        title
+    }
+
+    var accent: Color {
+        switch self {
+        case .tarot:
+            return AuroraColors.auroraRose
+        case .oracle:
+            return AuroraColors.auroraViolet
+        case .home:
+            return AuroraColors.auroraMint
+        case .dreams:
+            return AuroraColors.auroraCyan
+        case .profile:
+            return AuroraColors.polarWhite
+        }
+    }
+
+    var glyphKind: AuroraGlyphKind {
+        switch self {
+        case .tarot:
+            return .tarot
+        case .oracle:
+            return .eye
+        case .home:
+            return .saturn
+        case .dreams:
+            return .dreamcatcher
+        case .profile:
+            return .profile
+        }
+    }
+
+    var dockAccessibilityIdentifier: String {
+        switch self {
+        case .tarot:
+            return "dock.tarot"
+        case .oracle:
+            return "dock.oracle"
+        case .home:
+            return "dock.home"
+        case .dreams:
+            return "dock.dreams"
+        case .profile:
+            return "dock.profile"
+        }
     }
 }
 
@@ -404,166 +509,19 @@ enum AppTab: String, CaseIterable {
     case dream
     case profile
 
-    var title: String {
+    var destination: AppDestination {
         switch self {
-        case .home: return String(localized: "tab.home")
-        case .chart: return String(localized: "tab.chart")
-        case .chat: return String(localized: "tab.chat")
-        case .dream: return String(localized: "tab.dream")
-        case .profile: return String(localized: "tab.profile")
+        case .home:
+            return .home
+        case .chart:
+            return .home
+        case .chat:
+            return .oracle
+        case .dream:
+            return .dreams
+        case .profile:
+            return .profile
         }
-    }
-
-    var icon: String {
-        switch self {
-        case .home: return "sparkles"
-        case .chart: return "circle.hexagongrid"
-        case .chat: return "bubble.left.and.bubble.right"
-        case .dream: return "moon.zzz"
-        case .profile: return "person.circle"
-        }
-    }
-
-    var iconFilled: String {
-        switch self {
-        case .home: return "sparkles"
-        case .chart: return "circle.hexagongrid.fill"
-        case .chat: return "bubble.left.and.bubble.right.fill"
-        case .dream: return "moon.zzz.fill"
-        case .profile: return "person.circle.fill"
-        }
-    }
-
-    var color: Color {
-        switch self {
-        case .home: return MysticColors.mysticGold
-        case .chart: return MysticColors.neonLavender
-        case .chat: return MysticColors.auroraGreen
-        case .dream: return MysticColors.celestialPink
-        case .profile: return MysticColors.starWhite
-        }
-    }
-}
-
-private enum QuickAction: CaseIterable {
-    case newChat
-    case newDream
-    case openTarot
-    case openPalm
-
-    var title: String {
-        switch self {
-        case .newChat: return String(localized: "quick_actions.chat")
-        case .newDream: return String(localized: "quick_actions.dream")
-        case .openTarot: return String(localized: "quick_actions.tarot")
-        case .openPalm: return String(localized: "quick_actions.palm")
-        }
-    }
-
-    var subtitle: String {
-        switch self {
-        case .newChat: return String(localized: "quick_actions.chat.subtitle")
-        case .newDream: return String(localized: "quick_actions.dream.subtitle")
-        case .openTarot: return String(localized: "quick_actions.tarot.subtitle")
-        case .openPalm: return String(localized: "quick_actions.palm.subtitle")
-        }
-    }
-
-    var icon: String {
-        switch self {
-        case .newChat: return "bubble.left.and.bubble.right.fill"
-        case .newDream: return "moon.zzz.fill"
-        case .openTarot: return "suit.diamond.fill"
-        case .openPalm: return "hand.raised.fill"
-        }
-    }
-
-    var testId: String {
-        switch self {
-        case .newChat: return "quick_action.new_chat"
-        case .newDream: return "quick_action.new_dream"
-        case .openTarot: return "quick_action.open_tarot"
-        case .openPalm: return "quick_action.open_palm"
-        }
-    }
-
-    var color: Color {
-        switch self {
-        case .newChat: return MysticColors.auroraGreen
-        case .newDream: return MysticColors.celestialPink
-        case .openTarot: return MysticColors.mysticGold
-        case .openPalm: return MysticColors.neonLavender
-        }
-    }
-}
-
-private struct QuickActionsSheet: View {
-    let onSelect: (QuickAction) -> Void
-
-    var body: some View {
-        ZStack {
-            MysticColors.voidBlack.ignoresSafeArea()
-            StarField(starCount: 25)
-
-            VStack(alignment: .leading, spacing: MysticSpacing.md) {
-                MysticCard(glowColor: MysticColors.mysticGold.opacity(0.85)) {
-                    VStack(alignment: .leading, spacing: MysticSpacing.xs) {
-                        Text("quick_actions.title")
-                            .font(MysticTypographyRoles.section)
-                            .foregroundColor(MysticColors.textPrimary)
-
-                        Text("quick_actions.subtitle")
-                            .font(MysticTypographyRoles.cardBody)
-                            .foregroundColor(MysticColors.textSecondary)
-                    }
-                }
-
-                ForEach(QuickAction.allCases, id: \.self) { action in
-                    Button {
-                        onSelect(action)
-                    } label: {
-                        MysticCard(glowColor: action.color) {
-                            HStack(spacing: MysticSpacing.md) {
-                                Image(systemName: action.icon)
-                                    .font(.system(size: 18))
-                                    .foregroundColor(action.color)
-                                    .frame(width: 28)
-
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(action.title)
-                                        .font(MysticTypographyRoles.cardBody.weight(.semibold))
-                                        .foregroundColor(MysticColors.textPrimary)
-                                    Text(action.subtitle)
-                                        .font(MysticTypographyRoles.metadata)
-                                        .foregroundColor(MysticColors.textMuted)
-                                }
-
-                                Spacer()
-                                Image(systemName: "chevron.right")
-                                    .font(.system(size: 13, weight: .semibold))
-                                    .foregroundColor(MysticColors.textMuted)
-                            }
-                            .frame(minHeight: MysticAccessibility.minimumTapTarget)
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(Text(action.title))
-                    .accessibilityHint(Text(String(localized: "quick_actions.item.hint")))
-                    .accessibilityIdentifier(action.testId)
-                }
-
-                Spacer(minLength: 0)
-            }
-            .padding(MysticSpacing.md)
-        }
-    }
-}
-
-struct ScaleButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.9 : 1)
-            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: configuration.isPressed)
     }
 }
 

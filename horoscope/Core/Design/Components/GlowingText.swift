@@ -12,8 +12,8 @@ struct GlowingText: View {
     init(
         _ text: String,
         font: Font = MysticFonts.title(30),
-        color: Color = MysticColors.mysticGold,
-        glowRadius: CGFloat = 10
+        color: Color = MysticColors.auroraGreen,
+        glowRadius: CGFloat = 16
     ) {
         self.text = text
         self.font = font
@@ -31,9 +31,9 @@ struct GlowingText: View {
                     endPoint: .bottomTrailing
                 )
             )
-            .shadow(color: color.opacity(glowAnimation ? 0.65 : 0.2), radius: glowRadius)
-            .shadow(color: color.opacity(glowAnimation ? 0.35 : 0.1), radius: glowRadius * 1.8)
-            .shadow(color: color.opacity(glowAnimation ? 0.15 : 0.05), radius: glowRadius * 3)
+            .shadow(color: color.opacity(glowAnimation ? 0.9 : 0.3), radius: glowRadius * 0.4)
+            .shadow(color: color.opacity(glowAnimation ? 0.5 : 0.15), radius: glowRadius)
+            .shadow(color: color.opacity(glowAnimation ? 0.2 : 0.05), radius: glowRadius * 2.2)
             .onAppear {
                 if reduceMotion {
                     glowAnimation = true
@@ -55,7 +55,7 @@ struct ZodiacSymbol: View {
     let size: CGFloat
     let color: Color
 
-    init(_ sign: ZodiacSign, size: CGFloat = 40, color: Color = MysticColors.mysticGold) {
+    init(_ sign: ZodiacSign, size: CGFloat = 40, color: Color = MysticColors.auroraGreen) {
         self.sign = sign
         self.size = size
         self.color = color

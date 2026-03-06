@@ -6,78 +6,77 @@ struct SplashView: View {
 
     var body: some View {
         ZStack {
-            MysticColors.voidBlack
-                .ignoresSafeArea()
-            
-            StarField(starCount: 60)
+            AuroraBackdrop(style: .sanctumGlow)
 
-            VStack(spacing: MysticSpacing.xl) {
+            VStack(spacing: AuroraSpacing.xl) {
                 Spacer()
 
                 ZStack {
                     Circle()
-                        .stroke(
-                            AngularGradient(
-                                colors: [MysticColors.stardust.opacity(0.05), MysticColors.stardust.opacity(0.3), MysticColors.stardust.opacity(0.05)],
+                        .fill(
+                            RadialGradient(
+                                colors: [
+                                    AuroraColors.auroraMint.opacity(0.28),
+                                    AuroraColors.auroraViolet.opacity(0.16),
+                                    AuroraColors.auroraRose.opacity(0.08),
+                                    Color.clear
+                                ],
                                 center: .center,
-                                startAngle: .degrees(isAnimating ? 0 : 360),
-                                endAngle: .degrees(isAnimating ? 360 : 720)
-                            ),
-                            lineWidth: 0.5
-                        )
-                        .frame(width: 180, height: 180)
-
-                    Circle()
-                        .stroke(
-                            AngularGradient(
-                                colors: [MysticColors.mysticGold.opacity(0.08), MysticColors.mysticGold.opacity(0.9), MysticColors.mysticGold.opacity(0.08)],
-                                center: .center,
-                                startAngle: .degrees(isAnimating ? 0 : 360),
-                                endAngle: .degrees(isAnimating ? 360 : 720)
-                            ),
-                            lineWidth: 1.5
-                        )
-                        .frame(width: 160, height: 160)
-
-                    Circle()
-                        .stroke(
-                            AngularGradient(
-                                colors: [MysticColors.neonLavender.opacity(0.08), MysticColors.neonLavender.opacity(0.8), MysticColors.neonLavender.opacity(0.08)],
-                                center: .center,
-                                startAngle: .degrees(isAnimating ? 360 : 0),
-                                endAngle: .degrees(isAnimating ? 720 : 360)
-                            ),
-                            lineWidth: 1
-                        )
-                        .frame(width: 140, height: 140)
-
-                    Image(systemName: "moon.stars.fill")
-                        .font(.system(size: 64, weight: .thin))
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [MysticColors.mysticGold, Color(hex: "F0D060"), MysticColors.mysticGold.opacity(0.7)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
+                                startRadius: 18,
+                                endRadius: 120
                             )
                         )
-                        .shadow(color: MysticColors.mysticGold.opacity(isAnimating ? 0.6 : 0.2), radius: isAnimating ? 22 : 10)
-                        .shadow(color: MysticColors.mysticGold.opacity(isAnimating ? 0.2 : 0.05), radius: isAnimating ? 40 : 20)
-                        .scaleEffect(isAnimating ? 1.05 : 0.95)
+                        .frame(width: 220, height: 220)
+
+                    Capsule(style: .continuous)
+                        .fill(AuroraGradients.auroraVeil)
+                        .frame(width: 240, height: 76)
+                        .rotationEffect(.degrees(isAnimating ? -14 : -22))
+                        .blur(radius: 28)
+                        .opacity(0.5)
+
+                    Capsule(style: .continuous)
+                        .fill(AuroraGradients.oracle)
+                        .frame(width: 200, height: 60)
+                        .rotationEffect(.degrees(isAnimating ? 16 : 8))
+                        .blur(radius: 22)
+                        .opacity(0.34)
+
+                    Circle()
+                        .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                        .frame(width: 148, height: 148)
+
+                    AuroraGlyph(kind: .saturn, color: AuroraColors.polarWhite, lineWidth: 2.4)
+                        .frame(width: 72, height: 72)
+                        .foregroundStyle(AuroraGradients.primaryCTA)
+                        .shadow(color: AuroraColors.auroraMint.opacity(isAnimating ? 0.8 : 0.3), radius: isAnimating ? 28 : 12)
+                        .shadow(color: AuroraColors.auroraViolet.opacity(isAnimating ? 0.26 : 0.08), radius: isAnimating ? 44 : 20)
+                        .scaleEffect(isAnimating ? 1.04 : 0.96)
                 }
 
-                GlowingText(String(localized: "app.brand"), font: MysticFonts.title(42), color: MysticColors.mysticGold, glowRadius: isAnimating ? 14 : 6)
-                    .scaleEffect(isAnimating ? 1.02 : 0.98)
+                VStack(spacing: AuroraSpacing.sm) {
+                    Text(String(localized: "app.brand"))
+                        .font(AuroraTypography.hero(42))
+                        .foregroundColor(AuroraColors.textPrimary)
+                        .scaleEffect(isAnimating ? 1.01 : 0.99)
+
+                    Text("splash.subtitle")
+                        .font(AuroraTypography.body(14))
+                        .foregroundColor(AuroraColors.textSecondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, AuroraSpacing.lg)
+                }
 
                 Spacer()
-                
-                VStack(spacing: MysticSpacing.md) {
+
+                VStack(spacing: AuroraSpacing.md) {
                     ProgressView()
-                        .tint(MysticColors.stardust)
+                        .tint(AuroraColors.polarWhite)
                         .scaleEffect(1.1)
-                    
+
                     Text(String(localized: "splash.loading"))
-                        .font(MysticFonts.caption(13))
-                        .foregroundColor(MysticColors.textMuted)
+                        .font(AuroraTypography.body(13))
+                        .foregroundColor(AuroraColors.textMuted)
                         .opacity(isAnimating ? 1 : 0.5)
                 }
                 .padding(.bottom, 60)
@@ -85,10 +84,7 @@ struct SplashView: View {
         }
         .onAppear {
             if !reduceMotion {
-                withAnimation(.linear(duration: 8).repeatForever(autoreverses: false)) {
-                    isAnimating = true
-                }
-                withAnimation(.easeInOut(duration: 2).repeatForever(autoreverses: true)) {
+                withAnimation(.easeInOut(duration: 3.2).repeatForever(autoreverses: true)) {
                     isAnimating = true
                 }
             } else {

@@ -25,25 +25,42 @@ struct PaywallView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                MysticColors.voidBlack.ignoresSafeArea()
-                StarField(starCount: 35, mode: .modal)
+                AuroraBackdrop(style: .ambient)
 
                 ScrollView {
                     VStack(spacing: MysticSpacing.lg) {
-                        VStack(spacing: MysticSpacing.sm) {
-                            Image(systemName: "crown.fill")
-                                .font(.system(size: 52))
-                                .foregroundStyle(MysticGradients.goldShimmer)
+                        LumenCard(accent: AuroraColors.auroraMint) {
+                            VStack(spacing: AuroraSpacing.md) {
+                                ZStack {
+                                    Circle()
+                                        .fill(AuroraColors.auroraMint.opacity(0.16))
+                                        .frame(width: 88, height: 88)
 
-                            Text("settings.paywall.title")
-                                .font(MysticFonts.heading(24))
-                                .foregroundColor(MysticColors.textPrimary)
+                                    Image(systemName: "crown.fill")
+                                        .font(.system(size: 38))
+                                        .foregroundStyle(MysticGradients.goldShimmer)
+                                }
 
-                            Text("settings.paywall.subtitle")
-                                .font(MysticFonts.body(14))
-                                .foregroundColor(MysticColors.textSecondary)
-                                .multilineTextAlignment(.center)
+                                VStack(spacing: AuroraSpacing.sm) {
+                                    Text("settings.paywall.title")
+                                        .font(MysticFonts.heading(24))
+                                        .foregroundColor(MysticColors.textPrimary)
+
+                                    Text("Unlimited Oracle chats, richer natal readings, and premium aurora experiences across Tarot and Palm Reading.")
+                                        .font(MysticFonts.body(14))
+                                        .foregroundColor(MysticColors.textSecondary)
+                                        .multilineTextAlignment(.center)
+                                }
+
+                                HStack(spacing: AuroraSpacing.sm) {
+                                    paywallFeatureChip("Oracle", icon: "sparkles", accent: AuroraColors.auroraViolet)
+                                    paywallFeatureChip("Atlas", icon: "circle.hexagongrid.fill", accent: AuroraColors.auroraCyan)
+                                    paywallFeatureChip("Tarot", icon: "sparkles.rectangle.stack.fill", accent: AuroraColors.auroraRose)
+                                    paywallFeatureChip("Palm", icon: "hand.raised.fill", accent: AuroraColors.auroraMint)
+                                }
+                            }
                         }
+                        .padding(.horizontal, MysticSpacing.md)
 
                         if hasPremium {
                             MysticCard(glowColor: MysticColors.auroraGreen) {
@@ -167,7 +184,7 @@ struct PaywallView: View {
                     Button(String(localized: "common.close")) {
                         dismiss()
                     }
-                    .foregroundColor(MysticColors.neonLavender)
+                    .foregroundColor(AuroraColors.auroraCyan)
                 }
             }
             .task {
@@ -195,6 +212,24 @@ struct PaywallView: View {
                 }
             }
         }
+    }
+
+    private func paywallFeatureChip(_ title: String, icon: String, accent: Color) -> some View {
+        VStack(spacing: 6) {
+            ZStack {
+                Circle()
+                    .fill(accent.opacity(0.14))
+                    .frame(width: 42, height: 42)
+                Image(systemName: icon)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(accent)
+            }
+
+            Text(title)
+                .font(AuroraTypography.mono(10))
+                .foregroundColor(AuroraColors.textSecondary)
+        }
+        .frame(maxWidth: .infinity)
     }
 }
 
@@ -227,8 +262,7 @@ struct DeleteAccountSheet: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                MysticColors.voidBlack.ignoresSafeArea()
-                StarField(starCount: 25, mode: .modal)
+                AuroraBackdrop(style: .ambient)
 
                 ScrollView {
                     VStack(spacing: MysticSpacing.md) {
@@ -295,7 +329,7 @@ struct DeleteAccountSheet: View {
                     Button(String(localized: "common.close")) {
                         dismiss()
                     }
-                    .foregroundColor(MysticColors.neonLavender)
+                    .foregroundColor(AuroraColors.auroraCyan)
                     .disabled(authService.isLoading)
                 }
             }
@@ -328,8 +362,7 @@ struct NotificationPreferencesView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                MysticColors.voidBlack.ignoresSafeArea()
-                StarField(starCount: 25, mode: .modal)
+                AuroraBackdrop(style: .ambient)
 
                 VStack(spacing: MysticSpacing.lg) {
                     MysticCard(glowColor: MysticColors.neonLavender) {
@@ -393,7 +426,7 @@ struct NotificationPreferencesView: View {
                     Button(String(localized: "common.close")) {
                         dismiss()
                     }
-                    .foregroundColor(MysticColors.neonLavender)
+                    .foregroundColor(AuroraColors.auroraCyan)
                 }
             }
             .task {
@@ -415,8 +448,7 @@ struct LanguageSettingsView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                MysticColors.voidBlack.ignoresSafeArea()
-                StarField(starCount: 20, mode: .modal)
+                AuroraBackdrop(style: .ambient)
 
                 VStack(spacing: MysticSpacing.md) {
                     ForEach(languages, id: \.code) { language in
@@ -459,7 +491,7 @@ struct LanguageSettingsView: View {
                     Button(String(localized: "common.close")) {
                         dismiss()
                     }
-                    .foregroundColor(MysticColors.neonLavender)
+                    .foregroundColor(AuroraColors.auroraCyan)
                 }
             }
             .onAppear {
@@ -478,8 +510,7 @@ struct HelpCenterView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                MysticColors.voidBlack.ignoresSafeArea()
-                StarField(starCount: 15, mode: .modal)
+                AuroraBackdrop(style: .ambient)
 
                 ScrollView {
                     VStack(alignment: .leading, spacing: MysticSpacing.md) {
@@ -524,7 +555,7 @@ struct HelpCenterView: View {
                     Button(String(localized: "common.close")) {
                         dismiss()
                     }
-                    .foregroundColor(MysticColors.neonLavender)
+                    .foregroundColor(AuroraColors.auroraCyan)
                 }
             }
         }
@@ -550,8 +581,7 @@ struct PrivacyPolicyView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                MysticColors.voidBlack.ignoresSafeArea()
-                StarField(starCount: 15, mode: .modal)
+                AuroraBackdrop(style: .ambient)
 
                 ScrollView {
                     MysticCard(glowColor: MysticColors.mysticGold) {
@@ -585,7 +615,7 @@ struct PrivacyPolicyView: View {
                     Button(String(localized: "common.close")) {
                         dismiss()
                     }
-                    .foregroundColor(MysticColors.neonLavender)
+                    .foregroundColor(AuroraColors.auroraCyan)
                 }
             }
         }

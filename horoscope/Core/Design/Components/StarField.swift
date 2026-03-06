@@ -160,69 +160,108 @@ struct StarField: View {
                 }
                 .ignoresSafeArea()
 
+                // MARK: - Vivid Aurora Bokeh Blobs
                 Circle()
                     .fill(
                         RadialGradient(
                             colors: [
-                                MysticColors.neonLavender.opacity(0.08 * mode.nebulaOpacity),
+                                MysticColors.auroraGreen.opacity(0.35 * mode.nebulaOpacity),
+                                MysticColors.auroraGreen.opacity(0.08 * mode.nebulaOpacity),
                                 Color.clear
                             ],
                             center: .center,
-                            startRadius: 0,
-                            endRadius: 200
+                            startRadius: 20,
+                            endRadius: 280
                         )
                     )
-                    .frame(width: 400, height: 400)
-                    .offset(x: -80, y: -200)
-                    .blur(radius: 30)
+                    .frame(width: 600, height: 600)
+                    .offset(x: -100, y: -220)
+                    .blur(radius: 50)
 
                 Circle()
                     .fill(
                         RadialGradient(
                             colors: [
+                                MysticColors.celestialPink.opacity(0.22 * mode.nebulaOpacity),
                                 MysticColors.celestialPink.opacity(0.05 * mode.nebulaOpacity),
                                 Color.clear
                             ],
                             center: .center,
-                            startRadius: 0,
-                            endRadius: 150
+                            startRadius: 15,
+                            endRadius: 220
                         )
                     )
-                    .frame(width: 300, height: 300)
-                    .offset(x: 120, y: 300)
-                    .blur(radius: 40)
+                    .frame(width: 500, height: 500)
+                    .offset(x: 140, y: 320)
+                    .blur(radius: 55)
 
                 Ellipse()
                     .fill(
                         RadialGradient(
                             colors: [
-                                MysticColors.nebulaBlue.opacity(0.04 * mode.nebulaOpacity),
+                                MysticColors.neonLavender.opacity(0.2 * mode.nebulaOpacity),
+                                MysticColors.neonLavender.opacity(0.04 * mode.nebulaOpacity),
                                 Color.clear
                             ],
                             center: .center,
-                            startRadius: 0,
+                            startRadius: 10,
+                            endRadius: 240
+                        )
+                    )
+                    .frame(width: 550, height: 400)
+                    .offset(x: 80, y: -40)
+                    .blur(radius: 60)
+
+                Ellipse()
+                    .fill(
+                        RadialGradient(
+                            colors: [
+                                MysticColors.auroraGreen.opacity(0.18 * mode.nebulaOpacity),
+                                Color.clear
+                            ],
+                            center: .center,
+                            startRadius: 10,
                             endRadius: 180
                         )
                     )
-                    .frame(width: 350, height: 250)
-                    .offset(x: 60, y: -50)
-                    .blur(radius: 50)
+                    .frame(width: 400, height: 300)
+                    .offset(x: -120, y: 160)
+                    .blur(radius: 45)
 
-                Ellipse()
+                // Extra vivid blob — top right magenta
+                Circle()
                     .fill(
                         RadialGradient(
                             colors: [
-                                MysticColors.mysticGold.opacity(0.025 * mode.nebulaOpacity),
+                                MysticColors.celestialPink.opacity(0.15 * mode.nebulaOpacity),
                                 Color.clear
                             ],
                             center: .center,
-                            startRadius: 0,
-                            endRadius: 120
+                            startRadius: 5,
+                            endRadius: 160
                         )
                     )
-                    .frame(width: 240, height: 180)
-                    .offset(x: -100, y: 150)
-                    .blur(radius: 35)
+                    .frame(width: 350, height: 350)
+                    .offset(x: 160, y: -300)
+                    .blur(radius: 40)
+
+                // Extra vivid blob — center aurora shimmer
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            colors: [
+                                MysticColors.auroraGreen.opacity(0.12 * mode.nebulaOpacity),
+                                MysticColors.neonLavender.opacity(0.06 * mode.nebulaOpacity),
+                                Color.clear
+                            ],
+                            center: .center,
+                            startRadius: 20,
+                            endRadius: 200
+                        )
+                    )
+                    .frame(width: 450, height: 450)
+                    .offset(x: -40, y: 80)
+                    .blur(radius: 50)
             }
             .onAppear {
                 if stars.isEmpty {

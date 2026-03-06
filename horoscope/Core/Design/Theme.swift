@@ -3,44 +3,44 @@ import SwiftUI
 // MARK: - Color Palette
 enum MysticColors {
     // Primary
-    static let deepPurple = Color(hex: "100825")
-    static let cosmicBlue = Color(hex: "111B39")
-    static let midnightTeal = Color(hex: "0A1426")
-    static let voidBlack = Color(hex: "05030F")
+    static let deepPurple = AuroraColors.velvet
+    static let cosmicBlue = AuroraColors.eclipse
+    static let midnightTeal = AuroraColors.lagoon
+    static let voidBlack = AuroraColors.obsidian
 
     // Accent
-    static let mysticGold = Color(hex: "D4B06A")
-    static let neonLavender = Color(hex: "B197FF")
-    static let auroraGreen = Color(hex: "6AE1C1")
-    static let celestialPink = Color(hex: "E788B4")
-    static let starWhite = Color(hex: "ECE7F8")
-    static let nebulaBlue = Color(hex: "7BA5E8")
-    static let stardust = Color(hex: "D7C9FF")
-    static let transitOrange = Color(hex: "FFA94D")
+    static let mysticGold = AuroraColors.auroraMint
+    static let neonLavender = AuroraColors.auroraViolet
+    static let auroraGreen = AuroraColors.auroraMint
+    static let celestialPink = AuroraColors.auroraRose
+    static let starWhite = AuroraColors.polarWhite
+    static let nebulaBlue = AuroraColors.auroraCyan
+    static let stardust = AuroraColors.mist
+    static let transitOrange = AuroraColors.auroraCyan
 
     // Surface
-    static let cardBackground = Color(hex: "120B24").opacity(0.78)
-    static let cardBorder = Color(hex: "B89EEA").opacity(0.2)
-    static let inputBackground = Color(hex: "0D0920").opacity(0.9)
-    static let elevatedSurface = Color(hex: "1A1234").opacity(0.72)
+    static let cardBackground = AuroraColors.surfaceElevated.opacity(0.9)
+    static let cardBorder = AuroraColors.stroke
+    static let inputBackground = AuroraColors.surface.opacity(0.96)
+    static let elevatedSurface = AuroraColors.surfaceElevated.opacity(0.84)
 
     // Text
-    static let textPrimary = Color(hex: "F4F0FF")
-    static let textSecondary = Color(hex: "BCB2D6")
-    static let textMuted = Color(hex: "7A6F97")
+    static let textPrimary = AuroraColors.textPrimary
+    static let textSecondary = AuroraColors.textSecondary
+    static let textMuted = AuroraColors.textMuted
 }
 
 // MARK: - Arcane Editorial Tokens
 enum MysticSurfaces {
-    static let canvas = MysticColors.voidBlack
-    static let cardBase = Color(hex: "110A22").opacity(0.84)
-    static let cardGlassOverlay = Color.white.opacity(0.05)
-    static let cardTintOverlay = Color(hex: "A88FF3").opacity(0.1)
-    static let topBarBase = Color(hex: "0A0618").opacity(0.9)
-    static let tabBarBase = Color(hex: "090514").opacity(0.93)
+    static let canvas = AuroraColors.canvas
+    static let cardBase = AuroraColors.surfaceElevated.opacity(0.92)
+    static let cardGlassOverlay = Color.white.opacity(0.04)
+    static let cardTintOverlay = AuroraColors.auroraViolet.opacity(0.08)
+    static let topBarBase = AuroraColors.obsidian.opacity(0.9)
+    static let tabBarBase = AuroraColors.surfaceElevated.opacity(0.94)
     static let tabBarHighlight = Color.white.opacity(0.06)
-    static let separator = Color.white.opacity(0.1)
-    static let inputField = Color(hex: "0D081C").opacity(0.94)
+    static let separator = AuroraColors.hairline
+    static let inputField = AuroraColors.surface.opacity(0.95)
 }
 
 enum MysticTypographyRoles {
@@ -62,107 +62,39 @@ enum MysticElevation {
 
 // MARK: - Gradients
 enum MysticGradients {
-    static let cosmicBackground = LinearGradient(
-        colors: [
-            MysticColors.voidBlack,
-            Color(hex: "100722"),
-            Color(hex: "190F34"),
-            Color(hex: "142248"),
-            MysticColors.cosmicBlue,
-            MysticColors.midnightTeal
-        ],
-        startPoint: .topLeading,
-        endPoint: .bottomTrailing
-    )
-
-    static let goldShimmer = LinearGradient(
-        colors: [
-            Color(hex: "B98E4D"),
-            Color(hex: "E5C17C"),
-            Color(hex: "F2D89A"),
-            Color(hex: "C39A5B")
-        ],
-        startPoint: .topLeading,
-        endPoint: .bottomTrailing
-    )
-
-    static let lavenderGlow = LinearGradient(
-        colors: [
-            MysticColors.neonLavender.opacity(0.7),
-            MysticColors.stardust.opacity(0.5),
-            MysticColors.celestialPink.opacity(0.5),
-            MysticColors.neonLavender.opacity(0.7)
-        ],
-        startPoint: .topLeading,
-        endPoint: .bottomTrailing
-    )
-
-    static let auroraShift = LinearGradient(
-        colors: [
-            MysticColors.neonLavender,
-            MysticColors.nebulaBlue,
-            MysticColors.auroraGreen,
-            MysticColors.celestialPink
-        ],
-        startPoint: .topLeading,
-        endPoint: .bottomTrailing
-    )
-
-    static let cardGlass = LinearGradient(
-        colors: [
-            Color.white.opacity(0.09),
-            Color.white.opacity(0.03),
-            Color.white.opacity(0.01)
-        ],
-        startPoint: .topLeading,
-        endPoint: .bottomTrailing
-    )
-
-    static let celestialShimmer = LinearGradient(
-        colors: [
-            MysticColors.neonLavender,
-            MysticColors.nebulaBlue,
-            MysticColors.stardust
-        ],
-        startPoint: .leading,
-        endPoint: .trailing
-    )
-
-    static let cosmicRose = LinearGradient(
-        colors: [
-            MysticColors.celestialPink,
-            Color(hex: "BE95F5"),
-            MysticColors.neonLavender
-        ],
-        startPoint: .topLeading,
-        endPoint: .bottomTrailing
-    )
+    static let cosmicBackground = AuroraGradients.canvas
+    static let goldShimmer = AuroraGradients.primaryCTA
+    static let lavenderGlow = AuroraGradients.oracle
+    static let auroraShift = AuroraGradients.auroraVeil
+    static let cardGlass = AuroraGradients.silkHighlight
+    static let celestialShimmer = AuroraGradients.auroraSpectrum
+    static let cosmicRose = AuroraGradients.journal
 }
 
 // MARK: - Typography
 enum MysticFonts {
     static func title(_ size: CGFloat = 30) -> Font {
-        .system(size: size, weight: .bold, design: .serif)
+        AuroraTypography.hero(size)
     }
 
     static func heading(_ size: CGFloat = 22) -> Font {
-        .system(size: size, weight: .semibold, design: .serif)
+        AuroraTypography.section(size)
     }
 
     static func body(_ size: CGFloat = 16) -> Font {
-        .system(size: size, weight: .regular, design: .rounded)
+        AuroraTypography.body(size)
     }
 
     static func caption(_ size: CGFloat = 13) -> Font {
-        .system(size: size, weight: .medium, design: .rounded)
+        AuroraTypography.body(size)
     }
 
     static func mystic(_ size: CGFloat = 20) -> Font {
-        .system(size: size, weight: .light, design: .serif)
+        AuroraTypography.title(size)
     }
 
     static func mono(_ size: CGFloat = 14) -> Font {
-        .system(size: size, weight: .medium, design: .monospaced)
+        AuroraTypography.mono(size)
     }
 }
 
@@ -193,8 +125,8 @@ enum MysticAccessibility {
 // MARK: - Motion
 enum MysticMotion {
     static let quickPressDuration: Double = 0.12
-    static let buttonGlowDuration: Double = 2.5
-    static let textGlowDuration: Double = 3.0
+    static let buttonGlowDuration: Double = 1.8
+    static let textGlowDuration: Double = 2.4
     static let cardHoverDuration: Double = 0.2
     static let springResponse: Double = 0.35
     static let springDamping: Double = 0.72
@@ -205,14 +137,14 @@ enum MysticEffects {
     static let buttonPressedScale: CGFloat = 0.96
     static let cardPressedScale: CGFloat = 0.975
 
-    static let buttonGlowRadiusRest: CGFloat = 6
-    static let buttonGlowRadiusActive: CGFloat = 16
+    static let buttonGlowRadiusRest: CGFloat = 4
+    static let buttonGlowRadiusActive: CGFloat = 12
 
-    static let cardShadowRadius: CGFloat = 16
+    static let cardShadowRadius: CGFloat = 18
     static let cardShadowYOffset: CGFloat = 6
 
     static let compactTextLineSpacing: CGFloat = 3
 
-    static let cardBlurRadius: CGFloat = 20
-    static let topBarBlurRadius: CGFloat = 24
+    static let cardBlurRadius: CGFloat = 12
+    static let topBarBlurRadius: CGFloat = 16
 }

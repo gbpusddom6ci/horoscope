@@ -31,6 +31,14 @@ class FirestoreService {
         usersCollection().document(userId).collection("charts")
     }
 
+    private func insightsCollection(userId: String) -> CollectionReference {
+        usersCollection().document(userId).collection("savedInsights")
+    }
+
+    private func ritualsCollection(userId: String) -> CollectionReference {
+        usersCollection().document(userId).collection("dailyRituals")
+    }
+
     // MARK: - Remote User Document (raw)
 
     /// Fetches `users/{userId}` document from Firestore.
@@ -127,6 +135,37 @@ class FirestoreService {
         try await deleteAllDocuments(in: dreamsCollection(userId: userId))
     }
 
+    // MARK: - Saved Insights
+
+    func saveSavedInsight(_ insight: SavedInsight) async throws {
+        try insightsCollection(userId: insight.userId)
+            .document(insight.id)
+            .setData(from: insight, merge: true)
+    }
+
+    func getSavedInsights(userId: String) async throws -> [SavedInsight] {
+        let snapshot = try await insightsCollection(userId: userId)
+            .order(by: "createdAt", descending: true)
+            .getDocuments()
+
+        return snapshot.documents.compactMap { doc in
+            do {
+                return try doc.data(as: SavedInsight.self)
+            } catch {
+                logger.error("SavedInsight decode failed for \(doc.documentID): \(error.localizedDescription)")
+                return nil
+            }
+        }
+    }
+
+    func deleteSavedInsight(userId: String, insightId: String) async throws {
+        try await insightsCollection(userId: userId).document(insightId).delete()
+    }
+
+    func clearSavedInsights(userId: String) async throws {
+        try await deleteAllDocuments(in: insightsCollection(userId: userId))
+    }
+
     // MARK: - Chart Data
 
     func saveChartData(_ chart: ChartData, userId: String) async throws {
@@ -153,10 +192,32 @@ class FirestoreService {
             .delete()
     }
 
+    // MARK: - Daily Ritual State
+
+    func saveDailyRitualState(_ state: DailyRitualState) async throws {
+        try ritualsCollection(userId: state.userId)
+            .document(state.id)
+            .setData(from: state, merge: true)
+    }
+
+    func getDailyRitualState(userId: String, date: Date) async throws -> DailyRitualState? {
+        let snapshot = try await ritualsCollection(userId: userId)
+            .document(DailyRitualState.dateKey(for: date))
+            .getDocument()
+
+        guard snapshot.exists else {
+            return nil
+        }
+
+        return try snapshot.data(as: DailyRitualState.self)
+    }
+
     /// Removes all user-scoped app data and then deletes the root user document.
     func purgeUserData(userId: String) async throws {
         try await clearChatSessions(userId: userId)
         try await clearDreamEntries(userId: userId)
+        try await clearSavedInsights(userId: userId)
+        try await deleteAllDocuments(in: ritualsCollection(userId: userId))
         try await deleteAllDocuments(in: chartsCollection(userId: userId))
         try await usersCollection().document(userId).delete()
     }

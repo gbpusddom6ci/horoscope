@@ -61,7 +61,7 @@ struct HomeView: View {
                     } label: {
                         Image(systemName: "bolt.fill")
                             .font(.system(size: 17, weight: .semibold))
-                            .foregroundColor(MysticColors.mysticGold)
+                            .foregroundColor(MysticColors.auroraGreen)
                     }
                     .accessibilityLabel(Text(String(localized: "quick_actions.title")))
                     .accessibilityHint(Text(String(localized: "quick_actions.hint")))
@@ -209,9 +209,15 @@ struct HomeView: View {
     private var dailyFocusCard: some View {
         MysticCard(glowColor: MysticColors.neonLavender) {
             VStack(alignment: .leading, spacing: MysticSpacing.md) {
+                // Aurora wave visualization
+                AuroraWave(height: 80, lineWidth: 2, glowRadius: 8)
+                    .clipShape(RoundedRectangle(cornerRadius: MysticRadius.md))
+                    .padding(.horizontal, -MysticSpacing.md)
+                    .padding(.top, -MysticSpacing.md)
+
                 HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(verbatim: "Daily Focus")
+                        Text(verbatim: "Cosmic Forecast")
                             .font(MysticTypographyRoles.section)
                             .foregroundColor(MysticColors.textPrimary)
 
@@ -225,6 +231,7 @@ struct HomeView: View {
                     Image(systemName: "moon.stars.fill")
                         .font(.system(size: 20))
                         .foregroundColor(MysticColors.neonLavender)
+                        .shadow(color: MysticColors.neonLavender.opacity(0.5), radius: 6)
                         .padding(9)
                         .background(MysticColors.neonLavender.opacity(0.16))
                         .clipShape(RoundedRectangle(cornerRadius: MysticRadius.md, style: .continuous))
@@ -293,12 +300,12 @@ struct HomeView: View {
     // MARK: - Daily Energy
 
     private var dailyEnergyCard: some View {
-        MysticCard(glowColor: MysticColors.mysticGold) {
+        MysticCard(glowColor: MysticColors.auroraGreen) {
             VStack(alignment: .leading, spacing: MysticSpacing.md) {
                 HStack {
                     Image(systemName: "sparkles")
                         .font(.system(size: 20))
-                        .foregroundColor(MysticColors.mysticGold)
+                        .foregroundColor(MysticColors.auroraGreen)
 
                     Text("home.energy.title")
                         .font(MysticFonts.heading(18))
@@ -326,12 +333,31 @@ struct HomeView: View {
                             .lineSpacing(4)
                     }
 
-                    // Placeholder energy values; replace with API/calculation when available.
-                    HStack(spacing: MysticSpacing.md) {
-                        EnergyBar(label: String(localized: "home.energy.love"), value: 0.7, color: MysticColors.celestialPink)
-                        EnergyBar(label: String(localized: "home.energy.career"), value: 0.85, color: MysticColors.mysticGold)
-                        EnergyBar(label: String(localized: "home.energy.health"), value: 0.6, color: MysticColors.auroraGreen)
+                    // Glowing circular progress rings
+                    HStack(spacing: MysticSpacing.lg) {
+                        GlowingRing(
+                            progress: 0.7,
+                            color: MysticColors.celestialPink,
+                            size: 65,
+                            lineWidth: 5,
+                            label: String(localized: "home.energy.love")
+                        )
+                        GlowingRing(
+                            progress: 0.85,
+                            color: MysticColors.auroraGreen,
+                            size: 65,
+                            lineWidth: 5,
+                            label: String(localized: "home.energy.career")
+                        )
+                        GlowingRing(
+                            progress: 0.6,
+                            color: MysticColors.neonLavender,
+                            size: 65,
+                            lineWidth: 5,
+                            label: String(localized: "home.energy.health")
+                        )
                     }
+                    .frame(maxWidth: .infinity)
                     .transition(reduceMotion ? .identity : .opacity)
                 }
             }
@@ -391,7 +417,7 @@ struct HomeView: View {
                             label: String(localized: "home.natal.sun"),
                             value: birthData.sunSign.localizedDisplayName,
                             icon: "sun.max.fill",
-                            color: MysticColors.mysticGold
+                            color: MysticColors.auroraGreen
                         )
                         .frame(width: 110)
 
@@ -444,10 +470,10 @@ struct HomeView: View {
 
                 Text(verbatim: "\(remainingTransits.count)")
                     .font(MysticFonts.caption(13))
-                    .foregroundColor(MysticColors.mysticGold)
+                    .foregroundColor(MysticColors.auroraGreen)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 4)
-                    .background(MysticColors.mysticGold.opacity(0.15))
+                    .background(MysticColors.auroraGreen.opacity(0.15))
                     .clipShape(Capsule())
             }
 
@@ -682,56 +708,6 @@ private struct HomeQuickFeatureTile: View {
         .accessibilityLabel(Text(title))
         .accessibilityHint(Text(String(localized: "home.explore.item.hint")))
         .accessibilityIdentifier(id)
-    }
-}
-
-// MARK: - Energy Bar
-struct EnergyBar: View {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    let label: String
-    let value: Double
-    let color: Color
-    @State private var animatedValue: Double = 0
-
-    var body: some View {
-        VStack(spacing: MysticSpacing.xs + 2) {
-            Text(label)
-                .font(MysticFonts.caption(11))
-                .foregroundColor(MysticColors.textMuted)
-
-            GeometryReader { geometry in
-                ZStack(alignment: .leading) {
-                    Capsule()
-                        .fill(color.opacity(0.12))
-                        .frame(height: 7)
-
-                    Capsule()
-                        .fill(
-                            LinearGradient(
-                                colors: [color.opacity(0.7), color],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-                        .frame(width: max(0, geometry.size.width * animatedValue), height: 7)
-                        .shadow(color: color.opacity(0.3), radius: 4, y: 1)
-                }
-            }
-            .frame(height: 7)
-
-            Text(verbatim: "\(Int(value * 100))%")
-                .font(MysticFonts.mono(11))
-                .foregroundColor(color)
-        }
-        .onAppear {
-            if reduceMotion {
-                animatedValue = value
-            } else {
-                withAnimation(.easeOut(duration: 1.2).delay(0.4)) {
-                    animatedValue = value
-                }
-            }
-        }
     }
 }
 

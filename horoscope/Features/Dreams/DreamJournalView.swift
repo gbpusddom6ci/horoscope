@@ -588,10 +588,7 @@ struct NewDreamSheet: View {
                 }
                 .scrollDismissesKeyboard(.interactively)
                 .background {
-                    ZStack {
-                        MysticColors.voidBlack.ignoresSafeArea()
-                        StarField(starCount: 30, mode: .modal)
-                    }
+                    AuroraBackdrop(style: .ambient)
                 }
             .navigationTitle(Text("dream.new_sheet.title"))
             .navigationBarTitleDisplayMode(.inline)
@@ -599,7 +596,7 @@ struct NewDreamSheet: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button(String(localized: "common.cancel")) { dismiss() }
-                        .foregroundColor(MysticColors.neonLavender)
+                        .foregroundColor(AuroraColors.auroraCyan)
                 }
             }
         }
@@ -617,15 +614,18 @@ struct NewDreamSheet: View {
                             VStack(spacing: 4) {
                                 Text(mood.emoji).font(.system(size: 28))
                                 Text(mood.localizedDisplayName)
-                                    .font(MysticFonts.caption(10))
-                                    .foregroundColor(MysticColors.textSecondary)
+                                    .font(AuroraTypography.mono(10))
+                                    .foregroundColor(AuroraColors.textSecondary)
                             }
-                            .padding(MysticSpacing.sm)
-                            .background(selectedMood == mood ? MysticColors.neonLavender.opacity(0.15) : Color.clear)
-                            .clipShape(RoundedRectangle(cornerRadius: MysticRadius.md))
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 10)
+                            .background(
+                                RoundedRectangle(cornerRadius: AuroraRadius.sm, style: .continuous)
+                                    .fill(selectedMood == mood ? AnyShapeStyle(AuroraGradients.chipFill(accent: AuroraColors.auroraRose)) : AuroraSurfaceLevel.elevated.fillStyle)
+                            )
                             .overlay(
-                                RoundedRectangle(cornerRadius: MysticRadius.md)
-                                    .stroke(selectedMood == mood ? MysticColors.neonLavender.opacity(0.5) : Color.clear, lineWidth: 1)
+                                RoundedRectangle(cornerRadius: AuroraRadius.sm, style: .continuous)
+                                    .stroke(selectedMood == mood ? AuroraColors.auroraRose.opacity(0.4) : AuroraColors.stroke, lineWidth: 1)
                             )
                         }
                         .buttonStyle(.plain)
@@ -642,14 +642,24 @@ struct NewDreamSheet: View {
                 .font(MysticFonts.heading(16))
                 .foregroundColor(MysticColors.textPrimary)
             TextEditor(text: $dreamText)
-                .font(MysticFonts.body(15))
-                .foregroundColor(MysticColors.textPrimary)
+                .font(AuroraTypography.body(15))
+                .foregroundColor(AuroraColors.textPrimary)
                 .scrollContentBackground(.hidden)
                 .frame(minHeight: 200)
                 .padding(MysticSpacing.md)
-                .background(MysticColors.inputBackground)
-                .clipShape(RoundedRectangle(cornerRadius: MysticRadius.md))
-                .overlay(RoundedRectangle(cornerRadius: MysticRadius.md).stroke(MysticColors.cardBorder, lineWidth: 1))
+                .background(AuroraSurfaceLevel.elevated.fillStyle)
+                .clipShape(RoundedRectangle(cornerRadius: AuroraRadius.md, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: AuroraRadius.md, style: .continuous)
+                        .stroke(
+                            LinearGradient(
+                                colors: [AuroraColors.auroraRose.opacity(0.24), Color.white.opacity(0.08)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1
+                        )
+                )
                 .onChange(of: dreamText) { _, _ in
                     validationMessage = nil
                 }

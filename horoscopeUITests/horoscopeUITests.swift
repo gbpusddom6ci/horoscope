@@ -1,25 +1,20 @@
-//
-//  horoscopeUITests.swift
-//  horoscopeUITests
-//
-//  Created by malware on 2/25/26.
-//
-
 import XCTest
 
 final class horoscopeUITests: XCTestCase {
 
     override func setUpWithError() throws {
-        // Put setup code here. This method is called before the invocation of each test method in the class.
-
-        // In UI tests it is usually best to stop immediately when a failure occurs.
         continueAfterFailure = false
-
-        // In UI tests it’s important to set the initial state - such as interface orientation - required for your tests before they run. The setUp method is a good place to do this.
+        let app = XCUIApplication()
+        if app.state != .notRunning {
+            app.terminate()
+        }
     }
 
     override func tearDownWithError() throws {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
+        let app = XCUIApplication()
+        if app.state != .notRunning {
+            app.terminate()
+        }
     }
 
     private func launchAuthenticatedApp(language: String = "en") -> XCUIApplication {
@@ -34,67 +29,78 @@ final class horoscopeUITests: XCTestCase {
 
     private func revealElementIfNeeded(_ element: XCUIElement, in app: XCUIApplication, maxScrolls: Int = 8) {
         var attempts = 0
-        while !element.isHittable && attempts < maxScrolls {
-            app.swipeUp()
+        while (!element.exists || !element.isHittable) && attempts < maxScrolls {
+            let scrollTarget = app.scrollViews.firstMatch
+            if scrollTarget.exists {
+                scrollTarget.swipeUp()
+            } else {
+                app.swipeUp()
+            }
             attempts += 1
         }
     }
 
-    private func waitForNonExistence(_ element: XCUIElement, timeout: TimeInterval) -> Bool {
-        let predicate = NSPredicate(format: "exists == false")
-        let expectation = XCTNSPredicateExpectation(predicate: predicate, object: element)
-        return XCTWaiter.wait(for: [expectation], timeout: timeout) == .completed
+    @MainActor
+    func testAuthenticatedHomeShowsGreetingAndDock() throws {
+        let app = launchAuthenticatedApp()
+
+        XCTAssertTrue(app.staticTexts["home.greeting"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.otherElements["main.tab_bar"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["dock.tarot"].exists)
+        XCTAssertTrue(app.buttons["dock.oracle"].exists)
+        XCTAssertTrue(app.buttons["dock.home"].exists)
+        XCTAssertTrue(app.buttons["dock.dreams"].exists)
+        XCTAssertTrue(app.buttons["dock.profile"].exists)
     }
 
     @MainActor
-    func testExample() throws {
-        // UI tests must launch the application that they test.
-        let app = XCUIApplication()
-        app.launch()
-
-        XCTAssertTrue(app.staticTexts["Mystic"].waitForExistence(timeout: 5))
-    }
-
-    @MainActor
-    func testQuickActionsButtonNavigatesToChat() throws {
+    func testQuickActionsButtonNavigatesToOracle() throws {
         let app = launchAuthenticatedApp()
 
         let quickButton = app.buttons["quick_actions.button"]
         XCTAssertTrue(quickButton.waitForExistence(timeout: 8))
         quickButton.tap()
 
-        // Floating button should navigate to Chat tab
         let composer = app.otherElements["chat.composer"]
-        XCTAssertTrue(composer.waitForExistence(timeout: 5))
+        XCTAssertTrue(composer.waitForExistence(timeout: 8))
     }
 
     @MainActor
-    func testChatMoreContextsSheetOpens() throws {
+    func testHomeContainsAtlasPalmAndTarotCTAs() throws {
         let app = launchAuthenticatedApp()
 
-        // Navigate to Chat via floating button
-        let quickButton = app.buttons["quick_actions.button"]
-        XCTAssertTrue(quickButton.waitForExistence(timeout: 8))
-        quickButton.tap()
+        let atlasCTA = app.buttons["home.atlas.cta"]
+        let palmCTA = app.buttons["home.palm.cta"]
+        let tarotCTA = app.buttons["home.tarot.cta"]
 
-        let moreButton = app.buttons["chat.context.more"]
-        XCTAssertTrue(moreButton.waitForExistence(timeout: 5))
-        moreButton.tap()
+        XCTAssertTrue(app.staticTexts["home.greeting"].waitForExistence(timeout: 8))
 
-        XCTAssertTrue(app.staticTexts["More Contexts"].waitForExistence(timeout: 3))
-        XCTAssertTrue(app.buttons["Tarot"].exists)
+        revealElementIfNeeded(atlasCTA, in: app)
+        XCTAssertTrue(atlasCTA.exists)
+
+        revealElementIfNeeded(palmCTA, in: app)
+        XCTAssertTrue(palmCTA.exists)
+
+        revealElementIfNeeded(tarotCTA, in: app)
+        XCTAssertTrue(tarotCTA.exists)
     }
 
+    @MainActor
+    func testTarotTabShowsDrawCTA() throws {
+        let app = launchAuthenticatedApp()
 
+        let tarotDock = app.buttons["dock.tarot"]
+        XCTAssertTrue(tarotDock.waitForExistence(timeout: 5))
+        tarotDock.tap()
+
+        XCTAssertTrue(app.buttons["tarot.draw.cta"].waitForExistence(timeout: 5))
+    }
 
     @MainActor
     func testChatComposerKeyboardAdaptiveChrome() throws {
         let app = launchAuthenticatedApp()
 
-        // Navigate to Chat via floating button
-        let quickButton = app.buttons["quick_actions.button"]
-        XCTAssertTrue(quickButton.waitForExistence(timeout: 8))
-        quickButton.tap()
+        app.buttons["quick_actions.button"].tap()
 
         let composer = app.otherElements["chat.composer"]
         XCTAssertTrue(composer.waitForExistence(timeout: 5))
@@ -105,12 +111,9 @@ final class horoscopeUITests: XCTestCase {
         let inputField = app.textFields["chat.input.field"]
         XCTAssertTrue(inputField.waitForExistence(timeout: 5))
         inputField.tap()
-        
-        // Wait briefly for potential keyboard animation
+
         sleep(2)
 
-        // In iOS simulators with hardware keyboard connected, software keyboard doesn't appear.
-        // We evaluate success by checking if tabBar hid (software keyboard up) or remained (hardware keyboard).
         if !tabBar.exists || !tabBar.isHittable {
             XCTAssertTrue(composer.exists)
         } else {
@@ -120,7 +123,6 @@ final class horoscopeUITests: XCTestCase {
 
     @MainActor
     func testLaunchPerformance() throws {
-        // This measures how long it takes to launch your application.
         measure(metrics: [XCTApplicationLaunchMetric()]) {
             XCUIApplication().launch()
         }

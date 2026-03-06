@@ -10,13 +10,17 @@ struct OnboardingView: View {
 
     var body: some View {
         ZStack {
-            StarField(starCount: 80)
+            AuroraBackdrop(style: .ambient)
 
             VStack(spacing: 0) {
-                MysticTopBar("onboarding.title")
+                AuroraHeaderBar(
+                    eyebrow: String(localized: "onboarding.screen.eyebrow"),
+                    title: String(localized: "onboarding.screen.title"),
+                    subtitle: String(localized: "onboarding.screen.subtitle")
+                )
 
                 progressBar
-                    .padding(.top, MysticSpacing.sm)
+                    .padding(.top, AuroraSpacing.sm)
 
                 TabView(selection: $viewModel.currentStep) {
                     BirthDateStep(selectedDate: $viewModel.birthDate)
@@ -30,22 +34,25 @@ struct OnboardingView: View {
 
                     BirthLocationStep(viewModel: viewModel)
                         .tag(2)
+
+                    IntentSelectionStep(selectedIntent: $viewModel.guidanceIntent)
+                        .tag(3)
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
-                .animation(reduceMotion ? nil : .spring(response: MysticMotion.springResponse, dampingFraction: MysticMotion.springDamping), value: viewModel.currentStep)
+                .animation(reduceMotion ? nil : AuroraMotion.spring, value: viewModel.currentStep)
 
                 if case .failed(let message) = viewModel.submissionState {
                     Text(message)
-                        .font(MysticFonts.caption(13))
-                        .foregroundColor(MysticColors.celestialPink)
+                        .font(AuroraTypography.body(13))
+                        .foregroundColor(AuroraColors.auroraRose)
                         .multilineTextAlignment(.center)
-                        .padding(.horizontal, MysticSpacing.lg)
-                        .padding(.bottom, MysticSpacing.sm)
+                        .padding(.horizontal, AuroraSpacing.lg)
+                        .padding(.bottom, AuroraSpacing.sm)
                 }
 
                 navigationButtons
-                    .padding(.horizontal, MysticSpacing.lg)
-                    .padding(.bottom, MysticSpacing.xl)
+                    .padding(.horizontal, AuroraSpacing.lg)
+                    .padding(.bottom, AuroraSpacing.xl)
             }
         }
         .onChange(of: viewModel.currentStep) { _, _ in viewModel.persistDraft() }
@@ -53,43 +60,44 @@ struct OnboardingView: View {
         .onChange(of: viewModel.birthTime) { _, _ in viewModel.persistDraft() }
         .onChange(of: viewModel.isTimeKnown) { _, _ in viewModel.persistDraft() }
         .onChange(of: viewModel.locationQuery) { _, _ in viewModel.persistDraft() }
+        .onChange(of: viewModel.guidanceIntent) { _, _ in viewModel.persistDraft() }
     }
 
     // MARK: - Progress Bar
     private var progressBar: some View {
-        HStack(spacing: MysticSpacing.sm) {
-            ForEach(0..<3) { index in
+        HStack(spacing: AuroraSpacing.sm) {
+            ForEach(0..<4) { index in
                 Capsule()
                     .fill(
                         index <= viewModel.currentStep
                             ? AnyShapeStyle(
                                 LinearGradient(
-                                    colors: [MysticColors.mysticGold.opacity(0.8), MysticColors.mysticGold],
+                                    colors: [AuroraColors.auroraMint.opacity(0.8), AuroraColors.auroraCyan],
                                     startPoint: .leading,
                                     endPoint: .trailing
                                 )
                             )
-                            : AnyShapeStyle(MysticColors.textMuted.opacity(0.2))
+                            : AnyShapeStyle(AuroraColors.textMuted.opacity(0.2))
                     )
                     .frame(height: 4)
                     .shadow(
-                        color: index <= viewModel.currentStep ? MysticColors.mysticGold.opacity(0.25) : Color.clear,
+                        color: index <= viewModel.currentStep ? AuroraColors.auroraMint.opacity(0.25) : Color.clear,
                         radius: 4, y: 1
                     )
-                    .animation(reduceMotion ? nil : .spring(response: MysticMotion.springResponse, dampingFraction: MysticMotion.springDamping), value: viewModel.currentStep)
+                    .animation(reduceMotion ? nil : AuroraMotion.spring, value: viewModel.currentStep)
             }
         }
-        .padding(.horizontal, MysticSpacing.lg)
+        .padding(.horizontal, AuroraSpacing.lg)
         .accessibilityLabel(Text(String(localized: "onboarding.progress")))
-        .accessibilityValue(Text(verbatim: "\(viewModel.currentStep + 1)/3"))
+        .accessibilityValue(Text(verbatim: "\(viewModel.currentStep + 1)/4"))
     }
 
     // MARK: - Navigation Buttons
     private var navigationButtons: some View {
-        HStack(spacing: MysticSpacing.md) {
+        HStack(spacing: AuroraSpacing.md) {
             if viewModel.currentStep > 0 {
-                MysticButton(String(localized: "onboarding.navigation.back"), icon: "chevron.left", style: .ghost) {
-                    withAnimation(reduceMotion ? nil : .spring(response: MysticMotion.springResponse, dampingFraction: MysticMotion.springDamping)) {
+                HaloButton(String(localized: "onboarding.navigation.back"), icon: "chevron.left", style: .ghost) {
+                    withAnimation(reduceMotion ? nil : AuroraMotion.spring) {
                         viewModel.currentStep -= 1
                     }
                 }
@@ -97,19 +105,15 @@ struct OnboardingView: View {
                 .accessibilityHint(Text(String(localized: "onboarding.navigation.back.hint")))
             }
 
-            if viewModel.currentStep < 2 {
-                MysticButton(String(localized: "onboarding.navigation.next"), icon: "arrow.right", style: .primary) {
-                    withAnimation(reduceMotion ? nil : .spring(response: MysticMotion.springResponse, dampingFraction: MysticMotion.springDamping)) {
+            if viewModel.currentStep < 3 {
+                HaloButton(String(localized: "onboarding.navigation.next"), icon: "arrow.right") {
+                    withAnimation(reduceMotion ? nil : AuroraMotion.spring) {
                         viewModel.currentStep += 1
                     }
                 }
                 .accessibilityHint(Text(String(localized: "onboarding.navigation.next.hint")))
             } else {
-                MysticButton(
-                    String(localized: "onboarding.navigation.start"),
-                    style: .primary,
-                    isLoading: viewModel.isSubmitting || viewModel.isResolvingLocation
-                ) {
+                HaloButton(String(localized: "onboarding.navigation.enter_sanctum"), icon: "sparkles") {
                     Task {
                         await viewModel.completeOnboarding(authService: authService)
                     }
@@ -383,6 +387,7 @@ class OnboardingViewModel: NSObject, MKLocalSearchCompleterDelegate {
         var selectedLatitude: Double?
         var selectedLongitude: Double?
         var selectedTimezone: String
+        var guidanceIntentRawValue: String
     }
 
     private static let draftKey = "onboarding_draft_v1"
@@ -397,6 +402,7 @@ class OnboardingViewModel: NSObject, MKLocalSearchCompleterDelegate {
     var selectedLatitude: Double?
     var selectedLongitude: Double?
     var selectedTimezone: String = TimeZone.current.identifier
+    var guidanceIntent: GuidanceIntent = .clarity
     var submissionState: OnboardingSubmissionState = .idle
 
     var isSubmitting: Bool {
@@ -437,7 +443,8 @@ class OnboardingViewModel: NSObject, MKLocalSearchCompleterDelegate {
             selectedLocationName: selectedLocationName,
             selectedLatitude: selectedLatitude,
             selectedLongitude: selectedLongitude,
-            selectedTimezone: selectedTimezone
+            selectedTimezone: selectedTimezone,
+            guidanceIntentRawValue: guidanceIntent.rawValue
         )
 
         if let encoded = try? JSONEncoder().encode(draft) {
@@ -516,6 +523,12 @@ class OnboardingViewModel: NSObject, MKLocalSearchCompleterDelegate {
 
         do {
             try await authService.updateBirthData(birthData)
+            await MainActor.run {
+                authService.updateExperiencePreferences(
+                    guidanceIntent: guidanceIntent,
+                    preferredSessionTone: .softSpiritual
+                )
+            }
             try await authService.completeOnboarding()
             submissionState = .succeeded
             clearDraft()
@@ -530,7 +543,7 @@ class OnboardingViewModel: NSObject, MKLocalSearchCompleterDelegate {
             return
         }
 
-        currentStep = min(max(draft.currentStep, 0), 2)
+        currentStep = min(max(draft.currentStep, 0), 3)
         birthDate = draft.birthDate
         birthTime = draft.birthTime
         isTimeKnown = draft.isTimeKnown
@@ -539,6 +552,7 @@ class OnboardingViewModel: NSObject, MKLocalSearchCompleterDelegate {
         selectedLatitude = draft.selectedLatitude
         selectedLongitude = draft.selectedLongitude
         selectedTimezone = draft.selectedTimezone
+        guidanceIntent = GuidanceIntent(rawValue: draft.guidanceIntentRawValue) ?? .clarity
     }
 
     // MARK: - MKLocalSearchCompleterDelegate
@@ -550,6 +564,102 @@ class OnboardingViewModel: NSObject, MKLocalSearchCompleterDelegate {
     func completer(_ completer: MKLocalSearchCompleter, didFailWithError error: Error) {
         submissionState = .failed(String(localized: "onboarding.birth_location.resolve_failed"))
         logger.error("Location search completer error: \(error.localizedDescription, privacy: .public)")
+    }
+}
+
+struct IntentSelectionStep: View {
+    @Binding var selectedIntent: GuidanceIntent
+
+    var body: some View {
+        VStack(spacing: AuroraSpacing.lg) {
+            Spacer()
+
+            VStack(spacing: AuroraSpacing.md) {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 48))
+                    .foregroundStyle(AuroraGradients.primaryCTA)
+                    .shadow(color: AuroraColors.auroraMint.opacity(0.35), radius: 12)
+
+                Text("onboarding.intent.title")
+                    .font(AuroraTypography.title(28))
+                    .foregroundColor(AuroraColors.textPrimary)
+
+                Text("onboarding.intent.subtitle")
+                    .font(AuroraTypography.body(15))
+                    .foregroundColor(AuroraColors.textSecondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, AuroraSpacing.lg)
+            }
+
+            VStack(spacing: AuroraSpacing.sm) {
+                ForEach(GuidanceIntent.allCases) { intent in
+                    Button {
+                        selectedIntent = intent
+                    } label: {
+                        LumenCard(accent: selectedIntent == intent ? AuroraColors.auroraMint : AuroraColors.auroraViolet) {
+                            HStack(spacing: AuroraSpacing.md) {
+                                Image(systemName: intent.iconName)
+                                    .font(.system(size: 18, weight: .semibold))
+                                    .foregroundColor(selectedIntent == intent ? AuroraColors.auroraMint : AuroraColors.textSecondary)
+                                    .frame(width: 28)
+
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(intent.title)
+                                        .font(AuroraTypography.bodyStrong(15))
+                                        .foregroundColor(AuroraColors.textPrimary)
+                                    Text(intent.subtitle)
+                                        .font(AuroraTypography.body(13))
+                                        .foregroundColor(AuroraColors.textSecondary)
+                                }
+
+                                Spacer()
+
+                                if selectedIntent == intent {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .foregroundColor(AuroraColors.auroraMint)
+                                }
+                            }
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, AuroraSpacing.lg)
+
+            LumenCard(accent: AuroraColors.auroraMint) {
+                VStack(alignment: .leading, spacing: AuroraSpacing.sm) {
+                    Text("onboarding.intent.preview_title")
+                        .font(AuroraTypography.section(17))
+                        .foregroundColor(AuroraColors.textPrimary)
+
+                    Text(previewText(for: selectedIntent))
+                        .font(AuroraTypography.body(14))
+                        .foregroundColor(AuroraColors.textSecondary)
+                        .lineSpacing(4)
+
+                    HStack(spacing: AuroraSpacing.sm) {
+                        PrismChip(String(localized: "onboarding.intent.preview_chip"), icon: "sparkles", accent: AuroraColors.auroraMint, isSelected: true)
+                        PrismChip(selectedIntent.title, icon: selectedIntent.iconName, accent: AuroraColors.auroraViolet, isSelected: false)
+                    }
+                }
+            }
+            .padding(.horizontal, AuroraSpacing.lg)
+
+            Spacer()
+        }
+    }
+
+    private func previewText(for intent: GuidanceIntent) -> String {
+        switch intent {
+        case .clarity:
+            return String(localized: "onboarding.intent.preview.clarity")
+        case .love:
+            return String(localized: "onboarding.intent.preview.love")
+        case .career:
+            return String(localized: "onboarding.intent.preview.career")
+        case .healing:
+            return String(localized: "onboarding.intent.preview.healing")
+        }
     }
 }
 

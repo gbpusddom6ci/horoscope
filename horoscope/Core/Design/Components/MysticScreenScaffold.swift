@@ -90,11 +90,7 @@ struct MysticScreenScaffold<Trailing: View, Content: View>: View {
     var body: some View {
         ZStack {
             if showsBackground {
-                StarField(
-                    starCount: starCount,
-                    mode: starMode,
-                    isAnimated: isAnimatedBackground
-                )
+                AuroraBackdrop(style: backdropStyle)
             }
 
             VStack(spacing: 0) {
@@ -138,6 +134,17 @@ struct MysticScreenScaffold<Trailing: View, Content: View>: View {
 
     private var bottomInset: CGFloat {
         contentBottomInsetStrategy.resolve(using: chromeMetrics)
+    }
+
+    private var backdropStyle: AuroraBackdropStyle {
+        switch starMode {
+        case .screen:
+            return .sanctumGlow
+        case .modal:
+            return .ambient
+        case .staticBackdrop:
+            return .atlasGrid
+        }
     }
 }
 

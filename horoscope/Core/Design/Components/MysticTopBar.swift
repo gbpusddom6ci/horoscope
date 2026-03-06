@@ -18,8 +18,8 @@ struct MysticTopBar<Trailing: View>: View {
         VStack(spacing: 0) {
             HStack(spacing: MysticSpacing.sm) {
                 title
-                    .font(MysticTypographyRoles.section)
-                    .foregroundColor(MysticColors.textPrimary)
+                    .font(AuroraTypography.title(24))
+                    .foregroundColor(AuroraColors.textPrimary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
                     .accessibilityAddTraits(.isHeader)
@@ -35,28 +35,41 @@ struct MysticTopBar<Trailing: View>: View {
             .frame(minHeight: MysticLayout.topBarMinimumHeight, alignment: .center)
             .background(
                 ZStack {
-                    MysticSurfaces.topBarBase
                     LinearGradient(
-                        colors: [Color.white.opacity(0.06), Color.clear],
+                        colors: [
+                            AuroraColors.obsidian.opacity(0.92),
+                            AuroraColors.obsidian.opacity(0.3),
+                            Color.clear
+                        ],
                         startPoint: .top,
                         endPoint: .bottom
                     )
+
+                    RoundedRectangle(cornerRadius: 28, style: .continuous)
+                        .fill(AuroraColors.surface.opacity(0.6))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                                .stroke(
+                                    LinearGradient(
+                                        colors: [
+                                            AuroraColors.polarWhite.opacity(0.08),
+                                            AuroraColors.auroraViolet.opacity(0.12),
+                                            AuroraColors.auroraMint.opacity(0.08)
+                                        ],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    ),
+                                    lineWidth: 1
+                                )
+                        )
+                        .padding(.horizontal, 8)
                 }
             )
 
-            Rectangle()
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            MysticColors.mysticGold.opacity(0.2),
-                            MysticColors.neonLavender.opacity(0.08),
-                            MysticColors.mysticGold.opacity(0.2)
-                        ],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                )
-                .frame(height: 0.5)
+            Capsule(style: .continuous)
+                .fill(AuroraGradients.auroraSpectrum)
+                .frame(width: 88, height: 2)
+                .opacity(0.45)
         }
     }
 }

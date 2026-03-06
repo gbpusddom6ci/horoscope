@@ -2,6 +2,12 @@ import SwiftUI
 
 struct ChatBubbleView: View {
     let message: ChatMessage
+    let onSaveInsight: (() -> Void)?
+
+    init(message: ChatMessage, onSaveInsight: (() -> Void)? = nil) {
+        self.message = message
+        self.onSaveInsight = onSaveInsight
+    }
 
     private var isUser: Bool {
         message.role == .user
@@ -67,6 +73,14 @@ struct ChatBubbleView: View {
                             UIPasteboard.general.string = message.content
                         } label: {
                             Label(String(localized: "chat.bubble.copy"), systemImage: "doc.on.doc")
+                        }
+
+                        if !isUser, let onSaveInsight {
+                            Button {
+                                onSaveInsight()
+                            } label: {
+                                Label("Save insight", systemImage: "bookmark")
+                            }
                         }
 
                         ShareLink(item: message.content) {

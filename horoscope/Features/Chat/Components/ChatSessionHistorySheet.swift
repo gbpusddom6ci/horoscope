@@ -7,23 +7,22 @@ struct ChatSessionHistorySheet: View {
 
     var body: some View {
         ZStack {
-            MysticColors.voidBlack.ignoresSafeArea()
-            StarField(starCount: 25, mode: .modal)
+            AuroraBackdrop(style: .oracleMist)
 
-            VStack(alignment: .leading, spacing: MysticSpacing.md) {
+            VStack(alignment: .leading, spacing: AuroraSpacing.md) {
                 Text("chat.session.history")
-                    .font(MysticFonts.heading(20))
-                    .foregroundColor(MysticColors.textPrimary)
+                    .font(AuroraTypography.title(24))
+                    .foregroundColor(AuroraColors.textPrimary)
 
                 if sessions.isEmpty {
-                    VStack(spacing: MysticSpacing.md) {
+                    VStack(spacing: AuroraSpacing.md) {
                         Spacer().frame(height: 40)
                         Image(systemName: "bubble.left.and.bubble.right")
                             .font(.system(size: 40))
-                            .foregroundColor(MysticColors.textMuted)
+                            .foregroundColor(AuroraColors.textMuted)
                         Text("chat.session.no_history")
-                            .font(MysticFonts.body(15))
-                            .foregroundColor(MysticColors.textSecondary)
+                            .font(AuroraTypography.body(15))
+                            .foregroundColor(AuroraColors.textSecondary)
                         Spacer()
                     }
                     .frame(maxWidth: .infinity)
@@ -31,30 +30,30 @@ struct ChatSessionHistorySheet: View {
                     .accessibilityIdentifier("chat.session.empty")
                 } else {
                     ScrollView(.vertical, showsIndicators: false) {
-                        LazyVStack(spacing: MysticSpacing.sm) {
+                        LazyVStack(spacing: AuroraSpacing.sm) {
                             ForEach(sessions) { session in
                                 Button {
                                     onSelect(session)
                                 } label: {
-                                    MysticCard(glowColor: contextColor(session.context)) {
+                                    LumenCard(accent: contextColor(session.context)) {
                                         VStack(alignment: .leading, spacing: MysticSpacing.xs) {
                                             HStack {
                                                 Image(systemName: contextIcon(session.context))
                                                     .font(.system(size: 14))
                                                     .foregroundColor(contextColor(session.context))
                                                 Text(session.title)
-                                                    .font(MysticFonts.body(15))
-                                                    .foregroundColor(MysticColors.textPrimary)
+                                                    .font(AuroraTypography.bodyStrong(15))
+                                                    .foregroundColor(AuroraColors.textPrimary)
                                                     .lineLimit(1)
                                                 Spacer()
                                                 Text(session.updatedAt.relativeFormatted)
-                                                    .font(MysticFonts.caption(11))
-                                                    .foregroundColor(MysticColors.textMuted)
+                                                    .font(AuroraTypography.mono(11))
+                                                    .foregroundColor(AuroraColors.textMuted)
                                             }
 
                                             Text(session.lastMessagePreview)
-                                                .font(MysticFonts.caption(13))
-                                                .foregroundColor(MysticColors.textSecondary)
+                                                .font(AuroraTypography.body(13))
+                                                .foregroundColor(AuroraColors.textSecondary)
                                                 .lineLimit(2)
                                         }
                                         .frame(minHeight: MysticAccessibility.minimumTapTarget)
@@ -78,19 +77,19 @@ struct ChatSessionHistorySheet: View {
 
                 Spacer(minLength: 0)
             }
-            .padding(MysticSpacing.md)
+            .padding(AuroraSpacing.md)
         }
     }
 
     private func contextColor(_ context: ChatContext) -> Color {
         switch context {
-        case .general: return MysticColors.neonLavender
-        case .natal: return MysticColors.mysticGold
-        case .transit: return MysticColors.auroraGreen
-        case .dream: return MysticColors.celestialPink
-        case .palmReading: return MysticColors.neonLavender
-        case .tarot: return MysticColors.mysticGold
-        case .coffee: return MysticColors.mysticGold
+        case .general: return AuroraColors.auroraViolet
+        case .natal: return AuroraColors.auroraCyan
+        case .transit: return AuroraColors.auroraMint
+        case .dream: return AuroraColors.auroraRose
+        case .palmReading: return AuroraColors.auroraViolet
+        case .tarot: return AuroraColors.auroraMint
+        case .coffee: return AuroraColors.polarWhite
         }
     }
 

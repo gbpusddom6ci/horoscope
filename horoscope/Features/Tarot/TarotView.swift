@@ -109,68 +109,161 @@ final class TarotService {
 }
 
 struct TarotView: View {
-    @Environment(\.mainChromeMetrics) private var chromeMetrics
+    @Environment(\.dismiss) private var dismiss
     @State private var tarotService = TarotService.shared
 
+    let showsCloseButton: Bool
+
+    init(showsCloseButton: Bool = true) {
+        self.showsCloseButton = showsCloseButton
+    }
+
     var body: some View {
-        MysticScreenScaffold(
-            "tarot.title",
-            starCount: 45,
-            starMode: .modal
+        AuroraScreen(
+            backdropStyle: .oracleMist,
+            eyebrow: String(localized: "tarot.screen.eyebrow"),
+            title: String(localized: "tarot.screen.title"),
+            subtitle: String(localized: "tarot.screen.subtitle")
         ) {
-            ScrollView(.vertical, showsIndicators: false) {
-                VStack(spacing: MysticSpacing.lg) {
-                    Spacer().frame(height: 24)
+            if showsCloseButton {
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(AuroraColors.textPrimary)
+                }
+                .buttonStyle(.plain)
+            }
+        } content: {
+            ritualHero
 
-                    Image(systemName: "sparkles.rectangle.stack.fill")
-                        .font(.system(size: 58))
-                        .foregroundStyle(MysticGradients.goldShimmer)
-                        .shadow(color: MysticColors.mysticGold.opacity(0.35), radius: 10)
+            if let reading = tarotService.lastReading {
+                readingCard(reading)
+                followUpCard(reading)
+            } else {
+                emptySignalCard
+            }
+        }
+    }
 
-                    GlowingText(String(localized: "tarot.title"), font: MysticFonts.title(30), color: MysticColors.mysticGold)
+    private var ritualHero: some View {
+        LumenCard(accent: AuroraColors.auroraRose) {
+            VStack(alignment: .leading, spacing: AuroraSpacing.md) {
+                HStack(alignment: .top, spacing: AuroraSpacing.md) {
+                    ZStack {
+                        Circle()
+                            .fill(AuroraColors.auroraRose.opacity(0.16))
+                            .frame(width: 76, height: 76)
+                        AuroraGlyph(kind: .tarot, color: AuroraColors.auroraRose, lineWidth: 2)
+                            .frame(width: 34, height: 34)
+                    }
 
-                    Text("tarot.subtitle")
-                        .font(MysticFonts.body(15))
-                        .foregroundColor(MysticColors.textSecondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, MysticSpacing.xl)
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("tarot.hero.eyebrow")
+                            .font(AuroraTypography.mono(11))
+                            .foregroundColor(AuroraColors.textMuted)
+                        Text("tarot.hero.title")
+                            .font(AuroraTypography.section(20))
+                            .foregroundColor(AuroraColors.textPrimary)
+                        Text("tarot.hero.subtitle")
+                            .font(AuroraTypography.body(14))
+                            .foregroundColor(AuroraColors.textSecondary)
+                    }
+                }
 
-                    MysticButton(String(localized: "tarot.draw"), icon: "suit.spade.fill", style: .primary) {
+                HStack(spacing: AuroraSpacing.sm) {
+                    HaloButton(String(localized: "tarot.hero.draw"), icon: "sparkles.rectangle.stack.fill") {
                         tarotService.drawCard()
                     }
-                    .padding(.horizontal, MysticSpacing.md)
+                    .accessibilityIdentifier("tarot.draw.cta")
 
-                    if let reading = tarotService.lastReading {
-                        MysticCard(glowColor: MysticColors.neonLavender) {
-                            VStack(spacing: MysticSpacing.md) {
-                                Text(reading.card.symbol)
-                                    .font(.system(size: 60))
+                    HaloButton(String(localized: "tarot.hero.ask_oracle"), icon: "arrow.right", style: .ghost) {
+                        AppNavigation.openChat(
+                            context: .tarot,
+                            prompt: "Prepare me for a tarot reading and tell me what energy I should notice."
+                        )
+                    }
+                }
+            }
+        }
+    }
 
-                                Text(reading.title)
-                                    .font(MysticFonts.heading(22))
-                                    .foregroundColor(MysticColors.textPrimary)
+    private func readingCard(_ reading: TarotReading) -> some View {
+        LumenCard(accent: reading.isReversed ? AuroraColors.auroraRose : AuroraColors.auroraViolet) {
+            VStack(alignment: .leading, spacing: AuroraSpacing.md) {
+                HStack(alignment: .top) {
+                    Text(reading.card.symbol)
+                        .font(.system(size: 62))
 
-                                Text(reading.interpretation)
-                                    .font(MysticFonts.body(15))
-                                    .foregroundColor(MysticColors.textSecondary)
-                                    .multilineTextAlignment(.center)
-                                    .lineSpacing(3)
+                    Spacer()
 
-                                Text(reading.createdAt.formatted(as: "d MMMM HH:mm"))
-                                    .font(MysticFonts.caption(12))
-                                    .foregroundColor(MysticColors.textMuted)
-                            }
-                        }
-                        .padding(.horizontal, MysticSpacing.md)
+                    Text(reading.createdAt.formatted(as: "d MMMM HH:mm"))
+                        .font(AuroraTypography.mono(11))
+                        .foregroundColor(AuroraColors.textMuted)
+                }
+
+                Text(reading.title)
+                    .font(AuroraTypography.title(30))
+                    .foregroundColor(AuroraColors.textPrimary)
+
+                Text(reading.interpretation)
+                    .font(AuroraTypography.body(15))
+                    .foregroundColor(AuroraColors.textSecondary)
+                    .lineSpacing(4)
+
+                HStack(spacing: AuroraSpacing.sm) {
+                    PrismChip(reading.isReversed ? String(localized: "tarot.state.reversed") : String(localized: "tarot.state.upright"), icon: "sparkles", accent: reading.isReversed ? AuroraColors.auroraRose : AuroraColors.auroraViolet, isSelected: true)
+                    PrismChip(String(localized: "tarot.state.tonight"), icon: "moon.stars.fill", accent: AuroraColors.auroraMint, isSelected: false)
+                }
+            }
+        }
+    }
+
+    private func followUpCard(_ reading: TarotReading) -> some View {
+        LumenCard(accent: AuroraColors.auroraMint) {
+            VStack(alignment: .leading, spacing: AuroraSpacing.sm) {
+                Text("tarot.follow_up.title")
+                    .font(AuroraTypography.section(18))
+                    .foregroundColor(AuroraColors.textPrimary)
+
+                Text("tarot.follow_up.subtitle")
+                    .font(AuroraTypography.body(14))
+                    .foregroundColor(AuroraColors.textSecondary)
+                    .lineSpacing(4)
+
+                HStack(spacing: AuroraSpacing.sm) {
+                    HaloButton(String(localized: "tarot.follow_up.ask_oracle"), icon: "sparkles") {
+                        AppNavigation.openChat(
+                            context: .tarot,
+                            prompt: "I pulled \(reading.title). Connect this tarot message to my current astrology and tell me what action to take."
+                        )
                     }
 
-                    Color.clear.frame(height: max(72, chromeMetrics.contentBottomReservedSpace))
+                    HaloButton(String(localized: "tarot.follow_up.draw_again"), icon: "arrow.clockwise", style: .ghost) {
+                        tarotService.drawCard()
+                    }
                 }
+            }
+        }
+    }
+
+    private var emptySignalCard: some View {
+        LumenCard(accent: AuroraColors.auroraViolet) {
+            VStack(alignment: .leading, spacing: AuroraSpacing.sm) {
+                Text("tarot.empty.title")
+                    .font(AuroraTypography.section(18))
+                    .foregroundColor(AuroraColors.textPrimary)
+
+                Text("tarot.empty.subtitle")
+                    .font(AuroraTypography.body(14))
+                    .foregroundColor(AuroraColors.textSecondary)
+                    .lineSpacing(4)
             }
         }
     }
 }
 
 #Preview {
-    TarotView()
+    TarotView(showsCloseButton: false)
 }

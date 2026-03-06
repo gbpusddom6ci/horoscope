@@ -76,6 +76,10 @@ struct MysticButton: View {
         isEnabled && !isLoading
     }
 
+    private var cornerRadius: CGFloat {
+        size == .regular ? 24 : 20
+    }
+
     var body: some View {
         Button(action: {
             guard canInteract else { return }
@@ -101,13 +105,13 @@ struct MysticButton: View {
             .foregroundColor(textColor)
             .frame(maxWidth: .infinity)
             .frame(height: size.height)
-            .background(backgroundView)
-            .clipShape(RoundedRectangle(cornerRadius: MysticRadius.xl, style: .continuous))
+            .background(buttonSurface)
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
             .overlay(borderOverlay)
             .shadow(
-                color: glowColor.opacity(glowAnimation ? 0.4 : 0.12),
-                radius: glowAnimation ? MysticEffects.buttonGlowRadiusActive : MysticElevation.buttonShadowRadius,
-                y: MysticElevation.buttonShadowYOffset
+                color: glowColor.opacity(glowAnimation ? 0.24 : 0.12),
+                radius: glowAnimation ? MysticEffects.buttonGlowRadiusActive : 12,
+                y: 10
             )
             .scaleEffect((isPressed && !reduceMotion && canInteract) ? MysticEffects.buttonPressedScale : 1.0)
             .opacity(canInteract ? 1 : 0.55)
@@ -147,90 +151,111 @@ struct MysticButton: View {
 
     // MARK: - Style Computed Properties
 
-    @ViewBuilder
-    private var backgroundView: some View {
+    private var buttonSurface: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                .fill(fillStyle)
+
+            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                .fill(AuroraGradients.silkHighlight)
+                .opacity(style == .ghost ? 0.35 : 0.85)
+
+            if style != .ghost {
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .fill(AuroraGradients.cardWash(accent: glowColor))
+                    .opacity(style == .primary ? 0.22 : 0.16)
+            }
+        }
+    }
+
+    private var fillStyle: AnyShapeStyle {
         switch style {
         case .primary:
-            MysticGradients.goldShimmer
+            return AnyShapeStyle(AuroraGradients.primaryCTA)
         case .secondary:
-            LinearGradient(
-                colors: [
-                    MysticColors.neonLavender.opacity(0.22),
-                    MysticColors.neonLavender.opacity(0.12),
-                    MysticColors.celestialPink.opacity(0.08)
-                ],
+            return AnyShapeStyle(
+                LinearGradient(
+                    colors: [
+                        AuroraColors.surfaceElevated.opacity(0.98),
+                        AuroraColors.cardBase.opacity(0.92)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+        case .ghost:
+            return AnyShapeStyle(AuroraColors.surface.opacity(0.38))
+        case .danger:
+            return AnyShapeStyle(
+                LinearGradient(
+                    colors: [
+                        AuroraColors.surfaceElevated.opacity(0.94),
+                        AuroraColors.auroraRose.opacity(0.22)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+        }
+    }
+
+    private var borderOverlay: some View {
+        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+            .stroke(borderGradient, lineWidth: style == .ghost ? 0.9 : 1)
+    }
+
+    private var borderGradient: LinearGradient {
+        switch style {
+        case .primary:
+            return LinearGradient(
+                colors: [Color.white.opacity(0.4), AuroraColors.auroraMint.opacity(0.26)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        case .secondary:
+            return LinearGradient(
+                colors: [Color.white.opacity(0.18), AuroraColors.auroraViolet.opacity(0.3)],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
         case .ghost:
-            Color.clear
+            return LinearGradient(
+                colors: [AuroraColors.stroke, Color.white.opacity(0.06)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
         case .danger:
-            MysticColors.celestialPink.opacity(0.2)
-        }
-    }
-
-    @ViewBuilder
-    private var borderOverlay: some View {
-        switch style {
-        case .primary:
-            RoundedRectangle(cornerRadius: MysticRadius.xl, style: .continuous)
-                .stroke(
-                    LinearGradient(
-                        colors: [Color.white.opacity(0.35), MysticColors.mysticGold.opacity(0.25)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 0.8
-                )
-        case .secondary:
-            RoundedRectangle(cornerRadius: MysticRadius.xl, style: .continuous)
-                .stroke(
-                    LinearGradient(
-                        colors: [Color.white.opacity(0.25), MysticColors.neonLavender.opacity(0.2)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 1
-                )
-        case .ghost:
-            RoundedRectangle(cornerRadius: MysticRadius.xl, style: .continuous)
-                .stroke(MysticColors.cardBorder, lineWidth: 0.8)
-        case .danger:
-            RoundedRectangle(cornerRadius: MysticRadius.xl, style: .continuous)
-                .stroke(
-                    LinearGradient(
-                        colors: [MysticColors.celestialPink.opacity(0.5), MysticColors.celestialPink.opacity(0.15)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 0.8
-                )
+            return LinearGradient(
+                colors: [AuroraColors.auroraRose.opacity(0.52), AuroraColors.auroraRose.opacity(0.18)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
         }
     }
 
     private var textColor: Color {
         switch style {
         case .primary:
-            return MysticColors.voidBlack
+            return AuroraColors.obsidian
         case .secondary:
-            return MysticColors.neonLavender
+            return AuroraColors.textPrimary
         case .ghost:
-            return MysticColors.textPrimary
+            return AuroraColors.textSecondary
         case .danger:
-            return MysticColors.celestialPink
+            return AuroraColors.auroraRose
         }
     }
 
     private var glowColor: Color {
         switch style {
         case .primary:
-            return MysticColors.mysticGold
+            return AuroraColors.auroraMint
         case .secondary:
-            return MysticColors.neonLavender
+            return AuroraColors.auroraViolet
         case .ghost:
-            return Color.clear
+            return AuroraColors.auroraCyan
         case .danger:
-            return MysticColors.celestialPink
+            return AuroraColors.auroraRose
         }
     }
 }
@@ -251,35 +276,36 @@ struct AppleSignInButton: View {
                 Image(systemName: "apple.logo")
                     .font(.system(size: 20, weight: .semibold))
                 Text("auth.apple_signin")
-                    .font(MysticFonts.body(16))
-                    .fontWeight(.semibold)
+                    .font(AuroraTypography.bodyStrong(16))
             }
-            .foregroundColor(.white)
+            .foregroundColor(AuroraColors.textPrimary)
             .frame(maxWidth: .infinity)
             .frame(height: MysticButtonSize.regular.height)
             .background(
                 ZStack {
-                    Color.white.opacity(0.08)
+                    RoundedRectangle(cornerRadius: AuroraRadius.md, style: .continuous)
+                        .fill(AuroraColors.surfaceElevated.opacity(0.94))
+
                     LinearGradient(
-                        colors: [Color.white.opacity(0.06), Color.white.opacity(0.02)],
+                        colors: [Color.white.opacity(0.08), Color.white.opacity(0.015)],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
                 }
             )
-            .clipShape(RoundedRectangle(cornerRadius: MysticRadius.lg, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AuroraRadius.md, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: MysticRadius.lg, style: .continuous)
+                RoundedRectangle(cornerRadius: AuroraRadius.md, style: .continuous)
                     .stroke(
                         LinearGradient(
-                            colors: [Color.white.opacity(0.35), Color.white.opacity(0.1)],
+                            colors: [Color.white.opacity(0.2), AuroraColors.stroke],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         ),
-                        lineWidth: 0.8
+                        lineWidth: 1
                     )
             )
-            .shadow(color: Color.white.opacity(0.06), radius: 10, y: 4)
+            .shadow(color: Color.black.opacity(0.28), radius: 14, y: 10)
             .scaleEffect((isPressed && !reduceMotion) ? MysticEffects.buttonPressedScale : 1.0)
         }
         .buttonStyle(.plain)

@@ -16,54 +16,9 @@ struct MysticCard<Content: View>: View {
     }
 
     var body: some View {
-        content
-            .padding(padding)
-            .background(
-                ZStack {
-                    RoundedRectangle(cornerRadius: MysticRadius.lg)
-                        .fill(MysticSurfaces.cardBase)
-
-                    RoundedRectangle(cornerRadius: MysticRadius.lg)
-                        .fill(MysticGradients.cardGlass)
-
-                    RoundedRectangle(cornerRadius: MysticRadius.lg)
-                        .fill(
-                            RadialGradient(
-                                colors: [
-                                    glowColor.opacity(0.08),
-                                    MysticSurfaces.cardTintOverlay,
-                                    Color.clear
-                                ],
-                                center: .topLeading,
-                                startRadius: 0,
-                                endRadius: 200
-                            )
-                        )
-                }
-            )
-            .clipShape(RoundedRectangle(cornerRadius: MysticRadius.lg))
-            .overlay(
-                RoundedRectangle(cornerRadius: MysticRadius.lg)
-                    .stroke(
-                        LinearGradient(
-                            colors: [
-                                Color.white.opacity(0.18),
-                                glowColor.opacity(0.18),
-                                glowColor.opacity(0.06),
-                                Color.white.opacity(0.06)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 0.9
-                    )
-            )
-            .shadow(
-                color: glowColor.opacity(0.1),
-                radius: MysticElevation.cardShadowRadius,
-                x: 0,
-                y: MysticElevation.cardShadowYOffset
-            )
+        LumenCard(accent: glowColor, padding: padding) {
+            content
+        }
     }
 }
 

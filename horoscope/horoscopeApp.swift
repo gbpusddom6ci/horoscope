@@ -93,6 +93,14 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 struct horoscopeApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
 
+    init() {
+        // Some singleton services may touch Firebase very early in app startup.
+        // Configure once at app init to avoid timing-dependent warnings.
+        if FirebaseApp.app() == nil {
+            FirebaseApp.configure()
+        }
+    }
+
     var body: some Scene {
         WindowGroup {
             AppRouter()

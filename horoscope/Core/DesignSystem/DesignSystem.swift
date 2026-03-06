@@ -3,11 +3,11 @@ import SwiftUI
 // MARK: - App Theme (delegates to MysticColors for single source of truth)
 public struct AppTheme {
     public static let primary = MysticColors.neonLavender
-    public static let accent = MysticColors.mysticGold
+    public static let accent = MysticColors.auroraGreen
     public static let success = MysticColors.auroraGreen
 
-    // Adaptive backgrounds: celestial tint in light mode, cosmic void in dark mode
-    public static let bgLight = Color(hex: "F0ECFF")
+    // Adaptive backgrounds: aurora tint in light mode, deep space in dark mode
+    public static let bgLight = Color(hex: "E8F0FF")
     public static let bgDark = MysticColors.voidBlack
 
     public static let background = Color(uiColor: UIColor { traitCollection in

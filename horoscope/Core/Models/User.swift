@@ -11,6 +11,9 @@ struct AppUser: Codable, Identifiable {
     var lastActiveAt: Date?
     var fcmToken: String?
     var hasCompletedOnboarding: Bool
+    var guidanceIntent: GuidanceIntent?
+    var ritualReminderTime: Date?
+    var preferredSessionTone: PreferredSessionTone?
 
     init(
         id: String,
@@ -21,7 +24,10 @@ struct AppUser: Codable, Identifiable {
         createdAt: Date = Date(),
         lastActiveAt: Date? = nil,
         fcmToken: String? = nil,
-        hasCompletedOnboarding: Bool = false
+        hasCompletedOnboarding: Bool = false,
+        guidanceIntent: GuidanceIntent? = nil,
+        ritualReminderTime: Date? = nil,
+        preferredSessionTone: PreferredSessionTone? = .softSpiritual
     ) {
         self.id = id
         self.displayName = displayName
@@ -32,5 +38,8 @@ struct AppUser: Codable, Identifiable {
         self.lastActiveAt = lastActiveAt
         self.fcmToken = fcmToken
         self.hasCompletedOnboarding = hasCompletedOnboarding
+        self.guidanceIntent = guidanceIntent
+        self.ritualReminderTime = ritualReminderTime
+        self.preferredSessionTone = preferredSessionTone
     }
 }

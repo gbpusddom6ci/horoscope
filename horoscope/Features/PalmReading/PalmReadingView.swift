@@ -3,6 +3,7 @@ import PhotosUI
 import UIKit
 
 struct PalmReadingView: View {
+    @Environment(\.dismiss) private var dismiss
     @Environment(AuthService.self) private var authService
     @Environment(\.mainChromeMetrics) private var chromeMetrics
 
@@ -17,26 +18,39 @@ struct PalmReadingView: View {
     @State private var activeAnalysisRequestID: UUID?
 
     var body: some View {
-        MysticScreenScaffold(
-            "palm.title",
-            starCount: 40,
-            starMode: .modal
+        AuroraScreen(
+            backdropStyle: .oracleMist,
+            eyebrow: String(localized: "palm.eyebrow"),
+            title: String(localized: "palm.title"),
+            subtitle: String(localized: "palm.subtitle"),
+            usesScrollView: false,
+            contentBottomInsetStrategy: .none
         ) {
+            Button {
+                dismiss()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(AuroraColors.textPrimary)
+            }
+            .buttonStyle(.plain)
+        } content: {
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(spacing: MysticSpacing.lg) {
                     VStack(spacing: MysticSpacing.md) {
-                        Spacer().frame(height: 40)
+                        ZStack {
+                            Circle()
+                                .fill(AuroraColors.auroraViolet.opacity(0.16))
+                                .frame(width: 96, height: 96)
+                            Image(systemName: "hand.raised.fill")
+                                .font(.system(size: 48))
+                                .foregroundStyle(AuroraGradients.oracle)
+                                .shadow(color: AuroraColors.auroraViolet.opacity(0.3), radius: 18)
+                        }
 
-                        Image(systemName: "hand.raised.fill")
-                            .font(.system(size: 64))
-                            .foregroundStyle(MysticGradients.lavenderGlow)
-                            .shadow(color: MysticColors.neonLavender.opacity(0.4), radius: 12)
-
-                        GlowingText(String(localized: "palm.title"), font: MysticFonts.title(32), color: MysticColors.neonLavender)
-
-                        Text("palm.subtitle")
-                            .font(MysticFonts.body(15))
-                            .foregroundColor(MysticColors.textSecondary)
+                        Text("palm.hero.subtitle")
+                            .font(AuroraTypography.body(15))
+                            .foregroundColor(AuroraColors.textSecondary)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, MysticSpacing.xl)
                     }
@@ -59,15 +73,22 @@ struct PalmReadingView: View {
                                         Image(systemName: "photo.on.rectangle")
                                         Text("palm.gallery")
                                     }
-                                    .font(MysticFonts.body(14))
-                                    .foregroundColor(MysticColors.textPrimary)
+                                    .font(AuroraTypography.bodyStrong(14))
+                                    .foregroundColor(AuroraColors.textPrimary)
                                     .frame(maxWidth: .infinity)
                                     .frame(height: 48)
-                                    .background(MysticColors.inputBackground)
-                                    .clipShape(RoundedRectangle(cornerRadius: MysticRadius.md))
+                                    .background(AuroraSurfaceLevel.elevated.fillStyle)
+                                    .clipShape(RoundedRectangle(cornerRadius: AuroraRadius.md, style: .continuous))
                                     .overlay(
-                                        RoundedRectangle(cornerRadius: MysticRadius.md)
-                                            .stroke(MysticColors.cardBorder, lineWidth: 1)
+                                        RoundedRectangle(cornerRadius: AuroraRadius.md, style: .continuous)
+                                            .stroke(
+                                                LinearGradient(
+                                                    colors: [AuroraColors.auroraViolet.opacity(0.28), Color.white.opacity(0.08)],
+                                                    startPoint: .topLeading,
+                                                    endPoint: .bottomTrailing
+                                                ),
+                                                lineWidth: 1
+                                            )
                                     )
                                 }
                                 .buttonStyle(.plain)
@@ -173,6 +194,8 @@ struct PalmReadingView: View {
 
                     Color.clear.frame(height: max(72, chromeMetrics.contentBottomReservedSpace))
                 }
+                .padding(.horizontal, AuroraSpacing.md)
+                .padding(.top, AuroraSpacing.md)
             }
         }
         .sheet(isPresented: $showCamera) {
@@ -194,8 +217,19 @@ struct PalmReadingView: View {
 
     private var imagePreview: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: MysticRadius.lg)
-                .fill(MysticColors.inputBackground)
+            RoundedRectangle(cornerRadius: AuroraRadius.md, style: .continuous)
+                .fill(AuroraSurfaceLevel.elevated.fillStyle)
+                .overlay(
+                    RoundedRectangle(cornerRadius: AuroraRadius.md, style: .continuous)
+                        .stroke(
+                            LinearGradient(
+                                colors: [AuroraColors.auroraViolet.opacity(0.18), Color.white.opacity(0.06)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1
+                        )
+                )
                 .frame(height: 220)
 
             if let selectedImage {
@@ -203,16 +237,16 @@ struct PalmReadingView: View {
                     .resizable()
                     .scaledToFit()
                     .frame(maxHeight: 210)
-                    .clipShape(RoundedRectangle(cornerRadius: MysticRadius.md))
+                    .clipShape(RoundedRectangle(cornerRadius: AuroraRadius.sm, style: .continuous))
                     .padding(6)
             } else {
                 VStack(spacing: MysticSpacing.sm) {
                     Image(systemName: "hand.draw.fill")
                         .font(.system(size: 36))
-                        .foregroundColor(MysticColors.textMuted)
+                        .foregroundColor(AuroraColors.textMuted)
                     Text("palm.image_placeholder")
-                        .font(MysticFonts.body(14))
-                        .foregroundColor(MysticColors.textMuted)
+                        .font(AuroraTypography.body(14))
+                        .foregroundColor(AuroraColors.textMuted)
                 }
             }
         }
@@ -223,19 +257,18 @@ struct PalmReadingView: View {
         MysticCard(glowColor: color.opacity(0.5)) {
             HStack(spacing: MysticSpacing.md) {
                 Circle()
-                    .fill(color.opacity(0.2))
+                    .fill(color.opacity(0.16))
                     .frame(width: 40, height: 40)
                     .overlay(Circle().stroke(color.opacity(0.4), lineWidth: 1))
                     .overlay(Image(systemName: "line.diagonal").foregroundColor(color))
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(name)
-                        .font(MysticFonts.body(15))
-                        .fontWeight(.semibold)
-                        .foregroundColor(MysticColors.textPrimary)
+                        .font(AuroraTypography.bodyStrong(15))
+                        .foregroundColor(AuroraColors.textPrimary)
                     Text(desc)
-                        .font(MysticFonts.caption(13))
-                        .foregroundColor(MysticColors.textSecondary)
+                        .font(AuroraTypography.body(13))
+                        .foregroundColor(AuroraColors.textSecondary)
                 }
 
                 Spacer()

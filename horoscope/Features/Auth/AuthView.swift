@@ -14,80 +14,101 @@ struct AuthView: View {
     @State private var animateButtons = false
 
     var body: some View {
-        MysticScreenScaffold(
-            "auth.title",
-            starCount: 150,
-            starMode: .screen,
-            isAnimatedBackground: !reduceMotion
-        ) {
+        ZStack {
+            AuroraBackdrop(style: .sanctumGlow)
+
             VStack(spacing: 0) {
                 Spacer()
 
-                // Logo & Title
-                VStack(spacing: MysticSpacing.md) {
-                    // Mystic Moon Icon
+                VStack(spacing: AuroraSpacing.md) {
                     ZStack {
                         Circle()
                             .fill(
                                 RadialGradient(
                                     colors: [
-                                        MysticColors.mysticGold.opacity(0.25),
-                                        MysticColors.mysticGold.opacity(0.05),
+                                        AuroraColors.auroraMint.opacity(0.3),
+                                        AuroraColors.auroraViolet.opacity(0.14),
+                                        AuroraColors.auroraRose.opacity(0.1),
                                         Color.clear
                                     ],
                                     center: .center,
                                     startRadius: 15,
-                                    endRadius: 90
+                                    endRadius: 110
                                 )
                             )
-                            .frame(width: 170, height: 170)
+                            .frame(width: 200, height: 200)
 
-                        Image(systemName: "moon.stars.fill")
-                            .font(.system(size: 72))
-                            .foregroundStyle(
-                                LinearGradient(
-                                    colors: [MysticColors.mysticGold, Color(hex: "F0D060"), MysticColors.mysticGold.opacity(0.75)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .shadow(color: MysticColors.mysticGold.opacity(0.5), radius: 22)
-                            .shadow(color: MysticColors.mysticGold.opacity(0.15), radius: 40)
+                        Capsule(style: .continuous)
+                            .fill(AuroraGradients.auroraVeil)
+                            .frame(width: 220, height: 72)
+                            .rotationEffect(.degrees(animateTitle ? -15 : -22))
+                            .blur(radius: 24)
+                            .opacity(0.46)
+
+                        Capsule(style: .continuous)
+                            .fill(AuroraGradients.oracle)
+                            .frame(width: 180, height: 56)
+                            .rotationEffect(.degrees(animateTitle ? 18 : 10))
+                            .blur(radius: 20)
+                            .opacity(0.36)
+
+                        AuroraGlyph(kind: .saturn, color: AuroraColors.polarWhite, lineWidth: 2.4)
+                            .frame(width: 78, height: 78)
+                            .shadow(color: AuroraColors.auroraMint.opacity(0.5), radius: 22)
+                            .shadow(color: AuroraColors.auroraViolet.opacity(0.24), radius: 40)
                     }
                     .opacity(animateTitle ? 1 : 0)
                     .scaleEffect(animateTitle ? 1 : 0.5)
 
-                    GlowingText(
-                        String(localized: "app.brand"),
-                        font: MysticFonts.title(42),
-                        color: MysticColors.mysticGold,
-                        glowRadius: 12
-                    )
-                    .opacity(animateTitle ? 1 : 0)
-                    .offset(y: animateTitle ? 0 : 20)
+                    Text("auth.badge")
+                        .font(AuroraTypography.mono(11))
+                        .foregroundColor(AuroraColors.textMuted)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .background(
+                            Capsule(style: .continuous)
+                                .fill(AuroraColors.surfaceElevated.opacity(0.72))
+                        )
+                        .overlay(
+                            Capsule(style: .continuous)
+                                .stroke(AuroraColors.stroke, lineWidth: 1)
+                        )
+
+                    Text(String(localized: "app.brand"))
+                        .font(AuroraTypography.hero(44))
+                        .foregroundColor(AuroraColors.textPrimary)
+                        .opacity(animateTitle ? 1 : 0)
+                        .offset(y: animateTitle ? 0 : 20)
 
                     Text("auth.subtitle")
-                        .font(MysticFonts.mystic(18))
-                        .foregroundColor(MysticColors.textSecondary)
+                        .font(AuroraTypography.body(16))
+                        .foregroundColor(AuroraColors.textSecondary)
+                        .multilineTextAlignment(.center)
                         .opacity(animateSubtitle ? 1 : 0)
                         .offset(y: animateSubtitle ? 0 : 10)
+
+                    featurePreviewStrip
+                        .opacity(animateSubtitle ? 1 : 0)
+                        .offset(y: animateSubtitle ? 0 : 14)
                 }
-                .padding(.bottom, MysticSpacing.xxl)
+                .padding(.horizontal, AuroraSpacing.lg)
+                .padding(.bottom, AuroraSpacing.xl)
 
                 Spacer()
 
-                // Auth Buttons
-                VStack(spacing: MysticSpacing.md) {
-                    if showEmailAuth {
-                        emailAuthForm
-                            .transition(.move(edge: .bottom).combined(with: .opacity))
-                    } else {
-                        mainAuthButtons
-                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                LumenCard(accent: AuroraColors.auroraViolet) {
+                    VStack(spacing: AuroraSpacing.md) {
+                        if showEmailAuth {
+                            emailAuthForm
+                                .transition(.move(edge: .bottom).combined(with: .opacity))
+                        } else {
+                            mainAuthButtons
+                                .transition(.move(edge: .bottom).combined(with: .opacity))
+                        }
                     }
                 }
-                .padding(.horizontal, MysticSpacing.lg)
-                .padding(.bottom, MysticSpacing.xxl)
+                .padding(.horizontal, AuroraSpacing.lg)
+                .padding(.bottom, AuroraSpacing.xl)
                 .opacity(animateButtons ? 1 : 0)
                 .offset(y: animateButtons ? 0 : 30)
             }
@@ -114,31 +135,30 @@ struct AuthView: View {
     // MARK: - Main Auth Buttons
 
     private var mainAuthButtons: some View {
-        VStack(spacing: MysticSpacing.md) {
-            // Apple Sign In
+        VStack(spacing: AuroraSpacing.md) {
             AppleSignInButton {
                 Task {
                     await authService.signInWithApple()
                 }
             }
 
-            HStack(spacing: MysticSpacing.md) {
+            HStack(spacing: AuroraSpacing.md) {
                 Rectangle()
                     .fill(
                         LinearGradient(
-                            colors: [Color.clear, MysticColors.textMuted.opacity(0.3)],
+                            colors: [Color.clear, AuroraColors.textMuted.opacity(0.3)],
                             startPoint: .leading,
                             endPoint: .trailing
                         )
                     )
                     .frame(height: 0.5)
                 Text("auth.or")
-                    .font(MysticFonts.caption(12))
-                    .foregroundColor(MysticColors.textMuted)
+                    .font(AuroraTypography.mono(12))
+                    .foregroundColor(AuroraColors.textMuted)
                 Rectangle()
                     .fill(
                         LinearGradient(
-                            colors: [MysticColors.textMuted.opacity(0.3), Color.clear],
+                            colors: [AuroraColors.textMuted.opacity(0.3), Color.clear],
                             startPoint: .leading,
                             endPoint: .trailing
                         )
@@ -146,17 +166,16 @@ struct AuthView: View {
                     .frame(height: 0.5)
             }
 
-            MysticButton(String(localized: "auth.email_signin"), icon: "envelope.fill", style: .secondary) {
-                withAnimation(.spring(response: MysticMotion.springResponse, dampingFraction: MysticMotion.springDamping)) {
+            HaloButton(String(localized: "auth.continue_email"), icon: "envelope.fill", style: .secondary) {
+                withAnimation(AuroraMotion.spring) {
                     showEmailAuth = true
                 }
             }
 
-            // Error display
             if let error = authService.errorMessage {
                 Text(error)
-                    .font(MysticFonts.caption(13))
-                    .foregroundColor(MysticColors.celestialPink)
+                    .font(AuroraTypography.body(13))
+                    .foregroundColor(AuroraColors.auroraRose)
                     .multilineTextAlignment(.center)
                     .transition(.opacity)
             }
@@ -166,7 +185,7 @@ struct AuthView: View {
     // MARK: - Email Auth Form
 
     private var emailAuthForm: some View {
-        VStack(spacing: MysticSpacing.md) {
+        VStack(spacing: AuroraSpacing.md) {
             if isSignUp {
                 MysticTextField(
                     String(localized: "auth.name"),
@@ -191,11 +210,10 @@ struct AuthView: View {
                 isSecure: true
             )
 
-            MysticButton(
-                isSignUp ? String(localized: "auth.signup") : String(localized: "auth.signin"),
+            HaloButton(
+                isSignUp ? String(localized: "auth.create_account") : String(localized: "auth.signin"),
                 icon: "arrow.right",
-                style: .primary,
-                isLoading: authService.isLoading
+                style: .primary
             ) {
                 Task {
                     if isSignUp {
@@ -208,36 +226,73 @@ struct AuthView: View {
 
             // Toggle sign up / sign in
             Button {
-                withAnimation(.spring(response: MysticMotion.springResponse, dampingFraction: MysticMotion.springDamping)) {
+                withAnimation(AuroraMotion.spring) {
                     isSignUp.toggle()
                 }
             } label: {
                 Text(isSignUp ? "auth.already_have_account" : "auth.create_account")
-                    .font(MysticFonts.caption(14))
-                    .foregroundColor(MysticColors.neonLavender)
+                    .font(AuroraTypography.body(14))
+                    .foregroundColor(AuroraColors.auroraCyan)
             }
 
-            // Back button
             Button {
-                withAnimation(.spring(response: MysticMotion.springResponse, dampingFraction: MysticMotion.springDamping)) {
+                withAnimation(AuroraMotion.spring) {
                     showEmailAuth = false
                 }
             } label: {
-                HStack(spacing: MysticSpacing.xs) {
+                HStack(spacing: AuroraSpacing.xs) {
                     Image(systemName: "chevron.left")
                     Text("auth.back")
                 }
-                .font(MysticFonts.caption(14))
-                .foregroundColor(MysticColors.textSecondary)
+                .font(AuroraTypography.body(14))
+                .foregroundColor(AuroraColors.textSecondary)
             }
 
             if let error = authService.errorMessage {
                 Text(error)
-                    .font(MysticFonts.caption(13))
-                    .foregroundColor(MysticColors.celestialPink)
+                    .font(AuroraTypography.body(13))
+                    .foregroundColor(AuroraColors.auroraRose)
                     .multilineTextAlignment(.center)
             }
         }
+    }
+
+    private var featurePreviewStrip: some View {
+        HStack(spacing: AuroraSpacing.sm) {
+            featureChip(title: String(localized: "auth.feature.ai"), glyph: .eye, accent: AuroraColors.auroraViolet)
+            featureChip(title: String(localized: "auth.feature.tarot"), glyph: .tarot, accent: AuroraColors.auroraRose)
+            featureChip(title: String(localized: "auth.feature.dreams"), glyph: .dreamcatcher, accent: AuroraColors.auroraCyan)
+            featureChip(title: String(localized: "auth.feature.palm"), systemIcon: "hand.raised.fill", accent: AuroraColors.auroraMint)
+        }
+    }
+
+    private func featureChip(
+        title: String,
+        glyph: AuroraGlyphKind? = nil,
+        systemIcon: String? = nil,
+        accent: Color
+    ) -> some View {
+        VStack(spacing: 6) {
+            ZStack {
+                Circle()
+                    .fill(accent.opacity(0.12))
+                    .frame(width: 42, height: 42)
+
+                if let glyph {
+                    AuroraGlyph(kind: glyph, color: accent, lineWidth: 1.8)
+                        .frame(width: 18, height: 18)
+                } else if let systemIcon {
+                    Image(systemName: systemIcon)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(accent)
+                }
+            }
+
+            Text(title)
+                .font(AuroraTypography.mono(10))
+                .foregroundColor(AuroraColors.textSecondary)
+        }
+        .frame(maxWidth: .infinity)
     }
 }
 
@@ -256,38 +311,12 @@ struct MysticTextField: View {
     }
 
     var body: some View {
-        HStack(spacing: MysticSpacing.sm) {
-            if let icon = icon {
-                Image(systemName: icon)
-                    .font(.system(size: 16))
-                    .foregroundColor(MysticColors.textMuted)
-                    .frame(width: 24)
-            }
-
-            if isSecure {
-                SecureField(placeholder, text: $text)
-                    .font(MysticFonts.body(15))
-                    .foregroundColor(MysticColors.textPrimary)
-            } else {
-                TextField(placeholder, text: $text)
-                    .font(MysticFonts.body(15))
-                    .foregroundColor(MysticColors.textPrimary)
-            }
-        }
-        .padding(.horizontal, MysticSpacing.md)
-        .frame(height: 52)
-        .background(MysticColors.inputBackground)
-        .clipShape(RoundedRectangle(cornerRadius: MysticRadius.md, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: MysticRadius.md, style: .continuous)
-                .stroke(
-                    LinearGradient(
-                        colors: [MysticColors.cardBorder.opacity(1.2), MysticColors.cardBorder.opacity(0.5)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 0.6
-                )
+        AuroraTextField(
+            placeholder,
+            text: $text,
+            icon: icon,
+            isSecure: isSecure,
+            accent: isSecure ? AuroraColors.auroraRose : AuroraColors.auroraViolet
         )
     }
 }

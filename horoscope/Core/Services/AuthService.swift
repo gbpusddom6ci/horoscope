@@ -105,20 +105,22 @@ class AuthService {
                 doc = nil
             }
 
+            let userData = doc?.data()
+
             var displayName: String
             var hasCompletedOnboarding = false
             var birthData: BirthData? = nil
             var isPremium = false
             var createdAt = Date()
 
-            if let data = doc?.data(), doc?.exists == true {
+            if let userData, doc?.exists == true {
                 // Existing user — read stored data
-                displayName = data["displayName"] as? String
+                displayName = userData["displayName"] as? String
                     ?? (appleDisplayName.isEmpty ? String(localized: "common.user") : appleDisplayName)
-                hasCompletedOnboarding = data["hasCompletedOnboarding"] as? Bool ?? false
-                isPremium = data["isPremium"] as? Bool ?? false
-                createdAt = (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
-                birthData = extractBirthData(from: data)
+                hasCompletedOnboarding = userData["hasCompletedOnboarding"] as? Bool ?? false
+                isPremium = userData["isPremium"] as? Bool ?? false
+                createdAt = (userData["createdAt"] as? Timestamp)?.dateValue() ?? Date()
+                birthData = extractBirthData(from: userData)
             } else {
                 // New user — create Firestore document
                 displayName = appleDisplayName.isEmpty ? String(localized: "common.user") : appleDisplayName
@@ -140,7 +142,10 @@ class AuthService {
                 birthData: birthData,
                 isPremium: isPremium,
                 createdAt: createdAt,
-                hasCompletedOnboarding: hasCompletedOnboarding
+                hasCompletedOnboarding: hasCompletedOnboarding,
+                guidanceIntent: extractGuidanceIntent(from: userData),
+                ritualReminderTime: (userData?["ritualReminderTime"] as? Timestamp)?.dateValue(),
+                preferredSessionTone: extractPreferredSessionTone(from: userData)
             )
 
             await MainActor.run {
@@ -148,7 +153,7 @@ class AuthService {
                 self.authState = hasCompletedOnboarding ? .authenticated : .onboarding
                 self.saveSession(appUser)
                 self.applyPendingFCMTokenIfNeeded()
-                Task { await self.runLegacyMigrationIfNeeded(for: appUser.id) }
+                Task { [weak self] in await self?.runLegacyMigrationIfNeeded(for: appUser.id) }
                 self.isLoading = false
             }
         } catch let error as ASAuthorizationError where error.code == .canceled {
@@ -199,7 +204,10 @@ class AuthService {
                 birthData: birthData,
                 isPremium: data?["isPremium"] as? Bool ?? false,
                 createdAt: (data?["createdAt"] as? Timestamp)?.dateValue() ?? Date(),
-                hasCompletedOnboarding: hasCompletedOnboarding
+                hasCompletedOnboarding: hasCompletedOnboarding,
+                guidanceIntent: extractGuidanceIntent(from: data),
+                ritualReminderTime: (data?["ritualReminderTime"] as? Timestamp)?.dateValue(),
+                preferredSessionTone: extractPreferredSessionTone(from: data)
             )
 
             await MainActor.run {
@@ -207,7 +215,7 @@ class AuthService {
                 self.authState = hasCompletedOnboarding ? .authenticated : .onboarding
                 self.saveSession(appUser)
                 self.applyPendingFCMTokenIfNeeded()
-                Task { await self.runLegacyMigrationIfNeeded(for: appUser.id) }
+                Task { [weak self] in await self?.runLegacyMigrationIfNeeded(for: appUser.id) }
                 self.isLoading = false
             }
         } catch {
@@ -265,7 +273,7 @@ class AuthService {
                 self.authState = .onboarding
                 self.saveSession(appUser)
                 self.applyPendingFCMTokenIfNeeded()
-                Task { await self.runLegacyMigrationIfNeeded(for: appUser.id) }
+                Task { [weak self] in await self?.runLegacyMigrationIfNeeded(for: appUser.id) }
                 self.isLoading = false
             }
         } catch {
@@ -299,7 +307,11 @@ class AuthService {
         defer { isLoading = false }
 
         do {
-            try await reauthenticateForSensitiveAction(firebaseUser: firebaseUser, password: password)
+            let appleAuthorizationCode = try await reauthenticateForSensitiveAction(
+                firebaseUser: firebaseUser,
+                password: password
+            )
+            try await revokeAppleAuthorizationIfNeeded(authorizationCode: appleAuthorizationCode)
             try await firestoreService.purgeUserData(userId: user.id)
             try await firebaseUser.delete()
 
@@ -310,7 +322,11 @@ class AuthService {
             if let nsError = error as NSError?,
                nsError.code == AuthErrorCode.requiresRecentLogin.rawValue {
                 do {
-                    try await reauthenticateForSensitiveAction(firebaseUser: firebaseUser, password: password)
+                    let appleAuthorizationCode = try await reauthenticateForSensitiveAction(
+                        firebaseUser: firebaseUser,
+                        password: password
+                    )
+                    try await revokeAppleAuthorizationIfNeeded(authorizationCode: appleAuthorizationCode)
                     try await firestoreService.purgeUserData(userId: user.id)
                     try await firebaseUser.delete()
                     currentUser = nil
@@ -396,7 +412,7 @@ class AuthService {
         guard let user = currentUser else { return }
 
         saveSession(user)
-        Task {
+        Task { [firestoreService, logger] in
             do {
                 try await firestoreService.updateUserDocument(
                     userId: user.id,
@@ -404,6 +420,45 @@ class AuthService {
                 )
             } catch {
                 logger.error("Failed to update premium state in Firestore: \(error.localizedDescription, privacy: .public)")
+            }
+        }
+    }
+
+    @MainActor
+    func updateExperiencePreferences(
+        guidanceIntent: GuidanceIntent? = nil,
+        ritualReminderTime: Date? = nil,
+        preferredSessionTone: PreferredSessionTone? = nil
+    ) {
+        guard var user = currentUser else { return }
+
+        var updateData: [String: Any] = [:]
+
+        if let guidanceIntent {
+            user.guidanceIntent = guidanceIntent
+            updateData["guidanceIntent"] = guidanceIntent.rawValue
+        }
+
+        if let ritualReminderTime {
+            user.ritualReminderTime = ritualReminderTime
+            updateData["ritualReminderTime"] = Timestamp(date: ritualReminderTime)
+        }
+
+        if let preferredSessionTone {
+            user.preferredSessionTone = preferredSessionTone
+            updateData["preferredSessionTone"] = preferredSessionTone.rawValue
+        }
+
+        currentUser = user
+        saveSession(user)
+
+        guard !updateData.isEmpty else { return }
+
+        Task { [firestoreService, logger] in
+            do {
+                try await firestoreService.updateUserDocument(userId: user.id, data: updateData)
+            } catch {
+                logger.error("Failed to update experience preferences: \(error.localizedDescription, privacy: .public)")
             }
         }
     }
@@ -437,7 +492,7 @@ class AuthService {
         currentUser = user
         saveSession(user)
 
-        Task {
+        Task { [firestoreService, logger] in
             do {
                 try await firestoreService.updateUserDocument(
                     userId: user.id,
@@ -515,7 +570,10 @@ class AuthService {
             isPremium: data?["isPremium"] as? Bool ?? false,
             createdAt: (data?["createdAt"] as? Timestamp)?.dateValue() ?? Date(),
             fcmToken: data?["fcmToken"] as? String,
-            hasCompletedOnboarding: hasCompletedOnboarding
+            hasCompletedOnboarding: hasCompletedOnboarding,
+            guidanceIntent: extractGuidanceIntent(from: data),
+            ritualReminderTime: (data?["ritualReminderTime"] as? Timestamp)?.dateValue(),
+            preferredSessionTone: extractPreferredSessionTone(from: data)
         )
 
         await MainActor.run {
@@ -547,6 +605,20 @@ class AuthService {
             longitude: lon,
             timeZoneIdentifier: tz
         )
+    }
+
+    private func extractGuidanceIntent(from data: [String: Any]?) -> GuidanceIntent? {
+        guard let rawValue = data?["guidanceIntent"] as? String else {
+            return nil
+        }
+        return GuidanceIntent(rawValue: rawValue)
+    }
+
+    private func extractPreferredSessionTone(from data: [String: Any]?) -> PreferredSessionTone? {
+        guard let rawValue = data?["preferredSessionTone"] as? String else {
+            return .softSpiritual
+        }
+        return PreferredSessionTone(rawValue: rawValue) ?? .softSpiritual
     }
 
     private func checkLocalAuthState() {
@@ -582,7 +654,10 @@ class AuthService {
             email: "ui@test.local",
             birthData: birthData,
             isPremium: true,
-            createdAt: Date()
+            createdAt: Date(),
+            guidanceIntent: .clarity,
+            ritualReminderTime: Date(),
+            preferredSessionTone: .softSpiritual
         )
 
         currentUser = user
@@ -607,7 +682,7 @@ class AuthService {
     }
 
     @MainActor
-    private func reauthenticateForSensitiveAction(firebaseUser: User, password: String?) async throws {
+    private func reauthenticateForSensitiveAction(firebaseUser: User, password: String?) async throws -> String? {
         let providerIDs = Set(firebaseUser.providerData.map(\.providerID))
 
         if providerIDs.contains(EmailAuthProviderID) {
@@ -619,7 +694,7 @@ class AuthService {
             }
             let credential = EmailAuthProvider.credential(withEmail: email, password: password)
             _ = try await firebaseUser.reauthenticate(with: credential)
-            return
+            return nil
         }
 
         if providerIDs.contains("apple.com") {
@@ -637,7 +712,14 @@ class AuthService {
                 rawNonce: nonce
             )
             _ = try await firebaseUser.reauthenticate(with: credential)
-            return
+
+            guard let authorizationCodeData = appleCredential.authorizationCode,
+                  let authorizationCode = String(data: authorizationCodeData, encoding: .utf8),
+                  !authorizationCode.isEmpty else {
+                throw AuthServiceError.deleteAccountAppleRevokeCodeMissing
+            }
+
+            return authorizationCode
         }
 
         if providerIDs.isEmpty {
@@ -646,12 +728,27 @@ class AuthService {
 
         throw AuthServiceError.deleteAccountUnsupportedProvider
     }
+
+    private func revokeAppleAuthorizationIfNeeded(authorizationCode: String?) async throws {
+        guard let authorizationCode, !authorizationCode.isEmpty else {
+            return
+        }
+
+        do {
+            try await Auth.auth().revokeToken(withAuthorizationCode: authorizationCode)
+        } catch {
+            logger.error("Failed to revoke Apple token before account deletion: \(error.localizedDescription, privacy: .public)")
+            throw AuthServiceError.deleteAccountAppleRevokeFailed
+        }
+    }
 }
 
 enum AuthServiceError: LocalizedError {
     case notAuthenticated
     case deleteAccountPasswordRequired
     case deleteAccountReauthenticationRequired
+    case deleteAccountAppleRevokeCodeMissing
+    case deleteAccountAppleRevokeFailed
     case deleteAccountUnsupportedProvider
     case deleteAccountFailed
 
@@ -663,6 +760,10 @@ enum AuthServiceError: LocalizedError {
             return String(localized: "auth.error.delete_account_requires_password")
         case .deleteAccountReauthenticationRequired:
             return String(localized: "auth.error.delete_account_reauth_required")
+        case .deleteAccountAppleRevokeCodeMissing:
+            return String(localized: "auth.error.delete_account_apple_revoke_code_missing")
+        case .deleteAccountAppleRevokeFailed:
+            return String(localized: "auth.error.delete_account_apple_revoke_failed")
         case .deleteAccountUnsupportedProvider:
             return String(localized: "auth.error.delete_account_unsupported_provider")
         case .deleteAccountFailed:

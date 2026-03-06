@@ -6,6 +6,8 @@ struct AppRouter: View {
     @State private var notificationService = NotificationService.shared
     @State private var usageLimitService = UsageLimitService.shared
     @State private var networkMonitor = NetworkMonitor.shared
+    @State private var ritualService = RitualService.shared
+    @State private var insightService = InsightService.shared
     @AppStorage("selected_language") private var selectedLanguage = "en"
 
     private let supportedLanguages: Set<String> = ["en", "tr"]
@@ -51,6 +53,8 @@ struct AppRouter: View {
         .environment(notificationService)
         .environment(usageLimitService)
         .environment(networkMonitor)
+        .environment(ritualService)
+        .environment(insightService)
         .environment(\.locale, Locale(identifier: resolvedLanguage))
         .preferredColorScheme(.dark)
         .onAppear {
