@@ -73,8 +73,8 @@ struct MainTabView: View {
         switch selectedDestination {
         case .tarot:
             TarotView(showsCloseButton: false)
-        case .oracle:
-            OracleView()
+        case .palm:
+            PalmReadingView()
         case .home:
             SanctumView()
         case .dreams:
@@ -123,15 +123,25 @@ struct MainTabView: View {
     }
 }
 
-private enum AuroraDockMetrics {
-    static let sideButtonSize: CGFloat = 52
-    static let centerButtonSize: CGFloat = 78
-    static let orbLift: CGFloat = 24
-    static let surfaceHeight: CGFloat = 88
-    static let centerSlotWidth: CGFloat = 98
+enum AuroraDockMetrics {
+    static let outerHorizontalPadding: CGFloat = AuroraSpacing.md
+    static let sideButtonVisualSize: CGFloat = 40
+    static let centerButtonSize: CGFloat = 68
+    static let orbLift: CGFloat = 14
+    static let surfaceHeight: CGFloat = 72
+    static let centerSlotWidth: CGFloat = 88
+
+    static func bottomSpacing(bottomSafeArea: CGFloat) -> CGFloat {
+        max(4, min(10, bottomSafeArea * 0.18))
+    }
 
     static func height(bottomSafeArea: CGFloat) -> CGFloat {
-        surfaceHeight + orbLift + max(bottomSafeArea, 10)
+        surfaceHeight + orbLift + bottomSpacing(bottomSafeArea: bottomSafeArea)
+    }
+
+    static func sideSlotWidth(containerWidth: CGFloat) -> CGFloat {
+        let usableWidth = max(0, containerWidth - (outerHorizontalPadding * 2) - centerSlotWidth)
+        return usableWidth / 4
     }
 }
 
@@ -141,62 +151,38 @@ private struct AuroraDock: View {
     let bottomSafeArea: CGFloat
 
     var body: some View {
-        ZStack(alignment: .top) {
-            RoundedRectangle(cornerRadius: 34, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            AuroraColors.surfaceElevated.opacity(0.98),
-                            AuroraColors.cardBase.opacity(0.96),
-                            AuroraColors.obsidian.opacity(0.95)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 34, style: .continuous)
-                        .fill(AuroraGradients.cardWash(accent: selectedDestination.accent))
-                        .opacity(0.45)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 34, style: .continuous)
-                        .stroke(
-                            LinearGradient(
-                                colors: [
-                                    Color.white.opacity(0.12),
-                                    selectedDestination.accent.opacity(0.22),
-                                    Color.white.opacity(0.03)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
-                            lineWidth: 1
-                        )
-                )
-                .frame(height: AuroraDockMetrics.surfaceHeight)
-                .shadow(color: AuroraColors.dockShadow, radius: 28, x: 0, y: 18)
+        let bottomSpacing = AuroraDockMetrics.bottomSpacing(bottomSafeArea: bottomSafeArea)
 
-            HStack(spacing: 0) {
-                dockButton(for: .tarot)
-                dockButton(for: .oracle)
-                Color.clear
-                    .frame(width: AuroraDockMetrics.centerSlotWidth)
-                dockButton(for: .dreams)
-                dockButton(for: .profile)
+        ZStack(alignment: .top) {
+            dockSurface
+
+            GeometryReader { proxy in
+                let sideSlotWidth = AuroraDockMetrics.sideSlotWidth(containerWidth: proxy.size.width)
+
+                HStack(spacing: 0) {
+                    dockSlot(for: .tarot, width: sideSlotWidth)
+                    dockSlot(for: .dreams, width: sideSlotWidth)
+                    Color.clear
+                        .frame(width: AuroraDockMetrics.centerSlotWidth, height: AuroraDockMetrics.surfaceHeight)
+                    dockSlot(for: .palm, width: sideSlotWidth)
+                    dockSlot(for: .profile, width: sideSlotWidth)
+                }
             }
             .frame(height: AuroraDockMetrics.surfaceHeight)
-            .padding(.horizontal, AuroraSpacing.md)
+            .padding(.horizontal, AuroraDockMetrics.outerHorizontalPadding)
 
             homeButton
                 .offset(y: -AuroraDockMetrics.orbLift)
         }
-        .padding(.horizontal, AuroraSpacing.md)
+        .padding(.horizontal, AuroraDockMetrics.outerHorizontalPadding)
         .padding(.top, AuroraDockMetrics.orbLift)
-        .padding(.bottom, max(bottomSafeArea, 10))
+        .padding(.bottom, bottomSpacing)
         .background(
             LinearGradient(
-                colors: [Color.clear, AuroraColors.obsidian.opacity(0.84)],
+                colors: [
+                    Color.clear,
+                    selectedDestination.accent.opacity(0.08)
+                ],
                 startPoint: .top,
                 endPoint: .bottom
             )
@@ -206,6 +192,87 @@ private struct AuroraDock: View {
         .accessibilityIdentifier("main.tab_bar")
     }
 
+    private var dockSurface: some View {
+        let shape = RoundedRectangle(cornerRadius: AuroraRadius.xl, style: .continuous)
+
+        return shape
+            .fill(
+                LinearGradient(
+                    colors: [
+                        AuroraColors.surfaceElevated.opacity(0.96),
+                        AuroraColors.pearl.opacity(0.9),
+                        AuroraColors.frost.opacity(0.84)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+            .overlay {
+                shape
+                    .fill(AuroraGradients.silkHighlight)
+                    .opacity(0.42)
+                    .blendMode(.screen)
+            }
+            .overlay {
+                shape
+                    .fill(AuroraGradients.cardWash(accent: selectedDestination.accent))
+                    .opacity(0.92)
+            }
+            .overlay {
+                ZStack {
+                    Capsule(style: .continuous)
+                        .fill(AuroraGradients.auroraSpectrum)
+                        .frame(width: 210, height: 20)
+                        .blur(radius: 18)
+                        .offset(x: -54, y: -18)
+                        .opacity(0.14)
+
+                    Capsule(style: .continuous)
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    selectedDestination.accent.opacity(0.36),
+                                    AuroraColors.auroraCyan.opacity(0.2),
+                                    AuroraColors.auroraViolet.opacity(0.12)
+                                ],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .frame(width: 164, height: 18)
+                        .blur(radius: 16)
+                        .offset(x: 68, y: -4)
+                        .opacity(0.18)
+                }
+                .clipShape(shape)
+            }
+            .overlay {
+                shape.stroke(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.52),
+                            selectedDestination.accent.opacity(0.4),
+                            AuroraColors.auroraCyan.opacity(0.22)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1.05
+                )
+            }
+            .overlay {
+                shape.stroke(Color.white.opacity(0.18), lineWidth: 0.7)
+            }
+            .frame(height: AuroraDockMetrics.surfaceHeight)
+            .shadow(color: selectedDestination.accent.opacity(0.14), radius: 18, x: 0, y: 8)
+            .shadow(color: AuroraColors.shadow.opacity(0.28), radius: 24, x: 0, y: 14)
+    }
+
+    private func dockSlot(for destination: AppDestination, width: CGFloat) -> some View {
+        dockButton(for: destination)
+            .frame(width: width, height: AuroraDockMetrics.surfaceHeight)
+    }
+
     private func dockButton(for destination: AppDestination) -> some View {
         let isSelected = selectedDestination == destination
 
@@ -213,27 +280,76 @@ private struct AuroraDock: View {
             select(destination)
         } label: {
             ZStack {
-                Circle()
-                    .fill(destination.accent.opacity(isSelected ? 0.18 : 0.03))
-                    .frame(width: isSelected ? 42 : 38, height: isSelected ? 42 : 38)
-
                 if isSelected {
                     Circle()
-                        .stroke(destination.accent.opacity(0.35), lineWidth: 1)
-                        .frame(width: 46, height: 46)
+                        .fill(destination.accent.opacity(0.12))
+                        .frame(width: 50, height: 50)
+                        .blur(radius: 10)
                 }
+
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: isSelected
+                                ? [
+                                    destination.accent.opacity(0.28),
+                                    destination.accent.opacity(0.1)
+                                ]
+                                : [
+                                    AuroraColors.pearl.opacity(0.72),
+                                    AuroraColors.frost.opacity(0.56)
+                                ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(
+                        width: isSelected ? AuroraDockMetrics.sideButtonVisualSize : AuroraDockMetrics.sideButtonVisualSize - 4,
+                        height: isSelected ? AuroraDockMetrics.sideButtonVisualSize : AuroraDockMetrics.sideButtonVisualSize - 4
+                    )
+                    .overlay(
+                        Circle()
+                            .fill(Color.white.opacity(isSelected ? 0.16 : 0.08))
+                            .blur(radius: isSelected ? 3 : 2)
+                    )
+
+                Circle()
+                    .stroke(
+                        LinearGradient(
+                            colors: isSelected
+                                ? [
+                                    destination.accent.opacity(0.72),
+                                    Color.white.opacity(0.8)
+                                ]
+                                : [
+                                    AuroraColors.stroke.opacity(0.8),
+                                    AuroraColors.hairline.opacity(0.9)
+                                ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: isSelected ? 1.1 : 0.9
+                    )
+                    .frame(width: isSelected ? 44 : 40, height: isSelected ? 44 : 40)
 
                 AuroraGlyph(
                     kind: destination.glyphKind,
-                    color: isSelected ? destination.accent : AuroraColors.textMuted.opacity(0.92),
-                    lineWidth: isSelected ? 2 : 1.7
+                    color: isSelected ? destination.accent : AuroraColors.textSecondary.opacity(0.92),
+                    lineWidth: isSelected ? 2 : 1.65,
+                    layoutStyle: .dock
                 )
                 .frame(width: 22, height: 22)
             }
-            .frame(width: AuroraDockMetrics.sideButtonSize, height: AuroraDockMetrics.surfaceHeight)
-            .shadow(color: isSelected ? destination.accent.opacity(0.2) : .clear, radius: 12, x: 0, y: 8)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .contentShape(Rectangle())
+            .shadow(
+                color: isSelected ? destination.accent.opacity(0.18) : destination.accent.opacity(0.04),
+                radius: isSelected ? 12 : 6,
+                x: 0,
+                y: isSelected ? 6 : 4
+            )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(AuroraDockPressStyle())
         .accessibilityLabel(Text(destination.title))
         .accessibilityHint(Text(String(localized: "tab.switch.hint")))
         .accessibilityIdentifier(destination.dockAccessibilityIdentifier)
@@ -247,34 +363,69 @@ private struct AuroraDock: View {
         } label: {
             ZStack {
                 Circle()
-                    .fill(isSelected ? AnyShapeStyle(AuroraGradients.primaryCTA) : AnyShapeStyle(AuroraGradients.auroraVeil))
+                    .fill(AuroraGradients.auroraSpectrum)
+                    .frame(width: AuroraDockMetrics.centerButtonSize + 8, height: AuroraDockMetrics.centerButtonSize + 8)
+                    .blur(radius: isSelected ? 16 : 10)
+                    .opacity(isSelected ? 0.24 : 0.12)
+
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: isSelected
+                                ? [
+                                    AuroraColors.auroraMint,
+                                    AuroraColors.auroraCyan,
+                                    AuroraColors.auroraViolet
+                                ]
+                                : [
+                                    AuroraColors.pearl,
+                                    AuroraColors.frost,
+                                    AuroraColors.auroraCyan.opacity(0.22)
+                                ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: AuroraDockMetrics.centerButtonSize, height: AuroraDockMetrics.centerButtonSize)
+                    .overlay(
+                        Circle()
+                            .fill(Color.white.opacity(isSelected ? 0.12 : 0.18))
+                            .blur(radius: 4)
+                    )
+
+                Circle()
+                    .stroke(isSelected ? Color.white.opacity(0.52) : Color.white.opacity(0.38), lineWidth: 1)
                     .frame(width: AuroraDockMetrics.centerButtonSize, height: AuroraDockMetrics.centerButtonSize)
 
                 Circle()
-                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                    .frame(width: AuroraDockMetrics.centerButtonSize, height: AuroraDockMetrics.centerButtonSize)
+                    .stroke(AuroraColors.auroraCyan.opacity(isSelected ? 0.32 : 0.2), lineWidth: 1)
+                    .frame(width: AuroraDockMetrics.centerButtonSize + 14, height: AuroraDockMetrics.centerButtonSize + 14)
 
                 Circle()
-                    .stroke(AuroraColors.auroraViolet.opacity(0.12), lineWidth: 1)
-                    .frame(width: AuroraDockMetrics.centerButtonSize + 16, height: AuroraDockMetrics.centerButtonSize + 16)
+                    .stroke(AuroraColors.auroraMint.opacity(isSelected ? 0.3 : 0.16), lineWidth: 1)
+                    .frame(
+                        width: AuroraDockMetrics.centerButtonSize + (isSelected ? 26 : 18),
+                        height: AuroraDockMetrics.centerButtonSize + (isSelected ? 26 : 18)
+                    )
 
                 AuroraGlyph(
                     kind: .saturn,
-                    color: AuroraColors.obsidian.opacity(0.9),
-                    lineWidth: 2.2
+                    color: isSelected ? AuroraColors.obsidian : AuroraColors.textPrimary,
+                    lineWidth: isSelected ? 2.2 : 2.0,
+                    layoutStyle: .dock
                 )
-                .frame(width: 30, height: 30)
+                .frame(width: 28, height: 28)
             }
             .shadow(
                 color: isSelected
-                    ? AuroraColors.auroraMint.opacity(0.28)
-                    : AuroraColors.auroraViolet.opacity(0.18),
-                radius: 24,
+                    ? AuroraColors.auroraMint.opacity(0.22)
+                    : AuroraColors.auroraCyan.opacity(0.1),
+                radius: isSelected ? 18 : 10,
                 x: 0,
-                y: 16
+                y: isSelected ? 10 : 7
             )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(AuroraDockPressStyle())
         .accessibilityLabel(Text(AppDestination.home.title))
         .accessibilityHint(Text(String(localized: "tab.switch.hint")))
         .accessibilityIdentifier(AppDestination.home.dockAccessibilityIdentifier)
@@ -292,6 +443,14 @@ private struct AuroraDock: View {
         withAnimation(reduceMotion ? nil : AuroraMotion.spring) {
             selectedDestination = destination
         }
+    }
+}
+
+private struct AuroraDockPressStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.94 : 1)
+            .animation(AuroraMotion.transition, value: configuration.isPressed)
     }
 }
 
@@ -348,7 +507,7 @@ enum AppNavigation {
             payload[AppNavigationPayload.prompt] = prompt
         }
 
-        switchToDestination(.oracle)
+        switchToDestination(.home)
         NotificationCenter.default.post(name: .openChatQuickAction, object: nil, userInfo: payload)
     }
 
@@ -381,7 +540,7 @@ enum AppNavigation {
 
     static func openPalmQuickAction() {
         pendingPalmQuickAction = true
-        switchToDestination(.oracle)
+        switchToDestination(.palm)
         NotificationCenter.default.post(name: .openPalmQuickAction, object: nil)
     }
 
@@ -402,13 +561,13 @@ enum AppNavigation {
     }
 
     static func openQuickActionsSheet() {
-        switchToDestination(.oracle)
+        switchToDestination(.home)
     }
 }
 
 enum AppDestination: String, CaseIterable {
     case tarot
-    case oracle
+    case palm
     case home
     case dreams
     case profile
@@ -421,7 +580,7 @@ enum AppDestination: String, CaseIterable {
         case "atlas":
             return .home
         case "oracle":
-            return .oracle
+            return .home
         case "journal":
             return .dreams
         case "profile":
@@ -441,8 +600,8 @@ enum AppDestination: String, CaseIterable {
         switch self {
         case .tarot:
             return String(localized: "tab.aurora.tarot")
-        case .oracle:
-            return String(localized: "tab.aurora.oracle")
+        case .palm:
+            return String(localized: "tab.aurora.palm")
         case .home:
             return String(localized: "tab.aurora.home")
         case .dreams:
@@ -460,7 +619,7 @@ enum AppDestination: String, CaseIterable {
         switch self {
         case .tarot:
             return AuroraColors.auroraRose
-        case .oracle:
+        case .palm:
             return AuroraColors.auroraViolet
         case .home:
             return AuroraColors.auroraMint
@@ -475,8 +634,8 @@ enum AppDestination: String, CaseIterable {
         switch self {
         case .tarot:
             return .tarot
-        case .oracle:
-            return .eye
+        case .palm:
+            return .palm
         case .home:
             return .saturn
         case .dreams:
@@ -490,8 +649,8 @@ enum AppDestination: String, CaseIterable {
         switch self {
         case .tarot:
             return "dock.tarot"
-        case .oracle:
-            return "dock.oracle"
+        case .palm:
+            return "dock.palm"
         case .home:
             return "dock.home"
         case .dreams:
@@ -516,7 +675,7 @@ enum AppTab: String, CaseIterable {
         case .chart:
             return .home
         case .chat:
-            return .oracle
+            return .home
         case .dream:
             return .dreams
         case .profile:

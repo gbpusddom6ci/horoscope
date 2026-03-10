@@ -6,16 +6,53 @@ enum AuroraGlyphKind {
     case saturn
     case dreamcatcher
     case profile
+    case palm
+}
+
+enum AuroraGlyphLayoutStyle {
+    case standard
+    case dock
+}
+
+private struct AuroraGlyphLayoutMetrics {
+    let scale: CGFloat
+    let yOffsetFactor: CGFloat
+}
+
+extension AuroraGlyphKind {
+    fileprivate func metrics(for layoutStyle: AuroraGlyphLayoutStyle) -> AuroraGlyphLayoutMetrics {
+        switch layoutStyle {
+        case .standard:
+            return AuroraGlyphLayoutMetrics(scale: 1, yOffsetFactor: 0)
+        case .dock:
+            switch self {
+            case .tarot:
+                return AuroraGlyphLayoutMetrics(scale: 0.94, yOffsetFactor: -0.01)
+            case .eye:
+                return AuroraGlyphLayoutMetrics(scale: 0.93, yOffsetFactor: -0.015)
+            case .saturn:
+                return AuroraGlyphLayoutMetrics(scale: 0.94, yOffsetFactor: -0.005)
+            case .dreamcatcher:
+                return AuroraGlyphLayoutMetrics(scale: 0.84, yOffsetFactor: -0.07)
+            case .profile:
+                return AuroraGlyphLayoutMetrics(scale: 0.9, yOffsetFactor: -0.02)
+            case .palm:
+                return AuroraGlyphLayoutMetrics(scale: 0.86, yOffsetFactor: -0.045)
+            }
+        }
+    }
 }
 
 struct AuroraGlyph: View {
     let kind: AuroraGlyphKind
     var color: Color = AuroraColors.textPrimary
     var lineWidth: CGFloat = 1.8
+    var layoutStyle: AuroraGlyphLayoutStyle = .standard
 
     var body: some View {
         GeometryReader { proxy in
             let size = min(proxy.size.width, proxy.size.height)
+            let metrics = kind.metrics(for: layoutStyle)
             ZStack {
                 switch kind {
                 case .tarot:
@@ -28,8 +65,12 @@ struct AuroraGlyph: View {
                     dreamcatcherGlyph(size: size)
                 case .profile:
                     profileGlyph(size: size)
+                case .palm:
+                    palmGlyph(size: size)
                 }
             }
+            .scaleEffect(metrics.scale)
+            .offset(y: size * metrics.yOffsetFactor)
             .frame(width: proxy.size.width, height: proxy.size.height)
         }
         .aspectRatio(1, contentMode: .fit)
@@ -146,6 +187,35 @@ struct AuroraGlyph: View {
                 .stroke(color.opacity(0.92), style: StrokeStyle(lineWidth: lineWidth, lineCap: .round, lineJoin: .round))
                 .frame(width: size * 0.46, height: size * 0.24)
                 .offset(y: size * 0.18)
+        }
+    }
+
+    private func palmGlyph(size: CGFloat) -> some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: size * 0.18, style: .continuous)
+                .stroke(color.opacity(0.92), lineWidth: lineWidth)
+                .frame(width: size * 0.54, height: size * 0.64)
+                .offset(y: size * 0.14)
+
+            HStack(spacing: size * 0.06) {
+                ForEach(0..<5, id: \.self) { i in
+                    let heights: [CGFloat] = [0.22, 0.28, 0.30, 0.26, 0.20]
+                    Capsule(style: .continuous)
+                        .stroke(color.opacity(0.88), lineWidth: lineWidth * 0.9)
+                        .frame(width: size * 0.07, height: size * heights[i])
+                        .offset(y: -(size * 0.18 + size * heights[i] / 2))
+                }
+            }
+
+            EyeShape()
+                .stroke(color.opacity(0.90), style: StrokeStyle(lineWidth: lineWidth * 0.85, lineCap: .round, lineJoin: .round))
+                .frame(width: size * 0.28, height: size * 0.18)
+                .offset(y: size * 0.1)
+
+            Circle()
+                .fill(color.opacity(0.92))
+                .frame(width: size * 0.07, height: size * 0.07)
+                .offset(y: size * 0.1)
         }
     }
 

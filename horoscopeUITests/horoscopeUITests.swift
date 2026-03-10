@@ -47,7 +47,7 @@ final class horoscopeUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["home.greeting"].waitForExistence(timeout: 8))
         XCTAssertTrue(app.otherElements["main.tab_bar"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["dock.tarot"].exists)
-        XCTAssertTrue(app.buttons["dock.oracle"].exists)
+        XCTAssertTrue(app.buttons["dock.palm"].exists)
         XCTAssertTrue(app.buttons["dock.home"].exists)
         XCTAssertTrue(app.buttons["dock.dreams"].exists)
         XCTAssertTrue(app.buttons["dock.profile"].exists)
@@ -66,11 +66,11 @@ final class horoscopeUITests: XCTestCase {
     }
 
     @MainActor
-    func testHomeContainsAtlasPalmAndTarotCTAs() throws {
+    func testHomeContainsAtlasOracleAndTarotCTAs() throws {
         let app = launchAuthenticatedApp()
 
         let atlasCTA = app.buttons["home.atlas.cta"]
-        let palmCTA = app.buttons["home.palm.cta"]
+        let oracleCTA = app.buttons["home.oracle.portal"]
         let tarotCTA = app.buttons["home.tarot.cta"]
 
         XCTAssertTrue(app.staticTexts["home.greeting"].waitForExistence(timeout: 8))
@@ -78,8 +78,8 @@ final class horoscopeUITests: XCTestCase {
         revealElementIfNeeded(atlasCTA, in: app)
         XCTAssertTrue(atlasCTA.exists)
 
-        revealElementIfNeeded(palmCTA, in: app)
-        XCTAssertTrue(palmCTA.exists)
+        revealElementIfNeeded(oracleCTA, in: app)
+        XCTAssertTrue(oracleCTA.exists)
 
         revealElementIfNeeded(tarotCTA, in: app)
         XCTAssertTrue(tarotCTA.exists)

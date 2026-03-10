@@ -10,6 +10,18 @@ import Foundation
 @testable import horoscope
 
 struct horoscopeTests {
+    private struct LegacyOnboardingDraftFixture: Codable {
+        var currentStep: Int
+        var birthDate: Date
+        var birthTime: Date
+        var isTimeKnown: Bool
+        var locationQuery: String
+        var selectedLocationName: String?
+        var selectedLatitude: Double?
+        var selectedLongitude: Double?
+        var selectedTimezone: String
+        var guidanceIntentRawValue: String
+    }
 
     @Test("Zodiac boundary dates are mapped correctly")
     func zodiacBoundaryDates() {
@@ -168,6 +180,24 @@ struct horoscopeTests {
         #expect(MysticLayout.tabBarHeight(bottomSafeArea: 34) == 68)
     }
 
+    @Test("Aurora dock side slots divide width evenly around center orb")
+    func auroraDockSlotDistribution() {
+        let containerWidth: CGFloat = 390
+        let expected = (containerWidth - (AuroraDockMetrics.outerHorizontalPadding * 2) - AuroraDockMetrics.centerSlotWidth) / 4
+
+        #expect(abs(AuroraDockMetrics.sideSlotWidth(containerWidth: containerWidth) - expected) < 0.001)
+        #expect(AuroraDockMetrics.sideSlotWidth(containerWidth: containerWidth) > AuroraDockMetrics.sideButtonVisualSize)
+    }
+
+    @Test("Aurora dock height includes floating bottom spacing")
+    func auroraDockHeightIncludesBottomSpacing() {
+        let compactHeight = AuroraDockMetrics.height(bottomSafeArea: 0)
+        let insetHeight = AuroraDockMetrics.height(bottomSafeArea: 34)
+
+        #expect(compactHeight == AuroraDockMetrics.surfaceHeight + AuroraDockMetrics.orbLift + AuroraDockMetrics.bottomSpacing(bottomSafeArea: 0))
+        #expect(insetHeight > compactHeight)
+    }
+
     @Test("Date helpers honor selected app language with fallback locale")
     func dateHelperLocaleSelection() {
         let fallback = Locale(identifier: "en_US_POSIX")
@@ -261,6 +291,60 @@ struct horoscopeTests {
     func onboardingViewInitializes() {
         _ = OnboardingView()
         #expect(true)
+    }
+
+    @Test("Onboarding legacy steps migrate into the Aurora step order")
+    func onboardingStepMigration() {
+        #expect(OnboardingStep.migrated(fromLegacyRawValue: -1) == .welcomeIntent)
+        #expect(OnboardingStep.migrated(fromLegacyRawValue: 0) == .birthDate)
+        #expect(OnboardingStep.migrated(fromLegacyRawValue: 1) == .birthTime)
+        #expect(OnboardingStep.migrated(fromLegacyRawValue: 2) == .locationSummary)
+        #expect(OnboardingStep.migrated(fromLegacyRawValue: 3) == .locationSummary)
+    }
+
+    @MainActor
+    @Test("Onboarding legacy draft migrates into the new summary step")
+    func onboardingLegacyDraftMigration() throws {
+        let defaults = UserDefaults.standard
+        let draftKey = "onboarding_draft_v1"
+        let newDraftKey = "onboarding_draft_v2"
+        defaults.removeObject(forKey: draftKey)
+        defaults.removeObject(forKey: newDraftKey)
+        defer {
+            defaults.removeObject(forKey: draftKey)
+            defaults.removeObject(forKey: newDraftKey)
+        }
+
+        let fixture = LegacyOnboardingDraftFixture(
+            currentStep: 2,
+            birthDate: Date(timeIntervalSince1970: 123_456),
+            birthTime: Date(timeIntervalSince1970: 456_789),
+            isTimeKnown: false,
+            locationQuery: "Istanbul",
+            selectedLocationName: "Istanbul, Turkey",
+            selectedLatitude: 41.0082,
+            selectedLongitude: 28.9784,
+            selectedTimezone: "Europe/Istanbul",
+            guidanceIntentRawValue: GuidanceIntent.healing.rawValue
+        )
+        let encoded = try JSONEncoder().encode(fixture)
+        defaults.set(encoded, forKey: draftKey)
+
+        let viewModel = OnboardingViewModel()
+
+        #expect(viewModel.currentStep == .locationSummary)
+        #expect(viewModel.selectedLocationName == "Istanbul, Turkey")
+        #expect(viewModel.guidanceIntent == .healing)
+        #expect(viewModel.isTimeKnown == false)
+        #expect(defaults.data(forKey: newDraftKey) != nil)
+    }
+
+    @Test("Paywall defaults to the yearly plan when available")
+    func paywallRecommendation() {
+        #expect(PaywallView.recommendedProductID(from: ["monthly_plan", "yearly_plan"]) == "yearly_plan")
+        #expect(PaywallView.recommendedProductID(from: ["MONTHLY", "YEAR_ACCESS"]) == "YEAR_ACCESS")
+        #expect(PaywallView.recommendedProductID(from: ["monthly_plan"]) == "monthly_plan")
+        #expect(PaywallView.recommendedProductID(from: []) == nil)
     }
 
     @Test("Domain display names are localized and non-empty")
